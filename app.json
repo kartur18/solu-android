@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "SOLU - Técnicos verificados",
+    "slug": "solu-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "solu",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F26B21"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "pe.solu.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "SOLU necesita acceso a tus fotos para subir tu foto de perfil y DNI.",
+        "NSCameraUsageDescription": "SOLU necesita acceso a tu cámara para tomar fotos de tu DNI y perfil."
+      }
+    },
+    "android": {
+      "package": "pe.solu.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#F26B21"
+      },
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      "expo-image-picker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
