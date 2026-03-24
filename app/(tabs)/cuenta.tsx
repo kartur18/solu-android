@@ -285,6 +285,11 @@ function LegalSection({ router }: { router: any }) {
           <Text style={{ flex: 1, marginLeft: 10, fontSize: 13, fontWeight: '600', color: COLORS.dark }}>Soporte por WhatsApp</Text>
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray2} />
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/eliminar-cuenta')} style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+          <Ionicons name="trash-outline" size={18} color={COLORS.red} />
+          <Text style={{ flex: 1, marginLeft: 10, fontSize: 13, fontWeight: '600', color: COLORS.red }}>Eliminar mi cuenta</Text>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.gray2} />
+        </TouchableOpacity>
         <View style={{ padding: 14, alignItems: 'center' }}>
           <Text style={{ fontSize: 11, color: COLORS.gray2 }}>SOLU v1.0.0 · CITYLAND GROUP E.I.R.L.</Text>
         </View>

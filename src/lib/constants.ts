@@ -23,13 +23,24 @@ export const SERVICIOS = [
 ]
 
 export const DISTRITOS = [
-  'Miraflores', 'San Isidro', 'Surco', 'San Borja', 'La Molina',
-  'Jesús María', 'Lince', 'Pueblo Libre', 'Magdalena', 'San Miguel',
-  'Breña', 'Cercado de Lima', 'Ate', 'Santa Anita', 'Los Olivos',
-  'San Martín de Porres', 'Comas', 'Independencia', 'Chorrillos',
-  'Barranco', 'Villa El Salvador', 'San Juan de Lurigancho',
-  'Callao', 'Bellavista', 'La Perla',
+  // Lima Moderna
+  'Miraflores', 'San Isidro', 'Santiago de Surco', 'San Borja', 'La Molina',
+  'Barranco', 'Surquillo', 'Magdalena del Mar', 'Pueblo Libre',
+  // Lima Centro
+  'Lima Cercado', 'Jesús María', 'Lince', 'San Miguel', 'Breña', 'La Victoria', 'Rímac',
+  // Lima Norte
+  'Los Olivos', 'San Martín de Porres', 'Comas', 'Independencia',
+  'Carabayllo', 'Puente Piedra',
+  // Lima Este
+  'San Juan de Lurigancho', 'Ate', 'Santa Anita', 'El Agustino', 'Chaclacayo',
+  // Lima Sur
+  'San Juan de Miraflores', 'Villa El Salvador', 'Villa María del Triunfo',
+  'Chorrillos', 'Lurín',
+  // Callao
+  'Callao', 'Bellavista', 'La Perla', 'Ventanilla',
+  // Provincias
   'Arequipa', 'Trujillo', 'Chiclayo', 'Piura', 'Cusco',
+  'Huancayo', 'Iquitos', 'Tacna', 'Ica', 'Cajamarca',
 ]
 
 export const URGENCIAS = [
@@ -41,8 +52,8 @@ export const URGENCIAS = [
 export const LEVELS = [
   { name: 'Bronce', emoji: '🥉', min: 0, color: '#CD7F32' },
   { name: 'Plata', emoji: '🥈', min: 10, color: '#C0C0C0' },
-  { name: 'Oro', emoji: '🥇', min: 25, color: '#FFD700' },
-  { name: 'Diamante', emoji: '💎', min: 50, color: '#B9F2FF' },
+  { name: 'Oro', emoji: '🥇', min: 50, color: '#FFD700' },
+  { name: 'Diamante', emoji: '💎', min: 100, color: '#6366F1' },
 ]
 
 export function getTechLevel(servicios: number) {
