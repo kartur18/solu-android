@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import { COLORS } from '../lib/constants'
 import { ENV, fetchWithTimeout } from '../lib/env'
 
@@ -12,9 +13,11 @@ interface Message {
 const API_URL = `${ENV.API_BASE_URL}/ai-chat`
 
 export function ChatBot() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [lastService, setLastService] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: '¡Hola! Soy el asistente de SOLU. Describe tu problema y te recomiendo el técnico ideal.\n\nEjemplo: "Tengo una fuga en el baño"' },
+    { role: 'assistant', content: '¡Hola! Soy el asistente IA de SOLU. Describe tu problema y te recomiendo el técnico ideal.\n\nEjemplo: "Tengo una fuga en el baño"' },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -47,7 +50,8 @@ export function ChatBot() {
 
       if (data.recommendation) {
         const r = data.recommendation
-        reply = `🔧 ${r.service}\n\n${r.explanation}\n\n⚡ Urgencia: ${r.urgency}${r.priceRange ? `\n💰 Precio estimado: ${r.priceRange}` : ''}\n\n¿Quieres que busque un técnico disponible?`
+        setLastService(r.service)
+        reply = `🔧 ${r.service}\n\n${r.explanation}\n\n⚡ Urgencia: ${r.urgency}${r.priceRange ? `\n💰 Precio estimado: ${r.priceRange}` : ''}\n\nToca "Buscar técnico" abajo para encontrar uno disponible.`
       }
 
       setMessages([...newMessages, { role: 'assistant', content: reply || 'No pude procesar tu mensaje.' }])
@@ -63,13 +67,13 @@ export function ChatBot() {
       <TouchableOpacity
         onPress={() => setOpen(true)}
         style={{
-          position: 'absolute', bottom: 90, right: 16, width: 52, height: 52,
-          borderRadius: 26, backgroundColor: COLORS.pri, alignItems: 'center',
+          position: 'absolute', bottom: 90, right: 16, width: 56, height: 56,
+          borderRadius: 28, backgroundColor: COLORS.dark, alignItems: 'center',
           justifyContent: 'center', elevation: 6,
           shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6,
         }}
       >
-        <Ionicons name="chatbubble-ellipses" size={24} color={COLORS.white} />
+        <Ionicons name="sparkles" size={24} color={COLORS.white} />
       </TouchableOpacity>
     )
   }
@@ -82,10 +86,13 @@ export function ChatBot() {
       >
         <View style={{ height: '70%', backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', elevation: 10 }}>
           {/* Header */}
-          <View style={{ backgroundColor: COLORS.pri, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View>
-              <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>Asistente SOLU</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Describe tu problema</Text>
+          <View style={{ backgroundColor: COLORS.dark, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="sparkles" size={20} color={COLORS.yellow} />
+              <View>
+                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>Asistente IA SOLU</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Describe tu problema y te ayudo</Text>
+              </View>
             </View>
             <TouchableOpacity onPress={() => setOpen(false)}>
               <Ionicons name="close" size={22} color={COLORS.white} />
@@ -117,6 +124,17 @@ export function ChatBot() {
               </View>
             )}
           </ScrollView>
+
+          {/* Quick action */}
+          {lastService && (
+            <TouchableOpacity
+              onPress={() => { setOpen(false); router.push({ pathname: '/buscar', params: { servicio: lastService } }) }}
+              style={{ marginHorizontal: 12, marginBottom: 4, backgroundColor: COLORS.acc, borderRadius: 10, padding: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+            >
+              <Ionicons name="search" size={16} color={COLORS.white} />
+              <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>Buscar técnico de {lastService}</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Input */}
           <View style={{ flexDirection: 'row', padding: 12, gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border }}>
