@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, SERVICIOS, DISTRITOS } from '../../src/lib/constants'
+import { COLORS, SERVICIOS, DISTRITOS, expandSearchToOficios } from '../../src/lib/constants'
 import { logger } from '../../src/lib/logger'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
@@ -31,7 +31,13 @@ export default function BuscarScreen() {
 
       if (search) {
         const safe = search.replace(/[,().%\\]/g, '')
-        query = query.or(`oficio.ilike.%${safe}%,nombre.ilike.%${safe}%`)
+        // Expandir búsqueda: si busca "Gasfitería", también busca "Gasfitero"
+        const relatedOficios = expandSearchToOficios(safe)
+        const filters = [`oficio.ilike.%${safe}%`, `nombre.ilike.%${safe}%`]
+        for (const oficio of relatedOficios) {
+          filters.push(`oficio.ilike.%${oficio}%`)
+        }
+        query = query.or(filters.join(','))
       }
       if (distrito) {
         query = query.ilike('distrito', `%${distrito}%`)

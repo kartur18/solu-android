@@ -22,6 +22,40 @@ export const SERVICIOS = [
   'Seguridad (cámaras)', 'Redes y WiFi',
 ]
 
+// Mapeo de servicios a oficios para mejorar búsqueda
+export const SERVICIO_TO_OFICIO: Record<string, string[]> = {
+  'Gasfitería': ['Gasfitero'],
+  'Electricidad': ['Electricista'],
+  'Pintura': ['Pintor'],
+  'Cerrajería': ['Cerrajero'],
+  'Refrigeración': ['Técnico en refrigeración', 'Técnico AC / Refrigeración'],
+  'Albañilería': ['Albañil', 'Maestro de obra'],
+  'Carpintería': ['Carpintero'],
+  'Limpieza': ['Limpieza profesional', 'Limpieza'],
+  'Fumigación': ['Fumigador', 'Fumigación / Desinfección'],
+  'Instalaciones': ['Instalador', 'Instalador de drywall', 'Instalador de pisos'],
+  'Electrodomésticos': ['Técnico en electrodomésticos', 'Técnico en lavadoras', 'Técnico en cocinas/hornos'],
+  'Techado': ['Techador'],
+  'Vidriería': ['Vidriero'],
+  'Soldadura': ['Soldador', 'Soldador / Fierrero'],
+  'Jardinería': ['Jardinero'],
+  'Mudanzas': ['Mudanzas', 'Mudanzas / Fletes'],
+  'Seguridad (cámaras)': ['Técnico en seguridad', 'Instalador de cámaras'],
+  'Redes y WiFi': ['Técnico en redes', 'Técnico en redes / WiFi', 'Técnico PC / Laptops'],
+}
+
+// Expandir búsqueda: dado un término, devuelve oficios relacionados
+export function expandSearchToOficios(search: string): string[] {
+  const lower = search.toLowerCase()
+  const oficios: string[] = []
+  for (const [servicio, related] of Object.entries(SERVICIO_TO_OFICIO)) {
+    if (servicio.toLowerCase().includes(lower) || lower.includes(servicio.toLowerCase())) {
+      oficios.push(...related)
+    }
+  }
+  return oficios
+}
+
 export const DISTRITOS = [
   // Lima Moderna
   'Miraflores', 'San Isidro', 'Santiago de Surco', 'San Borja', 'La Molina',
@@ -83,10 +117,10 @@ export const ACHIEVEMENTS = [
 ]
 
 export const PLAN_FEATURES = {
-  trial: { name: 'Gratuito', price: 0, features: ['Perfil básico', '1 zona', '1 foto', 'WhatsApp'] },
-  profesional: { name: 'Profesional', price: 49, features: ['Badge verificado', '3 zonas', '3 fotos', 'Estadísticas', 'Soporte WhatsApp'] },
-  premium: { name: 'Premium', price: 79, features: ['Badge PRO', '5 zonas', '5 fotos + galería', 'Prioridad alta', 'Sección "Recomendados"', 'Soporte prioritario'] },
-  elite: { name: 'Elite', price: 99, features: ['Badge ELITE', 'Zonas ilimitadas', '10 fotos + galería', 'Siempre top 5', 'Certificado digital', 'Promociones ilimitadas'] },
+  trial: { name: 'Gratuito', price: 0, culqiLink: '', features: ['Perfil básico', '1 zona', '1 foto', 'WhatsApp'] },
+  profesional: { name: 'Profesional', price: 49, culqiLink: 'https://express.culqi.com/pago/665378042F', features: ['Badge verificado', '3 zonas', '3 fotos', 'Estadísticas', 'Soporte WhatsApp'] },
+  premium: { name: 'Premium', price: 79, culqiLink: 'https://express.culqi.com/pago/FFEC22C71A', features: ['Badge PRO', '5 zonas', '5 fotos + galería', 'Prioridad alta', 'Sección "Recomendados"', 'Soporte prioritario'] },
+  elite: { name: 'Elite', price: 99, culqiLink: 'https://express.culqi.com/pago/80O22AAFF4', features: ['Badge ELITE', 'Zonas ilimitadas', '10 fotos + galería', 'Siempre top 5', 'Certificado digital', 'Promociones ilimitadas'] },
 }
 
 export function waLink(phone: string, msg: string): string {

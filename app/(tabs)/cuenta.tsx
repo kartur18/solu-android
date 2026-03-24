@@ -24,25 +24,36 @@ export default function CuentaScreen() {
   async function doLogin() {
     if (!wa) return Alert.alert('Error', 'Ingresa tu WhatsApp')
     setLoading(true)
-    const { data } = await supabase
-      .from('tecnicos')
-      .select('*')
-      .eq('whatsapp', wa)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('tecnicos')
+        .select('*')
+        .eq('whatsapp', wa)
+        .single()
 
-    if (!data) {
-      Alert.alert('No encontrado', 'No hay cuenta de técnico con ese WhatsApp')
-    } else {
+      if (error || !data) {
+        Alert.alert('No encontrado', 'No hay cuenta de técnico con ese WhatsApp')
+        setLoading(false)
+        return
+      }
+
       setTech(data)
       setLoggedIn(true)
-      const [leadsRes, revRes] = await Promise.all([
-        supabase.from('clientes').select('*').eq('tecnico_asignado', data.id).order('created_at', { ascending: false }).limit(20),
-        supabase.from('resenas').select('*').eq('tecnico_id', data.id).order('created_at', { ascending: false }).limit(20),
-      ])
-      setLeads(leadsRes.data || [])
-      setReviews(revRes.data || [])
+      try {
+        const [leadsRes, revRes] = await Promise.all([
+          supabase.from('clientes').select('*').eq('tecnico_asignado', data.id).order('created_at', { ascending: false }).limit(20),
+          supabase.from('resenas').select('*').eq('tecnico_id', data.id).order('created_at', { ascending: false }).limit(20),
+        ])
+        setLeads(leadsRes.data || [])
+        setReviews(revRes.data || [])
+      } catch {
+        // Leads/reviews failed but login succeeded
+      }
+    } catch {
+      Alert.alert('Error', 'Error de conexión. Verifica tu internet e intenta de nuevo.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   if (!loggedIn) {
@@ -207,12 +218,22 @@ export default function CuentaScreen() {
                           <Text style={{ fontSize: 11, color: COLORS.gray }}>{f}</Text>
                         </View>
                       ))}
+                      {/* Pago con tarjeta (Culqi) - automático */}
+                      <TouchableOpacity
+                        onPress={() => Linking.openURL(`${plan.culqiLink}?metadata[tecnico_id]=${tech.id}&metadata[plan]=${planKey}`)}
+                        style={{ backgroundColor: '#1A1A2E', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                      >
+                        <Ionicons name="card-outline" size={18} color={COLORS.white} />
+                        <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>Pagar con tarjeta S/{plan.price}</Text>
+                      </TouchableOpacity>
+
+                      {/* Pago con Yape/Plin - manual */}
                       <TouchableOpacity
                         onPress={() => setSelectedPlan(selectedPlan === planKey ? null : planKey)}
-                        style={{ backgroundColor: COLORS.pri, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 10 }}
+                        style={{ backgroundColor: COLORS.white, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 6, borderWidth: 1, borderColor: COLORS.border }}
                       >
-                        <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>
-                          {selectedPlan === planKey ? 'Ocultar pago' : `Contratar ${plan.name}`}
+                        <Text style={{ color: COLORS.gray, fontWeight: '600', fontSize: 12 }}>
+                          {selectedPlan === planKey ? 'Ocultar' : 'Pagar con Yape o Plin'}
                         </Text>
                       </TouchableOpacity>
                       {selectedPlan === planKey && (
@@ -281,7 +302,7 @@ export default function CuentaScreen() {
 
       {/* Logout */}
       <TouchableOpacity
-        onPress={() => { setLoggedIn(false); setTech(null) }}
+        onPress={() => Alert.alert('Cerrar sesión', '¿Estás seguro que quieres salir?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Salir', style: 'destructive', onPress: () => { setLoggedIn(false); setTech(null) } }])}
         style={{ marginHorizontal: 16, marginBottom: 16, padding: 14, borderRadius: 12, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' }}
       >
         <Text style={{ color: COLORS.red, fontWeight: '700', fontSize: 14 }}>Cerrar sesión</Text>
