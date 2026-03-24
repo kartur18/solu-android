@@ -7,6 +7,7 @@ import { ENV } from '../../src/lib/env'
 import { YapeQR } from '../../src/components/YapeQR'
 import { PlinQR } from '../../src/components/PlinQR'
 import { supabase } from '../../src/lib/supabase'
+import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import type { Tecnico, Cliente, Resena } from '../../src/lib/types'
 
 export default function CuentaScreen() {
@@ -39,6 +40,10 @@ export default function CuentaScreen() {
 
       setTech(data)
       setLoggedIn(true)
+      // Registrar push token para notificaciones
+      registerForPushNotifications().then(token => {
+        if (token) savePushToken(data.id, token)
+      })
       try {
         const [leadsRes, revRes] = await Promise.all([
           supabase.from('clientes').select('*').eq('tecnico_asignado', data.id).order('created_at', { ascending: false }).limit(20),
@@ -111,11 +116,16 @@ export default function CuentaScreen() {
             <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>Servicios</Text>
           </View>
         </View>
-        <View style={{ marginTop: 10, backgroundColor: tech.plan === 'pro' ? '#FFD700' : 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4 }}>
-          <Text style={{ fontSize: 11, fontWeight: '800', color: tech.plan === 'pro' ? COLORS.dark : COLORS.white }}>
+        <View style={{ marginTop: 10, backgroundColor: tech.plan === 'pro' || tech.plan === 'premium' || tech.plan === 'elite' ? '#FFD700' : 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: tech.plan !== 'trial' ? COLORS.dark : COLORS.white }}>
             Plan {tech.plan?.toUpperCase() || 'GRATIS'}
           </Text>
         </View>
+        {tech.fecha_vencimiento && (
+          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
+            {Math.max(0, Math.ceil((new Date(tech.fecha_vencimiento).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} días restantes
+          </Text>
+        )}
       </View>
 
       {/* Tabs */}

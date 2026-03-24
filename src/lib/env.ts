@@ -10,3 +10,16 @@ export const ENV = {
   YAPE_NUMBER: extra.yapeNumber || '904518343',
   EXPO_PROJECT_ID: extra.eas?.projectId || 'e5c70e83-de40-40e4-8e2f-fb8d79c5d62b',
 }
+
+/** Fetch con timeout automático (default 10s) */
+export async function fetchWithTimeout(url: string, options?: RequestInit & { timeout?: number }): Promise<Response> {
+  const { timeout = 10000, ...fetchOptions } = options || {}
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeout)
+  try {
+    const res = await fetch(url, { ...fetchOptions, signal: controller.signal })
+    return res
+  } finally {
+    clearTimeout(id)
+  }
+}

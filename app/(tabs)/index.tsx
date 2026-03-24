@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator } from 'react-native'
+import { useState, useEffect, useCallback } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator, AppState } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS } from '../../src/lib/constants'
@@ -25,18 +25,22 @@ export default function HomeScreen() {
   const [topTechs, setTopTechs] = useState<Tecnico[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [offline, setOffline] = useState(false)
 
   async function loadTopTechs() {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('tecnicos')
         .select('*')
         .eq('disponible', true)
         .order('calificacion', { ascending: false })
         .limit(5)
+      if (error) throw error
       setTopTechs(data || [])
+      setOffline(false)
     } catch (err) {
       logger.error('Error loading techs:', err)
+      setOffline(true)
     } finally {
       setLoading(false)
     }
@@ -52,6 +56,12 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.light }}>
+    {offline && (
+      <View style={{ backgroundColor: COLORS.red, padding: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+        <Ionicons name="cloud-offline-outline" size={16} color={COLORS.white} />
+        <Text style={{ color: COLORS.white, fontSize: 12, fontWeight: '600' }}>Sin conexión - desliza para reintentar</Text>
+      </View>
+    )}
     <ScrollView
       style={{ flex: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.pri} />}

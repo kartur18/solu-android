@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { COLORS } from '../../src/lib/constants'
-import { ENV } from '../../src/lib/env'
+import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { AvailabilityPicker } from '../../src/components/AvailabilityPicker'
 import { YapeQR } from '../../src/components/YapeQR'
@@ -38,7 +38,7 @@ export default function AgendarScreen() {
 
     // Create appointment
     try {
-      const res = await fetch(`${ENV.API_BASE_URL}/appointments`, {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

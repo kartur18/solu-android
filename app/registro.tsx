@@ -109,7 +109,7 @@ export default function RegistroScreen() {
       calificacion: 0,
       num_resenas: 0,
       servicios_completados: 0,
-      fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      fecha_vencimiento: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     })
 
     if (error) {
@@ -120,7 +120,7 @@ export default function RegistroScreen() {
     } else {
       Alert.alert(
         '¡Registro exitoso!',
-        'Tu cuenta ha sido creada con 30 días de prueba gratuita. Te notificaremos cuando tu perfil sea verificado.',
+        'Tu cuenta ha sido creada con 90 días de prueba gratuita. Te notificaremos cuando tu perfil sea verificado.',
         [{ text: 'OK', onPress: () => router.back() }]
       )
     }

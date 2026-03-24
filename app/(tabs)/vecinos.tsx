@@ -17,39 +17,49 @@ export default function VecinosScreen() {
   async function joinGroup() {
     if (!code) return Alert.alert('Error', 'Ingresa el código del grupo')
     setLoading(true)
-    const { data, error } = await supabase
-      .from('vecinos')
-      .select('*')
-      .eq('codigo', code.toUpperCase())
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('vecinos')
+        .select('*')
+        .eq('codigo', code.toUpperCase())
+        .single()
 
-    if (error || !data) {
-      Alert.alert('Error', 'Grupo no encontrado')
-    } else {
-      await supabase.from('vecinos').update({ miembros: (data.miembros || 0) + 1 }).eq('id', data.id)
-      setGrupo(data)
-      Alert.alert('¡Listo!', `Te uniste al grupo "${data.nombre}". Tienes 10% de descuento en todos los servicios.`)
+      if (error || !data) {
+        Alert.alert('Error', 'Grupo no encontrado')
+      } else {
+        await supabase.from('vecinos').update({ miembros: (data.miembros || 0) + 1 }).eq('id', data.id)
+        setGrupo(data)
+        Alert.alert('¡Listo!', `Te uniste al grupo "${data.nombre}". Tienes 10% de descuento en todos los servicios.`)
+      }
+    } catch {
+      Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function createGroup() {
     if (!nombre || !direccion || !whatsapp) return Alert.alert('Error', 'Completa todos los campos')
     setLoading(true)
-    const codigo = 'VEC-' + Math.random().toString(36).substring(2, 7).toUpperCase()
-    const { data, error } = await supabase
-      .from('vecinos')
-      .insert({ nombre, direccion, whatsapp_admin: whatsapp, codigo, miembros: 1 })
-      .select()
-      .single()
+    try {
+      const codigo = 'VEC-' + Math.random().toString(36).substring(2, 7).toUpperCase()
+      const { data, error } = await supabase
+        .from('vecinos')
+        .insert({ nombre, direccion, whatsapp_admin: whatsapp, codigo, miembros: 1 })
+        .select()
+        .single()
 
-    if (error) {
-      Alert.alert('Error', 'No se pudo crear el grupo')
-    } else {
-      setGrupo(data)
-      Alert.alert('¡Grupo creado!', `Código: ${codigo}\nComparte este código con tus vecinos para que se unan y obtengan 10% de descuento.`)
+      if (error) {
+        Alert.alert('Error', 'No se pudo crear el grupo')
+      } else {
+        setGrupo(data)
+        Alert.alert('¡Grupo creado!', `Código: ${codigo}\nComparte este código con tus vecinos para que se unan y obtengan 10% de descuento.`)
+      }
+    } catch {
+      Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
