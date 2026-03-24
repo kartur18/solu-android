@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator 
 import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS, DISTRITOS } from '../../src/lib/constants'
+import { logger } from '../../src/lib/logger'
+import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
 import { TechMapView } from '../../src/components/TechMapView'
@@ -11,7 +13,7 @@ export default function BuscarScreen() {
   const params = useLocalSearchParams<{ servicio?: string }>()
   const [search, setSearch] = useState(params.servicio || '')
   const [distrito, setDistrito] = useState('')
-  const [techs, setTechs] = useState<any[]>([])
+  const [techs, setTechs] = useState<Tecnico[]>([])
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
@@ -28,7 +30,8 @@ export default function BuscarScreen() {
         .limit(30)
 
       if (search) {
-        query = query.or(`oficio.ilike.%${search}%,nombre.ilike.%${search}%`)
+        const safe = search.replace(/[,().%\\]/g, '')
+        query = query.or(`oficio.ilike.%${safe}%,nombre.ilike.%${safe}%`)
       }
       if (distrito) {
         query = query.ilike('distrito', `%${distrito}%`)
@@ -38,7 +41,7 @@ export default function BuscarScreen() {
       if (error) throw error
       setTechs(data || [])
     } catch (err) {
-      console.error('Error loading techs:', err)
+      logger.error('Error loading techs:', err)
       setTechs([])
     } finally {
       setLoading(false)
@@ -105,7 +108,7 @@ export default function BuscarScreen() {
                 Todos
               </Text>
             </TouchableOpacity>
-            {DISTRITOS.slice(0, 15).map((d) => (
+            {DISTRITOS.map((d) => (
               <TouchableOpacity
                 key={d}
                 onPress={() => setDistrito(distrito === d ? '' : d)}
@@ -127,7 +130,7 @@ export default function BuscarScreen() {
 
         {/* Service chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-          {SERVICIOS.slice(0, 10).map((s) => (
+          {SERVICIOS.map((s) => (
             <TouchableOpacity
               key={s}
               onPress={() => setSearch(search === s ? '' : s)}

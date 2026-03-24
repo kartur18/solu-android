@@ -38,6 +38,46 @@ export const URGENCIAS = [
   { value: 'emergencia', label: 'Emergencia', color: COLORS.red },
 ]
 
+export const LEVELS = [
+  { name: 'Bronce', emoji: '🥉', min: 0, color: '#CD7F32' },
+  { name: 'Plata', emoji: '🥈', min: 10, color: '#C0C0C0' },
+  { name: 'Oro', emoji: '🥇', min: 25, color: '#FFD700' },
+  { name: 'Diamante', emoji: '💎', min: 50, color: '#B9F2FF' },
+]
+
+export function getTechLevel(servicios: number) {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (servicios >= LEVELS[i].min) return LEVELS[i]
+  }
+  return LEVELS[0]
+}
+
+export function getTechLevelProgress(servicios: number) {
+  const current = getTechLevel(servicios)
+  const currentIdx = LEVELS.indexOf(current)
+  if (currentIdx >= LEVELS.length - 1) return 1
+  const next = LEVELS[currentIdx + 1]
+  return (servicios - current.min) / (next.min - current.min)
+}
+
+export const ACHIEVEMENTS = [
+  { id: 'first', emoji: '🎉', name: 'Primera chamba', desc: 'Completaste tu primer servicio', check: (t: any) => t.servicios_completados >= 1 },
+  { id: 'streak', emoji: '🔥', name: 'En racha', desc: '5 servicios completados', check: (t: any) => t.servicios_completados >= 5 },
+  { id: 'unstoppable', emoji: '⚡', name: 'Imparable', desc: '10 servicios completados', check: (t: any) => t.servicios_completados >= 10 },
+  { id: 'master', emoji: '👑', name: 'Maestro', desc: '50 servicios completados', check: (t: any) => t.servicios_completados >= 50 },
+  { id: 'verified', emoji: '✅', name: 'Verificado', desc: 'DNI verificado', check: (t: any) => t.verificado },
+  { id: 'fivestar', emoji: '⭐', name: 'Cinco estrellas', desc: 'Calificación perfecta', check: (t: any) => t.calificacion >= 5.0 },
+  { id: 'popular', emoji: '💬', name: 'Popular', desc: '10+ reseñas', check: (t: any) => t.num_resenas >= 10 },
+  { id: 'pro', emoji: '🏆', name: 'Profesional', desc: 'Plan de pago activo', check: (t: any) => t.plan !== 'trial' },
+]
+
+export const PLAN_FEATURES = {
+  trial: { name: 'Gratuito', price: 0, features: ['Perfil básico', '1 zona', '1 foto', 'WhatsApp'] },
+  profesional: { name: 'Profesional', price: 49, features: ['Badge verificado', '3 zonas', '3 fotos', 'Estadísticas', 'Soporte WhatsApp'] },
+  premium: { name: 'Premium', price: 79, features: ['Badge PRO', '5 zonas', '5 fotos + galería', 'Prioridad alta', 'Sección "Recomendados"', 'Soporte prioritario'] },
+  elite: { name: 'Elite', price: 99, features: ['Badge ELITE', 'Zonas ilimitadas', '10 fotos + galería', 'Siempre top 5', 'Certificado digital', 'Promociones ilimitadas'] },
+}
+
 export function waLink(phone: string, msg: string): string {
   const clean = phone.replace(/\D/g, '')
   const full = clean.length === 9 ? '51' + clean : clean

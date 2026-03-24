@@ -4,6 +4,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
+import type { Cliente } from '../../src/lib/types'
 
 const STEPS = [
   { key: 'Nuevo', label: 'Solicitud registrada', icon: 'document-text' as const },
@@ -15,7 +16,7 @@ const STEPS = [
 
 export default function TrackingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
-  const [service, setService] = useState<any>(null)
+  const [service, setService] = useState<Cliente | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -41,11 +42,11 @@ export default function TrackingScreen() {
         schema: 'public',
         table: 'clientes',
         filter: `id=eq.${service.id}`,
-      }, (payload: any) => {
-        setService((prev: any) => ({ ...prev, ...payload.new }))
+      }, (payload) => {
+        setService((prev) => prev ? { ...prev, ...payload.new as Partial<Cliente> } : prev)
       })
       .subscribe((status: string) => {
-        if (status !== 'SUBSCRIBED') console.warn('Realtime subscribe status:', status)
+        if (status !== 'SUBSCRIBED' && __DEV__) console.warn('Realtime subscribe status:', status)
       })
 
     return () => { supabase.removeChannel(channel) }

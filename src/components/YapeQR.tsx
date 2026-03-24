@@ -1,5 +1,6 @@
 import { View, Text, Image } from 'react-native'
 import { COLORS } from '../lib/constants'
+import { ENV } from '../lib/env'
 
 type Props = {
   amount: number
@@ -7,7 +8,7 @@ type Props = {
   yapeNumber?: string
 }
 
-export function YapeQR({ amount, reference, yapeNumber = '904518343' }: Props) {
+export function YapeQR({ amount, reference, yapeNumber = ENV.YAPE_NUMBER }: Props) {
   const qrData = `Yape: ${yapeNumber} | S/${amount} | Ref: ${reference}`
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`
 

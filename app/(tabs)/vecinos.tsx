@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'reac
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
+import type { GrupoVecinos } from '../../src/lib/types'
 
 export default function VecinosScreen() {
   const [tab, setTab] = useState<'join' | 'create'>('join')
@@ -11,7 +12,7 @@ export default function VecinosScreen() {
   const [direccion, setDireccion] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [loading, setLoading] = useState(false)
-  const [grupo, setGrupo] = useState<any>(null)
+  const [grupo, setGrupo] = useState<GrupoVecinos | null>(null)
 
   async function joinGroup() {
     if (!code) return Alert.alert('Error', 'Ingresa el código del grupo')

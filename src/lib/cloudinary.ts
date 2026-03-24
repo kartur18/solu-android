@@ -1,5 +1,7 @@
+import { ENV } from './env'
+
 // Cloudinary image optimization for Android
-const CLOUD_NAME = 'dcwwvvb1e'
+const CLOUD_NAME = ENV.CLOUDINARY_CLOUD_NAME
 
 export function optimizeUrl(url: string | null | undefined, opts?: { width?: number; height?: number }): string {
   if (!url) return ''

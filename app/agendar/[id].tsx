@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { COLORS } from '../../src/lib/constants'
+import { ENV } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { AvailabilityPicker } from '../../src/components/AvailabilityPicker'
 import { YapeQR } from '../../src/components/YapeQR'
@@ -13,8 +14,16 @@ export default function AgendarScreen() {
   const [showYape, setShowYape] = useState(false)
   const [selectedPay, setSelectedPay] = useState('yape')
   const [booked, setBooked] = useState(false)
+  const [precio, setPrecio] = useState(60)
 
   const techId = parseInt(id as string)
+  useEffect(() => {
+    if (!isNaN(techId)) {
+      supabase.from('tecnicos').select('precio_desde').eq('id', techId).single()
+        .then(({ data }) => { if (data?.precio_desde) setPrecio(data.precio_desde) })
+    }
+  }, [techId])
+
   if (!id || isNaN(techId)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
@@ -28,7 +37,7 @@ export default function AgendarScreen() {
 
     // Create appointment
     try {
-      const res = await fetch('https://solu.pe/api/appointments', {
+      const res = await fetch(`${ENV.API_BASE_URL}/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,7 +103,7 @@ export default function AgendarScreen() {
               ))}
             </View>
             {selectedPay === 'yape' && (
-              <YapeQR amount={60} reference={`SOLU-${techId}-${Date.now().toString(36).toUpperCase()}`} />
+              <YapeQR amount={precio} reference={`SOLU-${techId}-${Date.now().toString(36).toUpperCase()}`} />
             )}
           </View>
         )}

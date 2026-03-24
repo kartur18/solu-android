@@ -2,6 +2,8 @@ import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import { supabase } from './supabase'
+import { ENV } from './env'
+import { logger } from './logger'
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -9,12 +11,12 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-  }),
+  } as Notifications.NotificationBehavior),
 })
 
 export async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) {
-    console.log('Push notifications require a physical device')
+    logger.log('Push notifications require a physical device')
     return null
   }
 
@@ -28,7 +30,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   if (finalStatus !== 'granted') {
-    console.log('Push notification permission denied')
+    logger.log('Push notification permission denied')
     return null
   }
 
@@ -46,11 +48,11 @@ export async function registerForPushNotifications(): Promise<string | null> {
   // Get push token
   try {
     const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: 'e5c70e83-de40-40e4-8e2f-fb8d79c5d62b',
+      projectId: ENV.EXPO_PROJECT_ID,
     })
     return tokenData.data
   } catch (err) {
-    console.error('Failed to get push token:', err)
+    logger.error('Failed to get push token:', err)
     return null
   }
 }
@@ -62,6 +64,6 @@ export async function savePushToken(tecnicoId: number, token: string) {
       .update({ push_token: token })
       .eq('id', tecnicoId)
   } catch (err) {
-    console.error('Failed to save push token:', err)
+    logger.error('Failed to save push token:', err)
   }
 }

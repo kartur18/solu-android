@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { COLORS, SERVICIOS, DISTRITOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
+import { logger } from '../src/lib/logger'
 
 const OFICIOS = [
   'Gasfitero', 'Electricista', 'Pintor', 'Cerrajero', 'Técnico en refrigeración',
@@ -60,7 +61,7 @@ export default function RegistroScreen() {
       const { error } = await supabase.storage.from('fotos').upload(name, blob)
       return error ? null : name
     } catch (err) {
-      console.error('Upload error:', err)
+      logger.error('Upload error:', err)
       return null
     }
   }

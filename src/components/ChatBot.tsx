@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../lib/constants'
+import { ENV } from '../lib/env'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
 }
 
-const API_URL = 'https://solu.pe/api/ai-chat'
+const API_URL = `${ENV.API_BASE_URL}/ai-chat`
 
 export function ChatBot() {
   const [open, setOpen] = useState(false)

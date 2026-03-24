@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { COLORS } from '../lib/constants'
+import { ENV } from '../lib/env'
 
 type Props = {
   tecnicoId: number
@@ -50,7 +51,7 @@ export function AvailabilityPicker({ tecnicoId, onSelect }: Props) {
     async function loadAvailability() {
       setLoading(true)
       try {
-        const res = await fetch(`https://solu.pe/api/appointments?tecnicoId=${tecnicoId}&date=${selectedDate}`)
+        const res = await fetch(`${ENV.API_BASE_URL}/appointments?tecnicoId=${tecnicoId}&date=${selectedDate}`)
         if (cancelled) return
         const data = await res.json()
         if (cancelled) return

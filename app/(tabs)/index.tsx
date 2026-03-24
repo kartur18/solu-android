@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Ac
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS } from '../../src/lib/constants'
+import { logger } from '../../src/lib/logger'
+import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
 import { ChatBot } from '../../src/components/ChatBot'
@@ -20,7 +22,7 @@ const CATEGORIES = [
 
 export default function HomeScreen() {
   const router = useRouter()
-  const [topTechs, setTopTechs] = useState<any[]>([])
+  const [topTechs, setTopTechs] = useState<Tecnico[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -34,7 +36,7 @@ export default function HomeScreen() {
         .limit(5)
       setTopTechs(data || [])
     } catch (err) {
-      console.error('Error loading techs:', err)
+      logger.error('Error loading techs:', err)
     } finally {
       setLoading(false)
     }
@@ -111,6 +113,24 @@ export default function HomeScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Fidelidad banner */}
+      <TouchableOpacity
+        onPress={() => router.push('/fidelidad')}
+        style={{
+          marginHorizontal: 20, marginTop: 12,
+          backgroundColor: '#FFF8E1', borderRadius: 14, padding: 14,
+          flexDirection: 'row', alignItems: 'center', gap: 10,
+          borderWidth: 1, borderColor: '#FFD700',
+        }}
+      >
+        <Text style={{ fontSize: 24 }}>🏆</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.dark }}>Programa de Fidelidad</Text>
+          <Text style={{ fontSize: 11, color: COLORS.gray }}>Acumula puntos y gana descuentos</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={COLORS.gray2} />
+      </TouchableOpacity>
 
       {/* Categories */}
       <View style={{ padding: 20 }}>

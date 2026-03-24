@@ -23,6 +23,10 @@ export default function RootLayout() {
         <Stack.Screen name="solicitar" options={{ title: 'Solicitar técnico', presentation: 'modal' }} />
         <Stack.Screen name="registro" options={{ title: 'Registro de técnico', presentation: 'modal' }} />
         <Stack.Screen name="agendar/[id]" options={{ title: 'Agendar servicio', presentation: 'modal' }} />
+        <Stack.Screen name="privacidad" options={{ title: 'Política de Privacidad', presentation: 'modal' }} />
+        <Stack.Screen name="terminos" options={{ title: 'Términos y Condiciones', presentation: 'modal' }} />
+        <Stack.Screen name="fidelidad" options={{ title: 'Mi Fidelidad', presentation: 'modal' }} />
+        <Stack.Screen name="soporte" options={{ title: 'Soporte', presentation: 'modal' }} />
       </Stack>
     </ErrorBoundary>
   )

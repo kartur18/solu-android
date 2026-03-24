@@ -4,9 +4,10 @@ import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { COLORS, waLink } from '../lib/constants'
 import { optimizeUrl } from '../lib/cloudinary'
+import type { Tecnico } from '../lib/types'
 
 type Props = {
-  tech: any
+  tech: Tecnico
 }
 
 export const TechCard = React.memo(function TechCard({ tech }: Props) {

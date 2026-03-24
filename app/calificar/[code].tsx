@@ -4,11 +4,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
+import type { Cliente } from '../../src/lib/types'
 
 export default function CalificarScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
   const router = useRouter()
-  const [service, setService] = useState<any>(null)
+  const [service, setService] = useState<Cliente | null>(null)
   const [loading, setLoading] = useState(true)
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
@@ -27,7 +28,7 @@ export default function CalificarScreen() {
 
   async function submit() {
     if (rating === 0) return Alert.alert('Error', 'Selecciona una calificación')
-    if (submitting) return
+    if (submitting || !service) return
     setSubmitting(true)
 
     const { error } = await supabase.from('resenas').insert({
@@ -47,7 +48,7 @@ export default function CalificarScreen() {
       if (service.tecnico_asignado) {
         const { data: allReviews } = await supabase.from('resenas').select('calificacion').eq('tecnico_id', service.tecnico_asignado)
         if (allReviews) {
-          const avg = allReviews.reduce((s: number, r: any) => s + r.calificacion, 0) / allReviews.length
+          const avg = allReviews.reduce((s: number, r: { calificacion: number }) => s + r.calificacion, 0) / allReviews.length
           await supabase.from('tecnicos').update({ calificacion: Math.round(avg * 10) / 10, num_resenas: allReviews.length }).eq('id', service.tecnico_asignado)
         }
       }

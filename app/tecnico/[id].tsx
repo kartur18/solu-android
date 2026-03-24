@@ -4,12 +4,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
+import type { Tecnico, Resena } from '../../src/lib/types'
 
 export default function TecnicoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const [tech, setTech] = useState<any>(null)
-  const [reviews, setReviews] = useState<any[]>([])
+  const [tech, setTech] = useState<Tecnico | null>(null)
+  const [reviews, setReviews] = useState<Resena[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function TecnicoScreen() {
       {/* Reviews */}
       <View style={{ padding: 20 }}>
         <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>Reseñas ({reviews.length})</Text>
-        {reviews.map((r: any) => (
+        {reviews.map((r) => (
           <View key={r.id} style={{ backgroundColor: COLORS.white, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border }}>
             <View style={{ flexDirection: 'row', gap: 3, marginBottom: 6 }}>
               {[1, 2, 3, 4, 5].map((s) => (
