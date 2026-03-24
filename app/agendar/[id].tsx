@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, ScrollView, Alert } from 'react-native'
+import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
@@ -11,7 +11,17 @@ export default function AgendarScreen() {
   const router = useRouter()
   const [selectedTime, setSelectedTime] = useState<{ fecha: string; horaInicio: string; horaFin: string } | null>(null)
   const [showYape, setShowYape] = useState(false)
+  const [selectedPay, setSelectedPay] = useState('yape')
   const [booked, setBooked] = useState(false)
+
+  const techId = parseInt(id as string)
+  if (!id || isNaN(techId)) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+        <Text style={{ fontSize: 16, color: COLORS.gray }}>Técnico no encontrado</Text>
+      </View>
+    )
+  }
 
   async function handleTimeSelect(fecha: string, horaInicio: string, horaFin: string) {
     setSelectedTime({ fecha, horaInicio, horaFin })
@@ -22,7 +32,7 @@ export default function AgendarScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tecnicoId: parseInt(id),
+          tecnicoId: techId,
           fecha,
           horaInicio,
           horaFin,
@@ -59,29 +69,33 @@ export default function AgendarScreen() {
         {!booked && (
           <View style={{ marginBottom: 20 }}>
             <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark, marginBottom: 12 }}>Método de pago</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
               {[
                 { key: 'yape', icon: '💜', name: 'Yape' },
                 { key: 'plin', icon: '💚', name: 'Plin' },
                 { key: 'efectivo', icon: '💵', name: 'Efectivo' },
               ].map((m) => (
-                <View
+                <TouchableOpacity
                   key={m.key}
+                  onPress={() => setSelectedPay(m.key)}
                   style={{
                     flex: 1,
                     backgroundColor: COLORS.white,
                     borderRadius: 12,
                     padding: 12,
                     alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: showYape && m.key === 'yape' ? '#6C2EB9' : COLORS.border,
+                    borderWidth: 2,
+                    borderColor: selectedPay === m.key ? (m.key === 'yape' ? '#6C2EB9' : m.key === 'plin' ? '#10B981' : COLORS.pri) : COLORS.border,
                   }}
                 >
                   <Text style={{ fontSize: 20, marginBottom: 4 }}>{m.icon}</Text>
                   <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.dark }}>{m.name}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
+            {selectedPay === 'yape' && (
+              <YapeQR amount={60} reference={`SOLU-${techId}-${Date.now().toString(36).toUpperCase()}`} />
+            )}
           </View>
         )}
       </View>

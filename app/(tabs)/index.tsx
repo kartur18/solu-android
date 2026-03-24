@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS } from '../../src/lib/constants'
@@ -21,16 +21,23 @@ const CATEGORIES = [
 export default function HomeScreen() {
   const router = useRouter()
   const [topTechs, setTopTechs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   async function loadTopTechs() {
-    const { data } = await supabase
-      .from('tecnicos')
-      .select('*')
-      .eq('disponible', true)
-      .order('calificacion', { ascending: false })
-      .limit(5)
-    setTopTechs(data || [])
+    try {
+      const { data } = await supabase
+        .from('tecnicos')
+        .select('*')
+        .eq('disponible', true)
+        .order('calificacion', { ascending: false })
+        .limit(5)
+      setTopTechs(data || [])
+    } catch (err) {
+      console.error('Error loading techs:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadTopTechs() }, [])
@@ -149,12 +156,14 @@ export default function HomeScreen() {
         {topTechs.map((tech) => (
           <TechCard key={tech.id} tech={tech} />
         ))}
-        {topTechs.length === 0 && (
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.pri} style={{ marginVertical: 40 }} />
+        ) : topTechs.length === 0 ? (
           <View style={{ padding: 40, alignItems: 'center' }}>
             <Ionicons name="people-outline" size={40} color={COLORS.gray2} />
-            <Text style={{ color: COLORS.gray2, marginTop: 8, fontSize: 13 }}>Cargando técnicos...</Text>
+            <Text style={{ color: COLORS.gray2, marginTop: 8, fontSize: 13 }}>No hay técnicos disponibles</Text>
           </View>
-        )}
+        ) : null}
       </View>
 
       <View style={{ height: 40 }} />

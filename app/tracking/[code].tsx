@@ -44,7 +44,9 @@ export default function TrackingScreen() {
       }, (payload: any) => {
         setService((prev: any) => ({ ...prev, ...payload.new }))
       })
-      .subscribe()
+      .subscribe((status: string) => {
+        if (status !== 'SUBSCRIBED') console.warn('Realtime subscribe status:', status)
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [service?.id])

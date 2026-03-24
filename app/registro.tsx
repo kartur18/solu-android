@@ -38,6 +38,11 @@ export default function RegistroScreen() {
   const [dniBack, setDniBack] = useState<string | null>(null)
 
   async function pickImage(setter: (uri: string) => void) {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir fotos del DNI')
+      return
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.7,
@@ -46,12 +51,18 @@ export default function RegistroScreen() {
   }
 
   async function uploadDni(uri: string, side: string) {
-    const ext = uri.split('.').pop()
-    const name = `dni/${Date.now()}_${side}_${dni}.${ext}`
-    const response = await fetch(uri)
-    const blob = await response.blob()
-    const { error } = await supabase.storage.from('fotos').upload(name, blob)
-    return error ? null : name
+    try {
+      const ext = uri.split('.').pop()
+      const safeDni = dni.replace(/[^0-9]/g, '')
+      const name = `dni/${Date.now()}_${side}_${safeDni}.${ext}`
+      const response = await fetch(uri)
+      const blob = await response.blob()
+      const { error } = await supabase.storage.from('fotos').upload(name, blob)
+      return error ? null : name
+    } catch (err) {
+      console.error('Upload error:', err)
+      return null
+    }
   }
 
   function validateStep1() {

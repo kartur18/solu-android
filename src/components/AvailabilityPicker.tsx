@@ -46,23 +46,27 @@ export function AvailabilityPicker({ tecnicoId, onSelect }: Props) {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     async function loadAvailability() {
       setLoading(true)
       try {
         const res = await fetch(`https://solu.pe/api/appointments?tecnicoId=${tecnicoId}&date=${selectedDate}`)
+        if (cancelled) return
         const data = await res.json()
+        if (cancelled) return
         const booked = data.appointments || []
         setSlots(DEFAULT_SLOTS.map(slot => ({
           ...slot,
           available: !booked.some((b: any) => b.hora_inicio < slot.end && b.hora_fin > slot.start),
         })))
       } catch {
-        setSlots(DEFAULT_SLOTS)
+        if (!cancelled) setSlots(DEFAULT_SLOTS)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     loadAvailability()
+    return () => { cancelled = true }
   }, [tecnicoId, selectedDate])
 
   return (
