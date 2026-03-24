@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
+import { ChatBot } from '../../src/components/ChatBot'
 
 const CATEGORIES = [
   { name: 'Gasfitería', icon: 'water' as const, color: '#3B82F6' },
@@ -41,8 +42,9 @@ export default function HomeScreen() {
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: COLORS.light }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: COLORS.light }}
+      style={{ flex: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.pri} />}
     >
       {/* Hero */}
@@ -157,5 +159,7 @@ export default function HomeScreen() {
 
       <View style={{ height: 40 }} />
     </ScrollView>
+    <ChatBot />
+    </View>
   )
 }

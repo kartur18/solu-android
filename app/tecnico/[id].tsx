@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from 'react-native'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 
 export default function TecnicoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const router = useRouter()
   const [tech, setTech] = useState<any>(null)
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -82,13 +83,22 @@ export default function TecnicoScreen() {
           <Ionicons name="logo-whatsapp" size={22} color={COLORS.white} />
           <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Contactar por WhatsApp</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => Linking.openURL(`tel:${tech.whatsapp}`)}
-          style={{ backgroundColor: COLORS.white, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: COLORS.border }}
-        >
-          <Ionicons name="call" size={20} color={COLORS.pri} />
-          <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 15 }}>Llamar</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(`tel:${tech.whatsapp}`)}
+            style={{ flex: 1, backgroundColor: COLORS.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.border }}
+          >
+            <Ionicons name="call" size={18} color={COLORS.pri} />
+            <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 13 }}>Llamar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push(`/agendar/${tech.id}`)}
+            style={{ flex: 1, backgroundColor: COLORS.acc, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <Ionicons name="calendar" size={18} color={COLORS.white} />
+            <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>Agendar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Reviews */}

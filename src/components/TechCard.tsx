@@ -1,8 +1,9 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Linking } from 'react-native'
+import { View, Text, TouchableOpacity, Linking, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { COLORS, waLink } from '../lib/constants'
+import { optimizeUrl } from '../lib/cloudinary'
 
 type Props = {
   tech: any
@@ -24,6 +25,13 @@ export const TechCard = React.memo(function TechCard({ tech }: Props) {
       }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        {tech.foto_url ? (
+          <Image source={{ uri: optimizeUrl(tech.foto_url, { width: 48, height: 48 }) }} style={{ width: 48, height: 48, borderRadius: 12, marginRight: 10 }} />
+        ) : (
+          <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.pri }}>{tech.nombre?.charAt(0) || 'T'}</Text>
+          </View>
+        )}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark }}>{tech.nombre}</Text>

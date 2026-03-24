@@ -22,6 +22,7 @@ export default function RootLayout() {
         <Stack.Screen name="calificar/[code]" options={{ title: 'Calificar servicio' }} />
         <Stack.Screen name="solicitar" options={{ title: 'Solicitar técnico', presentation: 'modal' }} />
         <Stack.Screen name="registro" options={{ title: 'Registro de técnico', presentation: 'modal' }} />
+        <Stack.Screen name="agendar/[id]" options={{ title: 'Agendar servicio', presentation: 'modal' }} />
       </Stack>
     </ErrorBoundary>
   )

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS, DISTRITOS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
+import { TechMapView } from '../../src/components/TechMapView'
 
 export default function BuscarScreen() {
   const params = useLocalSearchParams<{ servicio?: string }>()
@@ -13,6 +14,7 @@ export default function BuscarScreen() {
   const [techs, setTechs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
 
   async function loadTechs() {
     setLoading(true)
@@ -140,16 +142,37 @@ export default function BuscarScreen() {
         </ScrollView>
       </View>
 
-      {/* Results */}
+      {/* View toggle + Results */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 10, gap: 8 }}>
+        <TouchableOpacity
+          onPress={() => setViewMode('list')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: viewMode === 'list' ? COLORS.pri : COLORS.white, borderWidth: 1, borderColor: viewMode === 'list' ? COLORS.pri : COLORS.border }}
+        >
+          <Ionicons name="list" size={14} color={viewMode === 'list' ? COLORS.white : COLORS.gray} />
+          <Text style={{ fontSize: 11, fontWeight: '700', color: viewMode === 'list' ? COLORS.white : COLORS.gray }}>Lista</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setViewMode('map')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: viewMode === 'map' ? COLORS.pri : COLORS.white, borderWidth: 1, borderColor: viewMode === 'map' ? COLORS.pri : COLORS.border }}
+        >
+          <Ionicons name="map" size={14} color={viewMode === 'map' ? COLORS.white : COLORS.gray} />
+          <Text style={{ fontSize: 11, fontWeight: '700', color: viewMode === 'map' ? COLORS.white : COLORS.gray }}>Mapa</Text>
+        </TouchableOpacity>
+        <Text style={{ flex: 1, textAlign: 'right', fontSize: 12, color: COLORS.gray, alignSelf: 'center' }}>
+          {techs.length} resultado{techs.length !== 1 ? 's' : ''}
+        </Text>
+      </View>
+
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={COLORS.pri} />
         </View>
+      ) : viewMode === 'map' ? (
+        <View style={{ padding: 16 }}>
+          <TechMapView techs={techs} />
+        </View>
       ) : (
         <ScrollView style={{ flex: 1, padding: 16 }}>
-          <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 12 }}>
-            {techs.length} técnico{techs.length !== 1 ? 's' : ''} encontrado{techs.length !== 1 ? 's' : ''}
-          </Text>
           {techs.map((tech) => (
             <TechCard key={tech.id} tech={tech} />
           ))}
