@@ -18,24 +18,31 @@ export default function BuscarScreen() {
 
   async function loadTechs() {
     setLoading(true)
-    let query = supabase
-      .from('tecnicos')
-      .select('*')
-      .eq('disponible', true)
-      .order('plan', { ascending: false })
-      .order('calificacion', { ascending: false })
-      .limit(30)
+    try {
+      let query = supabase
+        .from('tecnicos')
+        .select('*')
+        .eq('disponible', true)
+        .order('plan', { ascending: false })
+        .order('calificacion', { ascending: false })
+        .limit(30)
 
-    if (search) {
-      query = query.or(`oficio.ilike.%${search}%,nombre.ilike.%${search}%`)
-    }
-    if (distrito) {
-      query = query.eq('distrito', distrito)
-    }
+      if (search) {
+        query = query.or(`oficio.ilike.%${search}%,nombre.ilike.%${search}%`)
+      }
+      if (distrito) {
+        query = query.ilike('distrito', `%${distrito}%`)
+      }
 
-    const { data } = await query
-    setTechs(data || [])
-    setLoading(false)
+      const { data, error } = await query
+      if (error) throw error
+      setTechs(data || [])
+    } catch (err) {
+      console.error('Error loading techs:', err)
+      setTechs([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadTechs() }, [search, distrito])
