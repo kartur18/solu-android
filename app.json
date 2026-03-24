@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SOLU - Técnicos verificados",
+    "name": "SOLU - Técnicos a domicilio",
     "slug": "solu-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -40,13 +40,7 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-image-picker",
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": ""
-        }
-      ]
+      "expo-image-picker"
     ],
     "extra": {
       "eas": {

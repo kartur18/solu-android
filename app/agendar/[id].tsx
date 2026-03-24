@@ -6,6 +6,7 @@ import { ENV } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { AvailabilityPicker } from '../../src/components/AvailabilityPicker'
 import { YapeQR } from '../../src/components/YapeQR'
+import { PlinQR } from '../../src/components/PlinQR'
 
 export default function AgendarScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -104,6 +105,9 @@ export default function AgendarScreen() {
             </View>
             {selectedPay === 'yape' && (
               <YapeQR amount={precio} reference={`SOLU-${techId}-${Date.now().toString(36).toUpperCase()}`} />
+            )}
+            {selectedPay === 'plin' && (
+              <PlinQR amount={precio} reference={`SOLU-${techId}-${Date.now().toString(36).toUpperCase()}`} />
             )}
           </View>
         )}

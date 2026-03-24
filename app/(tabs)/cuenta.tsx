@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS } from '../../src/lib/constants'
+import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink } from '../../src/lib/constants'
+import { ENV } from '../../src/lib/env'
+import { YapeQR } from '../../src/components/YapeQR'
+import { PlinQR } from '../../src/components/PlinQR'
 import { supabase } from '../../src/lib/supabase'
 import type { Tecnico, Cliente, Resena } from '../../src/lib/types'
 
@@ -15,6 +18,8 @@ export default function CuentaScreen() {
   const [leads, setLeads] = useState<Cliente[]>([])
   const [reviews, setReviews] = useState<Resena[]>([])
   const [tab, setTab] = useState<'perfil' | 'leads' | 'resenas' | 'plan'>('perfil')
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [payMethod, setPayMethod] = useState<'yape' | 'plin'>('yape')
 
   async function doLogin() {
     if (!wa) return Alert.alert('Error', 'Ingresa tu WhatsApp')
@@ -203,11 +208,32 @@ export default function CuentaScreen() {
                         </View>
                       ))}
                       <TouchableOpacity
-                        onPress={() => Linking.openURL(`https://wa.me/51904518343?text=Hola,%20quiero%20el%20plan%20${plan.name}%20para%20mi%20cuenta%20${tech.whatsapp}`)}
+                        onPress={() => setSelectedPlan(selectedPlan === planKey ? null : planKey)}
                         style={{ backgroundColor: COLORS.pri, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 10 }}
                       >
-                        <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>Contratar {plan.name}</Text>
+                        <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>
+                          {selectedPlan === planKey ? 'Ocultar pago' : `Contratar ${plan.name}`}
+                        </Text>
                       </TouchableOpacity>
+                      {selectedPlan === planKey && (
+                        <View style={{ marginTop: 12 }}>
+                          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                            <TouchableOpacity onPress={() => setPayMethod('yape')} style={{ flex: 1, padding: 10, borderRadius: 10, alignItems: 'center', borderWidth: 2, borderColor: payMethod === 'yape' ? '#6C2EB9' : COLORS.border }}>
+                              <Text style={{ fontSize: 18 }}>💜</Text>
+                              <Text style={{ fontSize: 11, fontWeight: '600' }}>Yape</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setPayMethod('plin')} style={{ flex: 1, padding: 10, borderRadius: 10, alignItems: 'center', borderWidth: 2, borderColor: payMethod === 'plin' ? '#00BFA5' : COLORS.border }}>
+                              <Text style={{ fontSize: 18 }}>💚</Text>
+                              <Text style={{ fontSize: 11, fontWeight: '600' }}>Plin</Text>
+                            </TouchableOpacity>
+                          </View>
+                          {payMethod === 'yape' ? (
+                            <YapeQR amount={plan.price} reference={`PLAN-${planKey.toUpperCase()}-${tech.id}`} />
+                          ) : (
+                            <PlinQR amount={plan.price} reference={`PLAN-${planKey.toUpperCase()}-${tech.id}`} />
+                          )}
+                        </View>
+                      )}
                     </View>
                   )
                 })}
