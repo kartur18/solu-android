@@ -31,6 +31,24 @@ export default function TrackingScreen() {
     load()
   }, [code])
 
+  // Supabase Realtime: live status updates
+  useEffect(() => {
+    if (!service?.id) return
+    const channel = supabase
+      .channel(`tracking-${service.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'clientes',
+        filter: `id=eq.${service.id}`,
+      }, (payload: any) => {
+        setService((prev: any) => ({ ...prev, ...payload.new }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [service?.id])
+
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={COLORS.pri} /></View>
   if (!service) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}><Ionicons name="alert-circle-outline" size={48} color={COLORS.gray2} /><Text style={{ color: COLORS.gray, marginTop: 8 }}>Servicio no encontrado</Text></View>
 

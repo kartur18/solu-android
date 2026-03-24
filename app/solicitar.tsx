@@ -21,6 +21,11 @@ export default function SolicitarScreen() {
     if (!nombre || !whatsapp || !servicio || !distrito) {
       return Alert.alert('Error', 'Completa los campos obligatorios')
     }
+    const waClean = whatsapp.replace(/\D/g, '')
+    if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
+      return Alert.alert('Error', 'Ingresa un número de WhatsApp válido (9 dígitos, empieza con 9)')
+    }
+    if (loading) return
     setLoading(true)
 
     const codigo = 'SOLU-' + Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -42,7 +47,7 @@ export default function SolicitarScreen() {
     })
 
     if (error) {
-      Alert.alert('Error', 'No se pudo enviar la solicitud')
+      Alert.alert('Error', 'No se pudo enviar la solicitud. Verifica tu conexión e intenta de nuevo.')
     } else {
       Alert.alert(
         '¡Solicitud enviada!',

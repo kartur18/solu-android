@@ -54,10 +54,29 @@ export default function RegistroScreen() {
     return error ? null : name
   }
 
+  function validateStep1() {
+    if (!nombre.trim()) { Alert.alert('Error', 'Ingresa tu nombre completo'); return false }
+    const waClean = whatsapp.replace(/\D/g, '')
+    if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
+      Alert.alert('Error', 'Ingresa un número de WhatsApp válido (9 dígitos, empieza con 9)')
+      return false
+    }
+    if (dni.length !== 8 || !/^\d{8}$/.test(dni)) {
+      Alert.alert('Error', 'El DNI debe tener exactamente 8 dígitos')
+      return false
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      Alert.alert('Error', 'Ingresa un email válido')
+      return false
+    }
+    return true
+  }
+
   async function submit() {
     if (!nombre || !whatsapp || !dni || !oficio || !distrito) {
       return Alert.alert('Error', 'Completa todos los campos obligatorios')
     }
+    if (!validateStep1()) return
     setLoading(true)
 
     let dniFrenteUrl = null
@@ -82,7 +101,10 @@ export default function RegistroScreen() {
     })
 
     if (error) {
-      Alert.alert('Error', 'No se pudo completar el registro')
+      const msg = error.message?.includes('duplicate')
+        ? 'Ya existe una cuenta con ese DNI o WhatsApp'
+        : 'No se pudo completar el registro. Verifica tu conexión e intenta de nuevo.'
+      Alert.alert('Error', msg)
     } else {
       Alert.alert(
         '¡Registro exitoso!',
@@ -120,7 +142,7 @@ export default function RegistroScreen() {
             <Text style={styles.label}>DNI *</Text>
             <TextInput placeholder="12345678" value={dni} onChangeText={setDni} keyboardType="number-pad" maxLength={8} style={styles.input} placeholderTextColor={COLORS.gray2} />
 
-            <TouchableOpacity onPress={() => setStep(2)} style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8 }}>
+            <TouchableOpacity onPress={() => { if (validateStep1()) setStep(2) }} style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8 }}>
               <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Siguiente →</Text>
             </TouchableOpacity>
           </>

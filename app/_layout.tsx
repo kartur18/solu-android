@@ -1,10 +1,11 @@
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { COLORS } from '../src/lib/constants'
+import { ErrorBoundary } from '../src/components/ErrorBoundary'
 
 export default function RootLayout() {
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -22,6 +23,6 @@ export default function RootLayout() {
         <Stack.Screen name="solicitar" options={{ title: 'Solicitar técnico', presentation: 'modal' }} />
         <Stack.Screen name="registro" options={{ title: 'Registro de técnico', presentation: 'modal' }} />
       </Stack>
-    </>
+    </ErrorBoundary>
   )
 }

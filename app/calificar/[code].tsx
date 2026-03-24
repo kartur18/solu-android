@@ -27,6 +27,7 @@ export default function CalificarScreen() {
 
   async function submit() {
     if (rating === 0) return Alert.alert('Error', 'Selecciona una calificación')
+    if (submitting) return
     setSubmitting(true)
 
     const { error } = await supabase.from('resenas').insert({

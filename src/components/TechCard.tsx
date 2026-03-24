@@ -1,3 +1,4 @@
+import React from 'react'
 import { View, Text, TouchableOpacity, Linking } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
@@ -7,7 +8,7 @@ type Props = {
   tech: any
 }
 
-export function TechCard({ tech }: Props) {
+export const TechCard = React.memo(function TechCard({ tech }: Props) {
   const router = useRouter()
 
   return (
@@ -29,9 +30,14 @@ export function TechCard({ tech }: Props) {
             {tech.verificado && (
               <Ionicons name="checkmark-circle" size={16} color={COLORS.acc} />
             )}
-            {tech.plan === 'pro' && (
+            {(tech.plan === 'premium' || tech.plan === 'pro') && (
               <View style={{ backgroundColor: COLORS.pri, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
                 <Text style={{ color: COLORS.white, fontSize: 9, fontWeight: '800' }}>PRO</Text>
+              </View>
+            )}
+            {tech.plan === 'elite' && (
+              <View style={{ backgroundColor: '#FFD700', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
+                <Text style={{ color: '#1A1A2E', fontSize: 9, fontWeight: '800' }}>ELITE</Text>
               </View>
             )}
           </View>
@@ -89,4 +95,4 @@ export function TechCard({ tech }: Props) {
       </View>
     </TouchableOpacity>
   )
-}
+})
