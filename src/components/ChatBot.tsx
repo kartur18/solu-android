@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Modal, SafeAreaView } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { COLORS } from '../lib/constants'
@@ -78,13 +78,16 @@ export function ChatBot() {
     )
   }
 
+  const handleSendCallback = useCallback(() => handleSend(), [input, loading, messages])
+
   return (
     <Modal visible={open} animationType="slide" transparent>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, justifyContent: 'flex-end' }}
       >
-        <View style={{ height: '70%', backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', elevation: 10 }}>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setOpen(false)} />
+        <View style={{ height: '75%', backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', elevation: 10 }}>
           {/* Header */}
           <View style={{ backgroundColor: COLORS.dark, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -137,7 +140,7 @@ export function ChatBot() {
           )}
 
           {/* Input */}
-          <View style={{ flexDirection: 'row', padding: 12, gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+          <View style={{ flexDirection: 'row', padding: 12, paddingBottom: Platform.OS === 'android' ? 24 : 12, gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white }}>
             <TextInput
               style={{ flex: 1, backgroundColor: COLORS.light, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 13, borderWidth: 1, borderColor: COLORS.border, color: COLORS.dark }}
               placeholder="Describe tu problema..."
@@ -146,12 +149,13 @@ export function ChatBot() {
               onChangeText={setInput}
               onSubmitEditing={handleSend}
               editable={!loading}
+              returnKeyType="send"
             />
             <TouchableOpacity
               onPress={handleSend}
               disabled={loading || !input.trim()}
               style={{
-                width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.pri,
+                width: 44, height: 44, borderRadius: 12, backgroundColor: COLORS.pri,
                 alignItems: 'center', justifyContent: 'center',
                 opacity: loading || !input.trim() ? 0.5 : 1,
               }}
