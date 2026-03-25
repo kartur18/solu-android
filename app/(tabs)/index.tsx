@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator, AppState } from 'react-native'
+import { useState, useEffect } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS } from '../../src/lib/constants'
@@ -67,11 +68,11 @@ export default function HomeScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.pri} />}
     >
       {/* Hero */}
-      <View style={{ backgroundColor: COLORS.pri, padding: 24, paddingTop: 16, paddingBottom: 32, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
-        <Text style={{ fontSize: 24, fontWeight: '900', color: COLORS.white, marginBottom: 4 }}>
+      <LinearGradient colors={['#F26B21', '#E85D10', '#D14E00']} style={{ padding: 24, paddingTop: 20, paddingBottom: 32, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
+        <Text style={{ fontSize: 26, fontWeight: '900', color: COLORS.white, marginBottom: 6, lineHeight: 32 }}>
           ¿Qué necesitas{'\n'}reparar hoy?
         </Text>
-        <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 16 }}>
+        <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 18 }}>
           Técnicos verificados en Lima y todo el Perú
         </Text>
         <TouchableOpacity
@@ -88,7 +89,7 @@ export default function HomeScreen() {
           <Ionicons name="search" size={20} color={COLORS.gray2} />
           <Text style={{ color: COLORS.gray2, fontSize: 14 }}>Buscar servicio o técnico...</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {/* Quick actions */}
       <View style={{ flexDirection: 'row', gap: 10, padding: 20, paddingBottom: 0 }}>
@@ -155,11 +156,14 @@ export default function HomeScreen() {
               style={{
                 width: '23%',
                 backgroundColor: COLORS.white,
-                borderRadius: 14,
+                borderRadius: 16,
                 padding: 12,
                 alignItems: 'center',
-                borderWidth: 1,
-                borderColor: COLORS.border,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 1,
               }}
             >
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: cat.color + '15', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
