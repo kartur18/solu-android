@@ -281,9 +281,9 @@ export const ACHIEVEMENTS = [
 
 export const PLAN_FEATURES = {
   trial: { name: 'Periodo de prueba', price: 0, culqiLink: '', features: ['Perfil básico', '1 zona', '1 foto', 'WhatsApp'] },
-  profesional: { name: 'Profesional', price: 49, culqiLink: 'https://express.culqi.com/pago/665378042F', features: ['Badge verificado', '3 zonas', '3 fotos', 'Estadísticas', 'Soporte WhatsApp'] },
-  premium: { name: 'Premium', price: 79, culqiLink: 'https://express.culqi.com/pago/FFEC22C71A', features: ['Badge PRO', '5 zonas', '5 fotos + galería', 'Prioridad alta', 'Sección "Recomendados"', 'Soporte prioritario'] },
-  elite: { name: 'Elite', price: 99, culqiLink: 'https://express.culqi.com/pago/80O22AAFF4', features: ['Badge ELITE', 'Zonas ilimitadas', '10 fotos + galería', 'Siempre top 5', 'Certificado digital', 'Promociones ilimitadas'] },
+  profesional: { name: 'Profesional', price: 49, culqiLink: 'https://express.culqi.com/pago/665378042F', features: ['Sello verificado', '3 zonas', '3 fotos', 'Estadísticas', 'Soporte WhatsApp'] },
+  premium: { name: 'Premium', price: 79, culqiLink: 'https://express.culqi.com/pago/FFEC22C71A', features: ['Sello PRO', '5 zonas', '5 fotos + galería', 'Prioridad alta', 'Sección "Recomendados"', 'Soporte prioritario'] },
+  elite: { name: 'Elite', price: 99, culqiLink: 'https://express.culqi.com/pago/80O22AAFF4', features: ['Sello ELITE', 'Zonas ilimitadas', '10 fotos + galería', 'Siempre top 5', 'Certificado digital', 'Promociones ilimitadas'] },
 }
 
 export function waLink(phone: string, msg: string): string {
