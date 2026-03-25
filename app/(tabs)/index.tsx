@@ -246,22 +246,24 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Fidelidad banner */}
+        {/* Urgencias 24/7 banner */}
         <TouchableOpacity
-          onPress={() => router.push('/fidelidad')}
+          onPress={() => router.push('/urgencias')}
           style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, overflow: 'hidden' }}
         >
           <LinearGradient
-            colors={['#1E3A5F', '#2563EB']}
+            colors={['#DC2626', '#991B1B']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}
           >
-            <Text style={{ fontSize: 24 }}>🏆</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Programa de Fidelidad</Text>
-              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Acumula puntos y obtén descuentos</Text>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="warning" size={22} color="#fff" />
             </View>
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '900', color: '#fff' }}>Urgencias 24/7</Text>
+              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>Técnico de emergencia en tu zona ahora</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.8)" />
           </LinearGradient>
         </TouchableOpacity>
 

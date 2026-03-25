@@ -26,6 +26,7 @@ export default function RootLayout() {
         <Stack.Screen name="privacidad" options={{ title: 'Política de Privacidad', presentation: 'modal' }} />
         <Stack.Screen name="terminos" options={{ title: 'Términos y Condiciones', presentation: 'modal' }} />
         <Stack.Screen name="fidelidad" options={{ title: 'Mi Fidelidad', presentation: 'modal' }} />
+        <Stack.Screen name="urgencias" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="soporte" options={{ title: 'Soporte', presentation: 'modal' }} />
         <Stack.Screen name="eliminar-cuenta" options={{ title: 'Eliminar cuenta', presentation: 'modal' }} />
       </Stack>
