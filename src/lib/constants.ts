@@ -5,13 +5,14 @@ export const COLORS = {
   dark: '#1A1A2E',
   gray: '#6B7280',
   gray2: '#9CA3AF',
-  border: '#E5E7EB',
-  light: '#F9FAFB',
-  white: '#FFFFFF',
+  border: '#E8E4DF',
+  light: '#FAF8F5',
+  white: '#FFFFFE',
   green: '#10B981',
   red: '#EF4444',
   yellow: '#F59E0B',
-  blue: '#3B82F6',
+  blue: '#2563EB',
+  blueLight: '#EFF6FF',
 }
 
 export const SERVICIOS = [

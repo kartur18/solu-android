@@ -231,7 +231,7 @@ export default function CuentaScreen() {
                       {/* Pago con tarjeta (Culqi) - automático */}
                       <TouchableOpacity
                         onPress={() => Linking.openURL(`${plan.culqiLink}?metadata[tecnico_id]=${tech.id}&metadata[plan]=${planKey}`)}
-                        style={{ backgroundColor: '#1A1A2E', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                        style={{ backgroundColor: COLORS.blue, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
                       >
                         <Ionicons name="card-outline" size={18} color={COLORS.white} />
                         <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>Pagar con tarjeta S/{plan.price}</Text>
