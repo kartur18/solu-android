@@ -21,6 +21,11 @@ export const SERVICIOS = [
   'Fumigación', 'Instalaciones', 'Electrodomésticos', 'Techado',
   'Vidriería', 'Soldadura', 'Jardinería', 'Mudanzas',
   'Seguridad (cámaras)', 'Redes y WiFi',
+  'Aire acondicionado', 'Plomería', 'Impermeabilización', 'Pisos y enchapes',
+  'Drywall', 'Cielo raso', 'Puertas y portones', 'Cortinas y persianas',
+  'Muebles a medida', 'Tapicería', 'Restauración', 'Herrería',
+  'Automatización', 'Energía solar', 'Gas (instalación)', 'Ascensores',
+  'Piscinas', 'Desatoros', 'Pintura automotriz', 'Electrónica',
 ]
 
 // Mapeo de servicios a oficios para mejorar búsqueda
@@ -43,6 +48,26 @@ export const SERVICIO_TO_OFICIO: Record<string, string[]> = {
   'Mudanzas': ['Mudanzas', 'Mudanzas / Fletes'],
   'Seguridad (cámaras)': ['Técnico en seguridad', 'Instalador de cámaras'],
   'Redes y WiFi': ['Técnico en redes', 'Técnico en redes / WiFi', 'Técnico PC / Laptops'],
+  'Aire acondicionado': ['Técnico AC', 'Instalador de aire acondicionado'],
+  'Plomería': ['Plomero', 'Gasfitero'],
+  'Impermeabilización': ['Impermeabilizador', 'Técnico en impermeabilización'],
+  'Pisos y enchapes': ['Enchapador', 'Instalador de pisos', 'Porcelanista'],
+  'Drywall': ['Instalador de drywall', 'Drywallero'],
+  'Cielo raso': ['Instalador de cielo raso', 'Técnico en cielo raso'],
+  'Puertas y portones': ['Instalador de puertas', 'Técnico en portones'],
+  'Cortinas y persianas': ['Instalador de cortinas', 'Instalador de persianas'],
+  'Muebles a medida': ['Carpintero', 'Ebanista', 'Mueblero'],
+  'Tapicería': ['Tapicero', 'Retapizador'],
+  'Restauración': ['Restaurador de muebles', 'Restaurador'],
+  'Herrería': ['Herrero', 'Fierrero'],
+  'Automatización': ['Técnico en domótica', 'Instalador de automatización'],
+  'Energía solar': ['Instalador de paneles solares', 'Técnico solar'],
+  'Gas (instalación)': ['Instalador de gas', 'Gasista certificado'],
+  'Ascensores': ['Técnico en ascensores', 'Mantenimiento de ascensores'],
+  'Piscinas': ['Técnico en piscinas', 'Mantenimiento de piscinas'],
+  'Desatoros': ['Desatorador', 'Técnico en desatoros'],
+  'Pintura automotriz': ['Pintor automotriz', 'Técnico en pintura vehicular'],
+  'Electrónica': ['Técnico electrónico', 'Reparador de equipos electrónicos'],
 }
 
 // Expandir búsqueda: dado un término, devuelve oficios relacionados
@@ -61,21 +86,39 @@ export const DISTRITOS = [
   // Lima Moderna
   'Miraflores', 'San Isidro', 'Santiago de Surco', 'San Borja', 'La Molina',
   'Barranco', 'Surquillo', 'Magdalena del Mar', 'Pueblo Libre',
+  'Jesús María', 'Lince', 'San Miguel',
   // Lima Centro
-  'Lima Cercado', 'Jesús María', 'Lince', 'San Miguel', 'Breña', 'La Victoria', 'Rímac',
+  'Lima Cercado', 'Breña', 'La Victoria', 'Rímac', 'El Agustino', 'San Luis',
   // Lima Norte
   'Los Olivos', 'San Martín de Porres', 'Comas', 'Independencia',
-  'Carabayllo', 'Puente Piedra',
+  'Carabayllo', 'Puente Piedra', 'Ancón', 'Santa Rosa',
   // Lima Este
-  'San Juan de Lurigancho', 'Ate', 'Santa Anita', 'El Agustino', 'Chaclacayo',
+  'San Juan de Lurigancho', 'Ate', 'Santa Anita', 'Chaclacayo',
+  'Lurigancho-Chosica', 'Cieneguilla',
   // Lima Sur
   'San Juan de Miraflores', 'Villa El Salvador', 'Villa María del Triunfo',
-  'Chorrillos', 'Lurín',
+  'Chorrillos', 'Lurín', 'Pachacámac', 'Punta Hermosa', 'Punta Negra',
+  'San Bartolo', 'Santa María del Mar', 'Pucusana',
   // Callao
   'Callao', 'Bellavista', 'La Perla', 'Ventanilla',
-  // Provincias
-  'Arequipa', 'Trujillo', 'Chiclayo', 'Piura', 'Cusco',
-  'Huancayo', 'Iquitos', 'Tacna', 'Ica', 'Cajamarca',
+  'Carmen de la Legua', 'La Punta', 'Mi Perú',
+  // Provincias de Lima
+  'Huaral', 'Cañete', 'Huarochirí', 'Barranca', 'Canta',
+  'Cajatambo', 'Oyón', 'Yauyos',
+  // Norte del Perú
+  'Tumbes', 'Piura', 'Sullana', 'Talara', 'Paita',
+  'Chiclayo', 'Lambayeque', 'Ferreñafe',
+  'Trujillo', 'Chimbote', 'Huaraz',
+  'Cajamarca', 'Jaén', 'Chachapoyas', 'Moyobamba', 'Tarapoto',
+  // Centro del Perú
+  'Huancayo', 'Huánuco', 'Cerro de Pasco', 'Tarma', 'La Oroya',
+  'Huancavelica', 'Ayacucho',
+  'Ica', 'Chincha', 'Pisco', 'Nazca',
+  // Sur del Perú
+  'Arequipa', 'Mollendo', 'Camaná', 'Tacna', 'Moquegua', 'Ilo',
+  'Cusco', 'Juliaca', 'Puno', 'Abancay', 'Puerto Maldonado',
+  // Selva del Perú
+  'Iquitos', 'Pucallpa', 'Tingo María', 'Yurimaguas', 'Bagua',
 ]
 
 export const URGENCIAS = [
