@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Linking, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -28,7 +28,7 @@ export default function UrgenciasScreen() {
   const [assignedTech, setAssignedTech] = useState<any>(null)
 
   // Auto-detect location
-  useState(() => { location.detectLocation() })
+  useEffect(() => { location.detectLocation() }, [])
 
   async function handleSubmit() {
     if (!selected) return Alert.alert('Error', 'Selecciona el tipo de emergencia')
@@ -48,7 +48,7 @@ export default function UrgenciasScreen() {
         .eq('disponible', true)
 
       if (selected.oficio) {
-        query = query.ilike('oficio', `%${selected.oficio}%`)
+        query = query.or(`oficio.ilike.%${selected.oficio}%`)
       }
 
       const { data: techs } = await query

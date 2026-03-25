@@ -77,7 +77,7 @@ export default function BuscarScreen() {
         query = query.or(filters.join(','))
       }
       if (distrito) {
-        query = query.ilike('distrito', `%${distrito}%`)
+        query = query.or(`distrito.ilike.%${distrito}%`)
       }
 
       const { data, error } = await query
