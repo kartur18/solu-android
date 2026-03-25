@@ -1,22 +1,55 @@
 import { Tabs } from 'expo-router'
+import { View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
+
+const ACTIVE_COLOR = '#1E3A5F'
+const INACTIVE_COLOR = '#9CA3AF'
+
+type IconName = React.ComponentProps<typeof Ionicons>['name']
+
+function TabIcon({ focused, iconFilled, iconOutline }: { focused: boolean; iconFilled: IconName; iconOutline: IconName }) {
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      {focused && (
+        <View style={{
+          position: 'absolute',
+          top: -8,
+          width: 24,
+          height: 3,
+          borderRadius: 2,
+          backgroundColor: ACTIVE_COLOR,
+        }} />
+      )}
+      <Ionicons
+        name={focused ? iconFilled : iconOutline}
+        size={22}
+        color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+      />
+    </View>
+  )
+}
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: COLORS.pri,
-        tabBarInactiveTintColor: COLORS.gray2,
+        tabBarActiveTintColor: ACTIVE_COLOR,
+        tabBarInactiveTintColor: INACTIVE_COLOR,
         tabBarStyle: {
           backgroundColor: COLORS.white,
-          borderTopColor: COLORS.border,
-          height: 60,
+          borderTopWidth: 0,
+          height: 64,
           paddingBottom: 8,
-          paddingTop: 4,
+          paddingTop: 6,
+          shadowColor: '#1E3A5F',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          elevation: 8,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        headerStyle: { backgroundColor: COLORS.white },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+        headerStyle: { backgroundColor: COLORS.white, shadowColor: 'transparent', elevation: 0 },
         headerTitleStyle: { fontWeight: '800', fontSize: 18, color: COLORS.dark },
         headerShadowVisible: false,
       }}
@@ -26,7 +59,7 @@ export default function TabLayout() {
         options={{
           title: 'SOLU',
           tabBarLabel: 'Inicio',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} iconFilled="home" iconOutline="home-outline" />,
         }}
       />
       <Tabs.Screen
@@ -34,7 +67,7 @@ export default function TabLayout() {
         options={{
           title: 'Buscar técnico',
           tabBarLabel: 'Buscar',
-          tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} iconFilled="search" iconOutline="search-outline" />,
         }}
       />
       <Tabs.Screen
@@ -42,7 +75,7 @@ export default function TabLayout() {
         options={{
           title: 'Vecinos',
           tabBarLabel: 'Vecinos',
-          tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} iconFilled="people" iconOutline="people-outline" />,
         }}
       />
       <Tabs.Screen
@@ -50,7 +83,7 @@ export default function TabLayout() {
         options={{
           title: 'Mi cuenta',
           tabBarLabel: 'Cuenta',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} iconFilled="person" iconOutline="person-outline" />,
         }}
       />
     </Tabs>
