@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Dimensions, Animated } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Dimensions, Animated, TextInput } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -72,6 +72,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [offline, setOffline] = useState(false)
+  const [heroSearch, setHeroSearch] = useState('')
   const location = useLocationDetection()
   const fadeAnim = useRef(new Animated.Value(0)).current
 
@@ -124,7 +125,7 @@ export default function HomeScreen() {
       )}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.blue} />}
       >
         {/* Hero */}
@@ -150,23 +151,46 @@ export default function HomeScreen() {
             Técnicos verificados con DNI · Contacto directo
           </Text>
 
-          <TouchableOpacity
-            onPress={() => router.push('/buscar')}
-            activeOpacity={0.8}
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.12)',
-              borderRadius: 14,
-              padding: 14,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.15)',
-            }}
-          >
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            borderRadius: 14,
+            padding: 4,
+            paddingLeft: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.15)',
+          }}>
             <Ionicons name="search" size={16} color="rgba(255,255,255,0.5)" />
-            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Buscar servicio o técnico...</Text>
-          </TouchableOpacity>
+            <TextInput
+              placeholder="Buscar servicio o técnico..."
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              value={heroSearch}
+              onChangeText={setHeroSearch}
+              onSubmitEditing={() => {
+                if (heroSearch.trim()) {
+                  router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() } })
+                  setHeroSearch('')
+                } else {
+                  router.push('/buscar')
+                }
+              }}
+              returnKeyType="search"
+              style={{ flex: 1, color: '#fff', fontSize: 13, paddingVertical: 10 }}
+            />
+            {heroSearch.trim() ? (
+              <TouchableOpacity
+                onPress={() => {
+                  router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() } })
+                  setHeroSearch('')
+                }}
+                style={{ backgroundColor: '#F26B21', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginRight: 2 }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Buscar</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
           {/* Trust stats */}
           <View style={{ flexDirection: 'row', marginTop: 14, gap: 6 }}>
