@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import * as ImagePicker from 'expo-image-picker'
 import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink, DISTRITOS } from '../../src/lib/constants'
 import { ENV } from '../../src/lib/env'
 import { hashPassword } from '../../src/lib/auth'
@@ -9,17 +10,44 @@ import { YapeQR } from '../../src/components/YapeQR'
 import { PlinQR } from '../../src/components/PlinQR'
 import { supabase } from '../../src/lib/supabase'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
-import type { Tecnico, Cliente, Resena } from '../../src/lib/types'
+import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 
-type Tab = 'dashboard' | 'servicios' | 'resenas' | 'plan' | 'perfil'
+type Tab = 'dashboard' | 'servicios' | 'resenas' | 'plan' | 'perfil' | 'cotizaciones'
 
 const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'dashboard', icon: 'grid', label: 'Inicio' },
   { key: 'servicios', icon: 'briefcase', label: 'Servicios' },
   { key: 'resenas', icon: 'star', label: 'Reseñas' },
+  { key: 'cotizaciones', icon: 'document-text', label: 'Cotizaciones' },
   { key: 'plan', icon: 'diamond', label: 'Plan' },
   { key: 'perfil', icon: 'person', label: 'Perfil' },
 ]
+
+const NOTIF_ICONS: Record<string, string> = {
+  nueva_solicitud: 'notifications',
+  pago_recibido: 'cash',
+  plan_vencimiento: 'warning',
+  nueva_resena: 'star',
+}
+
+const NOTIF_COLORS: Record<string, string> = {
+  nueva_solicitud: '#2563EB',
+  pago_recibido: '#10B981',
+  plan_vencimiento: '#F59E0B',
+  nueva_resena: '#F59E0B',
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'ahora'
+  if (mins < 60) return `${mins}m`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d`
+  return `${Math.floor(days / 30)}mes`
+}
 
 export default function CuentaScreen() {
   const router = useRouter()
@@ -42,6 +70,24 @@ export default function CuentaScreen() {
   const [editPrecio, setEditPrecio] = useState('')
   const [editDisponible, setEditDisponible] = useState(true)
   const [savingProfile, setSavingProfile] = useState(false)
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notificacion[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Gallery state
+  const [galleryImages, setGalleryImages] = useState<string[]>([])
+  const [uploadingImage, setUploadingImage] = useState(false)
+
+  // Cotizaciones state
+  const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([])
+  const [showNewCotizacion, setShowNewCotizacion] = useState(false)
+  const [cotLeadId, setCotLeadId] = useState('')
+  const [cotMonto, setCotMonto] = useState('')
+  const [cotDescripcion, setCotDescripcion] = useState('')
+  const [cotServicio, setCotServicio] = useState('')
+  const [savingCotizacion, setSavingCotizacion] = useState(false)
 
   async function doLogin() {
     const trimmedId = loginId.trim()
@@ -99,6 +145,7 @@ export default function CuentaScreen() {
       setEditDesc(data.descripcion || '')
       setEditPrecio(data.precio_desde?.toString() || '')
       setEditDisponible(data.disponible)
+      setGalleryImages(data.galeria || [])
 
       registerForPushNotifications().then(token => {
         if (token) savePushToken(data.id, token)
@@ -113,12 +160,18 @@ export default function CuentaScreen() {
 
   async function loadData(techId: number) {
     try {
-      const [leadsRes, revRes] = await Promise.all([
+      const [leadsRes, revRes, notifRes, cotRes] = await Promise.all([
         supabase.from('clientes').select('*').eq('tecnico_asignado', techId).order('created_at', { ascending: false }).limit(30),
         supabase.from('resenas').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(30),
+        supabase.from('notificaciones').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(50),
+        supabase.from('cotizaciones').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(30),
       ])
       setLeads(leadsRes.data || [])
       setReviews(revRes.data || [])
+      const notifs = notifRes.data || []
+      setNotifications(notifs)
+      setUnreadCount(notifs.filter((n: Notificacion) => !n.leido).length)
+      setCotizaciones(cotRes.data || [])
     } catch {
       // silent
     }
@@ -134,6 +187,7 @@ export default function CuentaScreen() {
         setEditDesc(data.descripcion || '')
         setEditPrecio(data.precio_desde?.toString() || '')
         setEditDisponible(data.disponible)
+        setGalleryImages(data.galeria || [])
       }
       await loadData(tech.id)
     } catch {} finally {
@@ -159,6 +213,143 @@ export default function CuentaScreen() {
       Alert.alert('Error', 'No se pudo guardar: ' + (err?.message || 'Intenta de nuevo'))
     } finally {
       setSavingProfile(false)
+    }
+  }
+
+  // --- Notification functions ---
+  async function markNotifRead(notifId: number) {
+    try {
+      await supabase.from('notificaciones').update({ leido: true }).eq('id', notifId)
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n))
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch {}
+  }
+
+  // --- Gallery functions ---
+  function getMaxPhotos(): number {
+    if (!tech) return 0
+    if (tech.plan === 'premium' || tech.plan === 'elite') return 10
+    if (tech.plan === 'profesional' || tech.plan === 'pro') return 5
+    return 3
+  }
+
+  async function pickAndUploadImage() {
+    if (!tech) return
+    const maxPhotos = getMaxPhotos()
+    if (galleryImages.length >= maxPhotos) {
+      return Alert.alert('Límite alcanzado', `Tu plan permite máximo ${maxPhotos} fotos. Elimina alguna o mejora tu plan.`)
+    }
+
+    const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permResult.granted) {
+      return Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir fotos.')
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    })
+
+    if (result.canceled || !result.assets?.[0]) return
+
+    setUploadingImage(true)
+    try {
+      const asset = result.assets[0]
+      const ext = asset.uri.split('.').pop() || 'jpg'
+      const fileName = `tech_${tech.id}_${Date.now()}.${ext}`
+
+      const response = await fetch(asset.uri)
+      const blob = await response.blob()
+
+      const { error: uploadError } = await supabase.storage
+        .from('fotos')
+        .upload(`galeria/${fileName}`, blob, { contentType: `image/${ext}`, upsert: false })
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(`galeria/${fileName}`)
+      const publicUrl = urlData.publicUrl
+
+      const newGaleria = [...galleryImages, publicUrl]
+      const { error: updateError } = await supabase.from('tecnicos').update({ galeria: newGaleria }).eq('id', tech.id)
+      if (updateError) throw updateError
+
+      setGalleryImages(newGaleria)
+      setTech({ ...tech, galeria: newGaleria })
+      Alert.alert('Subida exitosa', 'La foto se agregó a tu galería.')
+    } catch (err: any) {
+      Alert.alert('Error', 'No se pudo subir la imagen: ' + (err?.message || 'Intenta de nuevo'))
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  async function deleteGalleryImage(imageUrl: string) {
+    if (!tech) return
+    Alert.alert('Eliminar foto', '¿Seguro que quieres eliminar esta foto?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive', onPress: async () => {
+          try {
+            // Extract file path from URL
+            const pathMatch = imageUrl.match(/galeria\/[^?]+/)
+            if (pathMatch) {
+              await supabase.storage.from('fotos').remove([pathMatch[0]])
+            }
+            const newGaleria = galleryImages.filter(url => url !== imageUrl)
+            await supabase.from('tecnicos').update({ galeria: newGaleria }).eq('id', tech.id)
+            setGalleryImages(newGaleria)
+            setTech({ ...tech, galeria: newGaleria })
+          } catch (err: any) {
+            Alert.alert('Error', 'No se pudo eliminar: ' + (err?.message || 'Intenta de nuevo'))
+          }
+        }
+      },
+    ])
+  }
+
+  // --- Cotizacion functions ---
+  async function createCotizacion() {
+    if (!tech) return
+    if (!cotLeadId || !cotMonto || !cotDescripcion) {
+      return Alert.alert('Error', 'Completa todos los campos')
+    }
+    const selectedLead = leads.find(l => l.id === parseInt(cotLeadId))
+    if (!selectedLead) {
+      return Alert.alert('Error', 'Selecciona un lead válido')
+    }
+
+    setSavingCotizacion(true)
+    try {
+      const { error } = await supabase.from('cotizaciones').insert({
+        tecnico_id: tech.id,
+        cliente_id: selectedLead.id,
+        servicio: cotServicio || selectedLead.servicio,
+        descripcion: cotDescripcion,
+        monto: parseFloat(cotMonto),
+        estado: 'pendiente',
+        codigo_solicitud: selectedLead.codigo,
+        cliente_nombre: selectedLead.nombre,
+        cliente_whatsapp: selectedLead.whatsapp,
+      })
+
+      if (error) throw error
+
+      Alert.alert('Cotización creada', 'La cotización se envió correctamente.')
+      setShowNewCotizacion(false)
+      setCotLeadId('')
+      setCotMonto('')
+      setCotDescripcion('')
+      setCotServicio('')
+      // Reload
+      const { data: cotData } = await supabase.from('cotizaciones').select('*').eq('tecnico_id', tech.id).order('created_at', { ascending: false }).limit(30)
+      setCotizaciones(cotData || [])
+    } catch (err: any) {
+      Alert.alert('Error', 'No se pudo crear: ' + (err?.message || 'Intenta de nuevo'))
+    } finally {
+      setSavingCotizacion(false)
     }
   }
 
@@ -260,15 +451,28 @@ export default function CuentaScreen() {
               <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Bienvenido</Text>
               <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff' }}>{tech.nombre}</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Salir', style: 'destructive', onPress: () => { setLoggedIn(false); setTech(null); setTab('dashboard') } },
-              ])}
-              style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => setShowNotifications(true)}
+                style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Ionicons name="notifications-outline" size={18} color="rgba(255,255,255,0.7)" />
+                {unreadCount > 0 && (
+                  <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}>
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Salir', style: 'destructive', onPress: () => { setLoggedIn(false); setTech(null); setTab('dashboard') } },
+                ])}
+                style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Stats row */}
@@ -546,6 +750,124 @@ export default function CuentaScreen() {
             </View>
           )}
 
+          {/* ═══ COTIZACIONES ═══ */}
+          {tab === 'cotizaciones' && (
+            <View style={{ gap: 12 }}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Mis cotizaciones</Text>
+                    <Text style={{ fontSize: 11, color: COLORS.gray }}>Presupuestos enviados a clientes</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShowNewCotizacion(true)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E3A5F', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
+                  >
+                    <Ionicons name="add" size={16} color="#fff" />
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>Nueva</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {cotizaciones.length === 0 ? (
+                  <Text style={{ textAlign: 'center', color: COLORS.gray2, padding: 20, fontSize: 12 }}>No tienes cotizaciones aún</Text>
+                ) : (
+                  cotizaciones.map((cot) => {
+                    const statusColors: Record<string, string> = { pendiente: '#F59E0B', aceptada: '#10B981', rechazada: '#EF4444' }
+                    const color = statusColors[cot.estado] || COLORS.gray
+                    return (
+                      <View key={cot.id} style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: 14, marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{cot.cliente_nombre || 'Cliente'}</Text>
+                          <View style={{ backgroundColor: color + '15', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                            <Text style={{ fontSize: 9, fontWeight: '700', color }}>{cot.estado}</Text>
+                          </View>
+                        </View>
+                        <Text style={{ fontSize: 12, color: COLORS.gray }}>{cot.servicio}</Text>
+                        {cot.descripcion ? <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 2 }}>{cot.descripcion}</Text> : null}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                          <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E3A5F' }}>S/{cot.monto}</Text>
+                          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{new Date(cot.created_at).toLocaleDateString()}</Text>
+                        </View>
+                      </View>
+                    )
+                  })
+                )}
+              </View>
+
+              {/* New cotizacion form modal */}
+              <Modal visible={showNewCotizacion} transparent animationType="slide">
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+                  <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                      <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark }}>Nueva cotización</Text>
+                      <TouchableOpacity onPress={() => setShowNewCotizacion(false)}>
+                        <Ionicons name="close" size={24} color={COLORS.gray} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Seleccionar cliente</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12, maxHeight: 44 }}>
+                      {leads.map((l) => (
+                        <TouchableOpacity
+                          key={l.id}
+                          onPress={() => { setCotLeadId(String(l.id)); setCotServicio(l.servicio) }}
+                          style={{
+                            paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, marginRight: 6,
+                            backgroundColor: cotLeadId === String(l.id) ? '#1E3A5F' : '#F1F5F9',
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: cotLeadId === String(l.id) ? '#fff' : COLORS.dark }}>
+                            {l.nombre}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Servicio</Text>
+                    <TextInput
+                      value={cotServicio}
+                      onChangeText={setCotServicio}
+                      placeholder="Ej: Reparación de tubería"
+                      style={{ backgroundColor: '#F1F5F9', borderRadius: 12, padding: 14, fontSize: 14, marginBottom: 12 }}
+                      placeholderTextColor={COLORS.gray2}
+                    />
+
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Monto (S/)</Text>
+                    <TextInput
+                      value={cotMonto}
+                      onChangeText={setCotMonto}
+                      placeholder="150"
+                      keyboardType="numeric"
+                      style={{ backgroundColor: '#F1F5F9', borderRadius: 12, padding: 14, fontSize: 14, marginBottom: 12 }}
+                      placeholderTextColor={COLORS.gray2}
+                    />
+
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Descripción</Text>
+                    <TextInput
+                      value={cotDescripcion}
+                      onChangeText={setCotDescripcion}
+                      placeholder="Detalle del trabajo y materiales..."
+                      multiline
+                      numberOfLines={3}
+                      style={{ backgroundColor: '#F1F5F9', borderRadius: 12, padding: 14, fontSize: 14, marginBottom: 16, textAlignVertical: 'top', minHeight: 80 }}
+                      placeholderTextColor={COLORS.gray2}
+                    />
+
+                    <TouchableOpacity
+                      onPress={createCotizacion}
+                      disabled={savingCotizacion}
+                      style={{ backgroundColor: '#1E3A5F', borderRadius: 14, padding: 16, alignItems: 'center' }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
+                        {savingCotizacion ? 'Creando...' : 'Crear cotización'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
+            </View>
+          )}
+
           {/* ═══ PERFIL (Editable) ═══ */}
           {tab === 'perfil' && (
             <View style={{ gap: 12 }}>
@@ -609,6 +931,54 @@ export default function CuentaScreen() {
                         thumbColor={editDisponible ? COLORS.green : '#94A3B8'}
                       />
                     </View>
+
+                    {/* Gallery section */}
+                    <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <View>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>Galería de trabajos</Text>
+                          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{galleryImages.length}/{getMaxPhotos()} fotos</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={pickAndUploadImage}
+                          disabled={uploadingImage}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
+                        >
+                          {uploadingImage ? (
+                            <ActivityIndicator size="small" color="#2563EB" />
+                          ) : (
+                            <Ionicons name="camera-outline" size={16} color="#2563EB" />
+                          )}
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>
+                            {uploadingImage ? 'Subiendo...' : 'Subir foto'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {galleryImages.length > 0 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                          {galleryImages.map((url, i) => (
+                            <View key={i} style={{ marginRight: 8, position: 'relative' }}>
+                              <Image
+                                source={{ uri: url }}
+                                style={{ width: 100, height: 75, borderRadius: 10, backgroundColor: '#F1F5F9' }}
+                              />
+                              <TouchableOpacity
+                                onPress={() => deleteGalleryImage(url)}
+                                style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#EF4444', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}
+                              >
+                                <Ionicons name="close" size={12} color="#fff" />
+                              </TouchableOpacity>
+                            </View>
+                          ))}
+                        </ScrollView>
+                      ) : (
+                        <View style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 20, alignItems: 'center' }}>
+                          <Ionicons name="images-outline" size={28} color={COLORS.gray2} />
+                          <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 6 }}>Sube fotos de tus trabajos</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 ) : (
                   <View style={{ marginTop: 8 }}>
@@ -642,6 +1012,57 @@ export default function CuentaScreen() {
 
         <LegalSection router={router} />
       </ScrollView>
+
+      {/* Notifications Modal */}
+      <Modal visible={showNotifications} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%', minHeight: 300 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark }}>Notificaciones</Text>
+              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                <Ionicons name="close" size={24} color={COLORS.gray} />
+              </TouchableOpacity>
+            </View>
+
+            {notifications.length === 0 ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Ionicons name="notifications-off-outline" size={40} color={COLORS.gray2} />
+                <Text style={{ fontSize: 13, color: COLORS.gray2, marginTop: 12 }}>Sin notificaciones</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={notifications}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={{ padding: 16 }}
+                renderItem={({ item }) => {
+                  const iconName = NOTIF_ICONS[item.tipo] || 'notifications'
+                  const iconColor = NOTIF_COLORS[item.tipo] || COLORS.gray
+                  return (
+                    <TouchableOpacity
+                      onPress={() => { if (!item.leido) markNotifRead(item.id) }}
+                      style={{ flexDirection: 'row', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
+                    >
+                      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: iconColor + '15', alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name={iconName as any} size={20} color={iconColor} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, flex: 1 }}>{item.titulo}</Text>
+                          {!item.leido && (
+                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#2563EB' }} />
+                          )}
+                        </View>
+                        <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 2 }}>{item.mensaje}</Text>
+                        <Text style={{ fontSize: 10, color: COLORS.gray2, marginTop: 4 }}>{timeAgo(item.created_at)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )
+                }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }

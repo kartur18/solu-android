@@ -21,6 +21,8 @@ export interface Tecnico {
   fecha_vencimiento?: string
   lat?: number
   lng?: number
+  galeria?: string[]
+  zonas?: string[]
   created_at: string
 }
 
@@ -57,5 +59,29 @@ export interface GrupoVecinos {
   whatsapp_admin: string
   codigo: string
   miembros: number
+  created_at: string
+}
+
+export interface Notificacion {
+  id: number
+  tecnico_id: number
+  tipo: 'nueva_solicitud' | 'pago_recibido' | 'plan_vencimiento' | 'nueva_resena'
+  titulo: string
+  mensaje: string
+  leido: boolean
+  created_at: string
+}
+
+export interface Cotizacion {
+  id: number
+  cliente_id: number
+  tecnico_id: number
+  servicio: string
+  descripcion: string
+  monto: number
+  estado: 'pendiente' | 'aceptada' | 'rechazada'
+  codigo_solicitud?: string
+  cliente_nombre?: string
+  cliente_whatsapp?: string
   created_at: string
 }
