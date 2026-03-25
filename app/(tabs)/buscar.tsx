@@ -387,7 +387,7 @@ export default function BuscarScreen() {
               </TouchableOpacity>
             </View>
           )}
-          <View style={{ height: 40 }} />
+          <View style={{ height: 200 }} />
         </ScrollView>
       )}
     </View>

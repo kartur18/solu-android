@@ -39,9 +39,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopWidth: 0,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: 56,
+          paddingBottom: 4,
+          paddingTop: 4,
           shadowColor: '#1E3A5F',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.06,
