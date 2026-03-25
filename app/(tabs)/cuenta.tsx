@@ -669,7 +669,7 @@ export default function CuentaScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Tu plan actual</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
-                    <Text style={{ fontWeight: '800', color: '#1E3A5F' }}>{planInfo?.name || 'Gratuito'}</Text>
+                    <Text style={{ fontWeight: '800', color: '#1E3A5F' }}>{planInfo?.name || 'Periodo de prueba'}</Text>
                   </View>
                   {!isExpired && daysLeft > 0 && (
                     <Text style={{ fontSize: 11, color: COLORS.gray2 }}>{daysLeft} días restantes</Text>
