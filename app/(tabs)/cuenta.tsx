@@ -442,6 +442,7 @@ export default function CuentaScreen() {
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 300 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1E3A5F" />}
       >
         {/* Header */}

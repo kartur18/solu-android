@@ -63,7 +63,7 @@ export default function VecinosScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }}>
+    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }} contentContainerStyle={{ paddingBottom: 300 }}>
       {/* Header */}
       <View style={{ backgroundColor: COLORS.blue, padding: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
