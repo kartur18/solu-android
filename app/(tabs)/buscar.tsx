@@ -4,19 +4,56 @@ import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS, DISTRITOS, expandSearchToOficios } from '../../src/lib/constants'
 import { logger } from '../../src/lib/logger'
+import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
 import { TechMapView } from '../../src/components/TechMapView'
 
 export default function BuscarScreen() {
-  const params = useLocalSearchParams<{ servicio?: string }>()
+  const params = useLocalSearchParams<{ servicio?: string; distrito?: string }>()
   const [search, setSearch] = useState(params.servicio || '')
-  const [distrito, setDistrito] = useState('')
+  const [distrito, setDistrito] = useState(params.distrito || '')
   const [techs, setTechs] = useState<Tecnico[]>([])
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [gpsActive, setGpsActive] = useState(false)
+
+  const location = useLocationDetection()
+
+  // Auto-detect location on mount (only if no distrito param was passed)
+  useEffect(() => {
+    if (params.distrito) {
+      setGpsActive(false)
+      return
+    }
+    ;(async () => {
+      const detected = await location.detectLocation()
+      if (detected) {
+        setDistrito(detected)
+        setGpsActive(true)
+        setShowFilters(true)
+      }
+    })()
+  }, [])
+
+  // If distrito param changes externally, update state
+  useEffect(() => {
+    if (params.distrito) {
+      setDistrito(params.distrito)
+      setGpsActive(false)
+    }
+  }, [params.distrito])
+
+  async function handleRedetectGPS() {
+    const detected = await location.detectLocation()
+    if (detected) {
+      setDistrito(detected)
+      setGpsActive(true)
+      setShowFilters(true)
+    }
+  }
 
   async function loadTechs() {
     setLoading(true)
@@ -31,7 +68,7 @@ export default function BuscarScreen() {
 
       if (search) {
         const safe = search.replace(/[,().%\\]/g, '')
-        // Expandir búsqueda: si busca "Gasfitería", también busca "Gasfitero"
+        // Expandir busqueda: si busca "Gasfiteria", tambien busca "Gasfitero"
         const relatedOficios = expandSearchToOficios(safe)
         const filters = [`oficio.ilike.%${safe}%`, `nombre.ilike.%${safe}%`]
         for (const oficio of relatedOficios) {
@@ -84,6 +121,31 @@ export default function BuscarScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
+
+          {/* GPS location button */}
+          <TouchableOpacity
+            onPress={handleRedetectGPS}
+            style={{
+              backgroundColor: gpsActive ? '#EFF6FF' : COLORS.light,
+              borderRadius: 12,
+              width: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: gpsActive ? 1.5 : 0,
+              borderColor: gpsActive ? COLORS.blue : 'transparent',
+            }}
+          >
+            {location.loading ? (
+              <ActivityIndicator size="small" color={COLORS.blue} />
+            ) : (
+              <Ionicons
+                name={gpsActive ? 'navigate' : 'navigate-outline'}
+                size={20}
+                color={gpsActive ? COLORS.blue : COLORS.gray}
+              />
+            )}
+          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => setShowFilters(!showFilters)}
             style={{
@@ -98,10 +160,33 @@ export default function BuscarScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* GPS active badge */}
+        {gpsActive && distrito ? (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: 8,
+            backgroundColor: '#EFF6FF',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 20,
+            alignSelf: 'flex-start',
+          }}>
+            <Text style={{ fontSize: 12 }}>{'\uD83D\uDCCD'}</Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.blue }}>
+              Cerca de ti: {distrito}
+            </Text>
+            <TouchableOpacity onPress={() => { setDistrito(''); setGpsActive(false) }}>
+              <Ionicons name="close-circle" size={16} color={COLORS.blue} />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {showFilters && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
             <TouchableOpacity
-              onPress={() => setDistrito('')}
+              onPress={() => { setDistrito(''); setGpsActive(false) }}
               style={{
                 paddingHorizontal: 14,
                 paddingVertical: 6,
@@ -117,7 +202,7 @@ export default function BuscarScreen() {
             {DISTRITOS.map((d) => (
               <TouchableOpacity
                 key={d}
-                onPress={() => setDistrito(distrito === d ? '' : d)}
+                onPress={() => { setDistrito(distrito === d ? '' : d); setGpsActive(false) }}
                 style={{
                   paddingHorizontal: 14,
                   paddingVertical: 6,

@@ -31,7 +31,9 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -40,7 +42,15 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-image-picker"
+      "expo-image-picker",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti.",
+          "locationAlwaysPermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti.",
+          "locationWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti."
+        }
+      ]
     ],
     "extra": {
       "eas": {

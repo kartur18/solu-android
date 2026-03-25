@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
 import { logger } from '../../src/lib/logger'
+import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
@@ -36,6 +37,12 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [offline, setOffline] = useState(false)
+  const location = useLocationDetection()
+
+  // Detect location on mount
+  useEffect(() => {
+    location.detectLocation()
+  }, [])
 
   async function loadTopTechs() {
     try {
@@ -174,6 +181,42 @@ export default function HomeScreen() {
             <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 13 }}>Soy técnico</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Cerca de ti banner */}
+        {location.distrito ? (
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/buscar', params: { distrito: location.distrito! } })}
+            style={{
+              marginHorizontal: 20,
+              marginTop: 14,
+              backgroundColor: '#EFF6FF',
+              borderRadius: 12,
+              padding: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              borderWidth: 1,
+              borderColor: '#BFDBFE',
+            }}
+          >
+            <View style={{
+              width: 36, height: 36, borderRadius: 10,
+              backgroundColor: COLORS.blue + '18',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Ionicons name="navigate" size={18} color={COLORS.blue} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>
+                {'\uD83D\uDCCD'} Técnicos cerca de {location.distrito}
+              </Text>
+              <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 1 }}>
+                Toca para ver técnicos en tu zona
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.blue} />
+          </TouchableOpacity>
+        ) : null}
 
         {/* Categories */}
         <View style={{ padding: 20, paddingBottom: 8 }}>
