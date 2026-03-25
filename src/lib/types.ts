@@ -16,6 +16,7 @@ export interface Tecnico {
   experiencia?: string
   descripcion?: string
   foto_url?: string
+  password_hash?: string
   push_token?: string
   fecha_vencimiento?: string
   lat?: number

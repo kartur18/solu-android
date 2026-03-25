@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink, DISTRITOS } from '../../src/lib/constants'
 import { ENV } from '../../src/lib/env'
+import { hashPassword } from '../../src/lib/auth'
 import { YapeQR } from '../../src/components/YapeQR'
 import { PlinQR } from '../../src/components/PlinQR'
 import { supabase } from '../../src/lib/supabase'
@@ -23,7 +24,9 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
 export default function CuentaScreen() {
   const router = useRouter()
   const [loggedIn, setLoggedIn] = useState(false)
-  const [wa, setWa] = useState('')
+  const [loginId, setLoginId] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [tech, setTech] = useState<Tecnico | null>(null)
@@ -41,20 +44,55 @@ export default function CuentaScreen() {
   const [savingProfile, setSavingProfile] = useState(false)
 
   async function doLogin() {
-    if (!wa) return Alert.alert('Error', 'Ingresa tu WhatsApp')
+    const trimmedId = loginId.trim()
+    if (!trimmedId) return Alert.alert('Error', 'Ingresa tu email o WhatsApp')
+
+    const isEmail = trimmedId.includes('@')
+    const isWhatsApp = /^\d{7,15}$/.test(trimmedId.replace(/\s/g, ''))
+
+    if (!isEmail && !isWhatsApp) {
+      return Alert.alert('Error', 'Ingresa un email válido o número de WhatsApp')
+    }
+
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('tecnicos')
-        .select('*')
-        .eq('whatsapp', wa)
-        .single()
+      let query = supabase.from('tecnicos').select('*')
+
+      if (isEmail) {
+        query = query.eq('email', trimmedId)
+      } else {
+        query = query.eq('whatsapp', trimmedId.replace(/\s/g, ''))
+      }
+
+      const { data, error } = await query.single()
 
       if (error || !data) {
-        Alert.alert('No encontrado', 'No hay cuenta de técnico con ese WhatsApp')
+        Alert.alert('No encontrado', isEmail
+          ? 'No hay cuenta de técnico con ese email'
+          : 'No hay cuenta de técnico con ese WhatsApp')
         setLoading(false)
         return
       }
+
+      // Password check
+      if (data.password_hash) {
+        // Tech has a password set — require it
+        if (!loginPassword) {
+          Alert.alert('Contraseña requerida', 'Esta cuenta tiene contraseña. Ingresa tu contraseña para continuar.')
+          setLoading(false)
+          return
+        }
+        const inputHash = hashPassword(loginPassword)
+        if (inputHash !== data.password_hash) {
+          Alert.alert('Error', 'Contraseña incorrecta')
+          setLoading(false)
+          return
+        }
+      } else if (isEmail && !isWhatsApp) {
+        // Legacy account without password, but logging in with email
+        // Allow login without password for backward compatibility
+      }
+      // Legacy WhatsApp-only login (no password_hash): allow through
 
       setTech(data)
       setLoggedIn(true)
@@ -150,21 +188,50 @@ export default function CuentaScreen() {
             <Ionicons name="person" size={28} color="#fff" />
           </View>
           <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark, textAlign: 'center', marginBottom: 4 }}>Mi cuenta</Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginBottom: 24 }}>Ingresa tu WhatsApp registrado</Text>
+          <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginBottom: 24 }}>Ingresa con tu email o WhatsApp</Text>
+
+          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Email o WhatsApp</Text>
           <TextInput
-            placeholder="999 888 777"
-            value={wa}
-            onChangeText={setWa}
-            keyboardType="phone-pad"
-            style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, fontSize: 16, marginBottom: 12, textAlign: 'center', fontWeight: '600' }}
+            placeholder="correo@email.com o 999888777"
+            value={loginId}
+            onChangeText={setLoginId}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 12, fontWeight: '600' }}
             placeholderTextColor={COLORS.gray2}
           />
+
+          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Contraseña</Text>
+          <View style={{ position: 'relative', marginBottom: 4 }}>
+            <TextInput
+              placeholder="Tu contraseña"
+              value={loginPassword}
+              onChangeText={setLoginPassword}
+              secureTextEntry={!showLoginPassword}
+              style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, paddingRight: 48, fontSize: 15, fontWeight: '600' }}
+              placeholderTextColor={COLORS.gray2}
+            />
+            <TouchableOpacity
+              onPress={() => setShowLoginPassword(!showLoginPassword)}
+              style={{ position: 'absolute', right: 14, top: 16 }}
+            >
+              <Ionicons name={showLoginPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => Linking.openURL(waLink('999888777', 'Hola, olvidé mi contraseña de SOLU'))}
+            style={{ alignSelf: 'flex-end', marginBottom: 16 }}
+          >
+            <Text style={{ fontSize: 11, color: '#1E3A5F', fontWeight: '600' }}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={doLogin}
             disabled={loading}
             style={{ backgroundColor: '#1E3A5F', borderRadius: 14, padding: 16, alignItems: 'center' }}
           >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>{loading ? 'Buscando...' : 'Ingresar →'}</Text>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>{loading ? 'Buscando...' : 'Ingresar'}</Text>
           </TouchableOpacity>
           <Text style={{ textAlign: 'center', fontSize: 11, color: COLORS.gray2, marginTop: 12 }}>
             ¿No tienes cuenta? Regístrate desde la pantalla de inicio

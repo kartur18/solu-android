@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { COLORS, SERVICIOS, DISTRITOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { logger } from '../src/lib/logger'
+import { hashPassword } from '../src/lib/auth'
 
 const OFICIOS = [
   'Gasfitero', 'Electricista', 'Pintor', 'Cerrajero', 'Técnico en refrigeración',
@@ -24,6 +25,10 @@ export default function RegistroScreen() {
   const [whatsapp, setWhatsapp] = useState('')
   const [email, setEmail] = useState('')
   const [dni, setDni] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Step 2
   const [oficio, setOficio] = useState('')
@@ -81,6 +86,14 @@ export default function RegistroScreen() {
       Alert.alert('Error', 'Ingresa un email válido')
       return false
     }
+    if (password && password.length < 6) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres')
+      return false
+    }
+    if (password && password !== confirmPassword) {
+      Alert.alert('Error', 'Las contraseñas no coinciden')
+      return false
+    }
     return true
   }
 
@@ -103,6 +116,7 @@ export default function RegistroScreen() {
       experiencia, descripcion,
       dni_frente_url: dniFrenteUrl,
       dni_posterior_url: dniPosteriorUrl,
+      password_hash: password ? hashPassword(password) : null,
       plan: 'trial',
       disponible: true,
       verificado: false,
@@ -150,6 +164,42 @@ export default function RegistroScreen() {
 
             <Text style={styles.label}>Email</Text>
             <TextInput placeholder="correo@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" style={styles.input} placeholderTextColor={COLORS.gray2} />
+
+            <Text style={styles.label}>Contraseña</Text>
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                placeholder="Mínimo 6 caracteres"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                style={[styles.input, { paddingRight: 48 }]}
+                placeholderTextColor={COLORS.gray2}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 14, top: 14 }}
+              >
+                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.label}>Confirmar contraseña</Text>
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                placeholder="Repite tu contraseña"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                style={[styles.input, { paddingRight: 48 }]}
+                placeholderTextColor={COLORS.gray2}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{ position: 'absolute', right: 14, top: 14 }}
+              >
+                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.label}>DNI *</Text>
             <TextInput placeholder="12345678" value={dni} onChangeText={setDni} keyboardType="number-pad" maxLength={8} style={styles.input} placeholderTextColor={COLORS.gray2} />
