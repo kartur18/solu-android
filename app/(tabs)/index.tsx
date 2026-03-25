@@ -26,7 +26,7 @@ const CATEGORIES = [
 
 const TRUST_STATS = [
   { label: 'Técnicos', value: '50+', icon: 'people' as const },
-  { label: 'Servicios', value: '38', icon: 'construct' as const },
+  { label: 'Servicios', value: '100+', icon: 'construct' as const },
   { label: 'Distritos', value: '95+', icon: 'location' as const },
 ]
 
@@ -218,7 +218,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/buscar')}
             style={{ alignItems: 'center', paddingVertical: 8 }}
           >
-            <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 12 }}>Ver los 38 servicios →</Text>
+            <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 12 }}>Ver los 100+ servicios →</Text>
           </TouchableOpacity>
         </View>
 
