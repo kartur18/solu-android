@@ -39,7 +39,6 @@ export default function HomeScreen() {
   const [offline, setOffline] = useState(false)
   const location = useLocationDetection()
 
-  // Detect location on mount
   useEffect(() => {
     location.detectLocation()
   }, [])
@@ -74,35 +73,39 @@ export default function HomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       {offline && (
-        <View style={{ backgroundColor: '#FEE2E2', padding: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-          <Ionicons name="cloud-offline-outline" size={14} color={COLORS.red} />
-          <Text style={{ color: COLORS.red, fontSize: 11, fontWeight: '600' }}>Sin conexión - desliza para reintentar</Text>
-        </View>
+        <TouchableOpacity
+          onPress={onRefresh}
+          style={{ backgroundColor: '#FEF3C7', padding: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+        >
+          <Ionicons name="wifi-outline" size={14} color="#92400E" />
+          <Text style={{ color: '#92400E', fontSize: 11, fontWeight: '600' }}>Verificando conexión - toca para reintentar</Text>
+        </TouchableOpacity>
       )}
       <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.blue} />}
       >
-        {/* Hero - Azul oscuro profesional */}
+        {/* Hero */}
         <LinearGradient
           colors={['#1E3A5F', '#162D4A', '#0F2035']}
-          style={{ padding: 24, paddingTop: 16, paddingBottom: 28, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}
+          style={{ padding: 20, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16 }}>S</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14 }}>S</Text>
             </View>
-            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>SOLU</Text>
-            <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16,185,129,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 }}>
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>SOLU</Text>
+            <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16,185,129,0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
               <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: COLORS.green }} />
-              <Text style={{ color: COLORS.green, fontSize: 10, fontWeight: '600' }}>En todo el Perú</Text>
+              <Text style={{ color: COLORS.green, fontSize: 9, fontWeight: '600' }}>En todo el Perú</Text>
             </View>
           </View>
 
-          <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff', marginBottom: 4, lineHeight: 30 }}>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', marginBottom: 4, lineHeight: 28 }}>
             ¿Qué necesitas{'\n'}reparar hoy?
           </Text>
-          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', marginBottom: 16 }}>
+          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 }}>
             Técnicos verificados con DNI · Contacto directo
           </Text>
 
@@ -110,75 +113,53 @@ export default function HomeScreen() {
             onPress={() => router.push('/buscar')}
             style={{
               backgroundColor: 'rgba(255,255,255,0.12)',
-              borderRadius: 14,
-              padding: 14,
+              borderRadius: 12,
+              padding: 12,
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
               borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.15)',
             }}
           >
-            <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
-            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Buscar servicio o técnico...</Text>
+            <Ionicons name="search" size={16} color="rgba(255,255,255,0.5)" />
+            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Buscar servicio o técnico...</Text>
           </TouchableOpacity>
 
           {/* Trust stats */}
-          <View style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}>
+          <View style={{ flexDirection: 'row', marginTop: 14, gap: 6 }}>
             {TRUST_STATS.map((stat) => (
-              <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10, alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>{stat.value}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '600', marginTop: 2 }}>{stat.label}</Text>
+              <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 8, alignItems: 'center' }}>
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{stat.value}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '600', marginTop: 1 }}>{stat.label}</Text>
               </View>
             ))}
           </View>
         </LinearGradient>
 
         {/* Quick actions */}
-        <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginTop: -14 }}>
+        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginTop: -12 }}>
           <TouchableOpacity
             onPress={() => router.push('/solicitar')}
             style={{
-              flex: 1,
-              backgroundColor: COLORS.pri,
-              borderRadius: 14,
-              padding: 14,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              shadowColor: COLORS.pri,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
+              flex: 1, backgroundColor: COLORS.pri, borderRadius: 12, padding: 12,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
               elevation: 4,
             }}
           >
-            <Ionicons name="build" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Solicitar técnico</Text>
+            <Ionicons name="build" size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Solicitar técnico</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/registro')}
             style={{
-              flex: 1,
-              backgroundColor: '#fff',
-              borderRadius: 14,
-              padding: 14,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              borderWidth: 1.5,
-              borderColor: '#E2E8F0',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
+              flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+              borderWidth: 1.5, borderColor: '#E2E8F0', elevation: 2,
             }}
           >
-            <Ionicons name="person-add" size={18} color={COLORS.dark} />
-            <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 13 }}>Soy técnico</Text>
+            <Ionicons name="person-add" size={16} color={COLORS.dark} />
+            <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 12 }}>Soy técnico</Text>
           </TouchableOpacity>
         </View>
 
@@ -187,40 +168,26 @@ export default function HomeScreen() {
           <TouchableOpacity
             onPress={() => router.push({ pathname: '/buscar', params: { distrito: location.distrito! } })}
             style={{
-              marginHorizontal: 20,
-              marginTop: 14,
-              backgroundColor: '#EFF6FF',
-              borderRadius: 12,
-              padding: 14,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              borderWidth: 1,
-              borderColor: '#BFDBFE',
+              marginHorizontal: 16, marginTop: 12,
+              backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12,
+              flexDirection: 'row', alignItems: 'center', gap: 10,
+              borderWidth: 1, borderColor: '#BFDBFE',
             }}
           >
-            <View style={{
-              width: 36, height: 36, borderRadius: 10,
-              backgroundColor: COLORS.blue + '18',
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Ionicons name="navigate" size={18} color={COLORS.blue} />
-            </View>
+            <Ionicons name="navigate" size={18} color={COLORS.blue} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>
-                {'\uD83D\uDCCD'} Técnicos cerca de {location.distrito}
+              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark }}>
+                📍 Técnicos cerca de {location.distrito}
               </Text>
-              <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 1 }}>
-                Toca para ver técnicos en tu zona
-              </Text>
+              <Text style={{ fontSize: 10, color: COLORS.gray }}>Toca para ver técnicos en tu zona</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.blue} />
+            <Ionicons name="chevron-forward" size={14} color={COLORS.blue} />
           </TouchableOpacity>
         ) : null}
 
         {/* Categories */}
-        <View style={{ padding: 20, paddingBottom: 8 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 14 }}>
+        <View style={{ padding: 16, paddingBottom: 4 }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>
             Servicios populares
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
@@ -230,64 +197,49 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: '/buscar', params: { servicio: cat.name } })}
                 style={{
                   width: CARD_SIZE,
-                  backgroundColor: '#fff',
-                  borderRadius: 14,
-                  paddingVertical: 14,
-                  paddingHorizontal: 4,
-                  alignItems: 'center',
-                  marginBottom: 10,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 4,
+                  backgroundColor: '#fff', borderRadius: 12,
+                  paddingVertical: 12, paddingHorizontal: 4,
+                  alignItems: 'center', marginBottom: 8,
                   elevation: 1,
                 }}
               >
                 <View style={{
-                  width: 44, height: 44, borderRadius: 14,
+                  width: 40, height: 40, borderRadius: 12,
                   backgroundColor: cat.color + '12',
-                  alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+                  alignItems: 'center', justifyContent: 'center', marginBottom: 6,
                 }}>
-                  <Ionicons name={cat.icon} size={22} color={cat.color} />
+                  <Ionicons name={cat.icon} size={20} color={cat.color} />
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.dark, textAlign: 'center' }} numberOfLines={1}>
+                <Text style={{ fontSize: 9, fontWeight: '600', color: COLORS.dark, textAlign: 'center' }} numberOfLines={1}>
                   {cat.name}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-
-          <TouchableOpacity
-            onPress={() => router.push('/buscar')}
-            style={{ alignItems: 'center', paddingVertical: 8 }}
-          >
-            <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 12 }}>Ver los 100+ servicios →</Text>
+          <TouchableOpacity onPress={() => router.push('/buscar')} style={{ alignItems: 'center', paddingVertical: 6 }}>
+            <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 11 }}>Ver los 100+ servicios →</Text>
           </TouchableOpacity>
         </View>
 
         {/* Value props */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-          <View style={{
-            backgroundColor: '#fff', borderRadius: 16, padding: 16,
-            shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1,
-          }}>
+        <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 14, elevation: 1 }}>
             {[
               { icon: 'shield-checkmark' as const, color: COLORS.green, title: 'Verificados con DNI', desc: 'Identidad confirmada de cada técnico' },
               { icon: 'logo-whatsapp' as const, color: '#25D366', title: 'Contacto directo', desc: 'Habla por WhatsApp sin intermediarios' },
               { icon: 'cash' as const, color: COLORS.pri, title: 'Paga como prefieras', desc: 'Yape, Plin, efectivo o transferencia' },
             ].map((item, i) => (
               <View key={i} style={{
-                flexDirection: 'row', alignItems: 'center', gap: 12,
-                paddingVertical: 12,
-                borderBottomWidth: i < 2 ? 1 : 0,
-                borderBottomColor: '#F1F5F9',
+                flexDirection: 'row', alignItems: 'center', gap: 10,
+                paddingVertical: 10,
+                borderBottomWidth: i < 2 ? 1 : 0, borderBottomColor: '#F1F5F9',
               }}>
-                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: item.color + '12', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name={item.icon} size={20} color={item.color} />
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: item.color + '12', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name={item.icon} size={18} color={item.color} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{item.title}</Text>
-                  <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 1 }}>{item.desc}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark }}>{item.title}</Text>
+                  <Text style={{ fontSize: 10, color: COLORS.gray, marginTop: 1 }}>{item.desc}</Text>
                 </View>
               </View>
             ))}
@@ -297,81 +249,68 @@ export default function HomeScreen() {
         {/* Fidelidad banner */}
         <TouchableOpacity
           onPress={() => router.push('/fidelidad')}
-          style={{
-            marginHorizontal: 20, marginBottom: 16,
-            borderRadius: 14, overflow: 'hidden',
-          }}
+          style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, overflow: 'hidden' }}
         >
           <LinearGradient
             colors={['#1E3A5F', '#2563EB']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={{ padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+            style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}
           >
-            <Text style={{ fontSize: 28 }}>🏆</Text>
+            <Text style={{ fontSize: 24 }}>🏆</Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Programa de Fidelidad</Text>
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Acumula puntos y obtén descuentos exclusivos</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Programa de Fidelidad</Text>
+              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Acumula puntos y obtén descuentos</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" />
           </LinearGradient>
         </TouchableOpacity>
 
         {/* Top techs */}
-        <View style={{ padding: 20, paddingTop: 4 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark }}>
-              Mejor valorados
-            </Text>
+        <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Mejor valorados</Text>
             <TouchableOpacity onPress={() => router.push('/buscar')}>
-              <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 12 }}>Ver todos →</Text>
+              <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 11 }}>Ver todos →</Text>
             </TouchableOpacity>
           </View>
-          {topTechs.map((tech) => (
-            <TechCard key={tech.id} tech={tech} />
-          ))}
           {loading ? (
-            <ActivityIndicator size="large" color={COLORS.blue} style={{ marginVertical: 40 }} />
-          ) : topTechs.length === 0 ? (
-            <View style={{ padding: 40, alignItems: 'center' }}>
-              <Ionicons name="people-outline" size={40} color={COLORS.gray2} />
-              <Text style={{ color: COLORS.gray2, marginTop: 8, fontSize: 13 }}>No hay técnicos disponibles</Text>
+            <ActivityIndicator size="large" color={COLORS.blue} style={{ marginVertical: 30 }} />
+          ) : topTechs.length > 0 ? (
+            topTechs.map((tech) => <TechCard key={tech.id} tech={tech} />)
+          ) : (
+            <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 30, alignItems: 'center', elevation: 1 }}>
+              <Ionicons name="search" size={36} color={COLORS.gray2} />
+              <Text style={{ color: COLORS.dark, marginTop: 8, fontSize: 13, fontWeight: '600' }}>Registra técnicos para verlos aquí</Text>
+              <Text style={{ color: COLORS.gray2, marginTop: 4, fontSize: 11, textAlign: 'center' }}>Los técnicos con mejor calificación aparecerán en esta sección</Text>
+              <TouchableOpacity
+                onPress={() => router.push('/buscar')}
+                style={{ marginTop: 12, backgroundColor: COLORS.blue, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Buscar técnicos →</Text>
+              </TouchableOpacity>
             </View>
-          ) : null}
+          )}
         </View>
 
         {/* CTA Técnico */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
           <View style={{
-            backgroundColor: '#FFF7ED', borderRadius: 16, padding: 20, alignItems: 'center',
+            backgroundColor: '#FFF7ED', borderRadius: 14, padding: 20, alignItems: 'center',
             borderWidth: 1, borderColor: '#FED7AA',
           }}>
-            <Text style={{ fontSize: 28, marginBottom: 8 }}>🔧</Text>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, textAlign: 'center' }}>
-              ¿Eres técnico?
-            </Text>
-            <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginTop: 4, marginBottom: 14, lineHeight: 18 }}>
+            <Text style={{ fontSize: 24, marginBottom: 6 }}>🔧</Text>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, textAlign: 'center' }}>¿Eres técnico?</Text>
+            <Text style={{ fontSize: 11, color: COLORS.gray, textAlign: 'center', marginTop: 4, marginBottom: 12, lineHeight: 16 }}>
               Únete a SOLU y recibe clientes todos los días.{'\n'}Prueba gratis por 90 días.
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/registro')}
-              style={{
-                backgroundColor: COLORS.pri,
-                borderRadius: 12,
-                paddingHorizontal: 28,
-                paddingVertical: 12,
-                shadowColor: COLORS.pri,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
+              style={{ backgroundColor: COLORS.pri, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10, elevation: 4 }}
             >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Registrarme gratis →</Text>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Registrarme gratis →</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        <View style={{ height: 40 }} />
       </ScrollView>
       <ChatBot />
     </View>
