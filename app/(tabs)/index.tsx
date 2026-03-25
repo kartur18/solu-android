@@ -204,12 +204,12 @@ export default function HomeScreen() {
         </LinearGradient>
 
         {/* Quick actions */}
-        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginTop: -12 }}>
+        <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: -12 }}>
           <PressableCard
             onPress={() => router.push('/solicitar')}
             style={{
-              flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, padding: 12,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+              flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, paddingVertical: 14,
+              alignItems: 'center', justifyContent: 'center',
               shadowColor: COLORS.pri,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -217,14 +217,14 @@ export default function HomeScreen() {
               elevation: 6,
             }}
           >
-            <Ionicons name="build" size={16} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Solicitar técnico</Text>
+            <Ionicons name="build" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11, marginTop: 4 }}>Solicitar técnico</Text>
           </PressableCard>
           <PressableCard
             onPress={() => router.push('/registro')}
             style={{
-              flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 12,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+              flex: 1, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14,
+              alignItems: 'center', justifyContent: 'center',
               borderWidth: 1.5, borderColor: '#E2E8F0',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
@@ -233,8 +233,8 @@ export default function HomeScreen() {
               elevation: 3,
             }}
           >
-            <Ionicons name="person-add" size={16} color={COLORS.dark} />
-            <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 12 }}>Soy técnico</Text>
+            <Ionicons name="person-add" size={18} color={COLORS.dark} />
+            <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 11, marginTop: 4 }}>Soy técnico</Text>
           </PressableCard>
         </View>
 
