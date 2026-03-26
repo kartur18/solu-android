@@ -130,39 +130,39 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.blue} />}
       >
-        {/* Hero */}
+        {/* Hero Premium */}
         <LinearGradient
-          colors={['#1E3A5F', '#162D4A', '#0F2035']}
-          style={{ padding: 20, paddingTop: 40, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}
+          colors={['#1A1A2E', '#16213E', '#0F172A']}
+          style={{ padding: 24, paddingTop: 48, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14 }}>S</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+            <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>S</Text>
             </View>
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>SOLU</Text>
-            <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16,185,129,0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
-              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: COLORS.green }} />
-              <Text style={{ color: COLORS.green, fontSize: 9, fontWeight: '600' }}>En todo el Perú</Text>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 }}>SOLU</Text>
+            <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(234,88,12,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 }}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EA580C' }} />
+              <Text style={{ color: '#F97316', fontSize: 10, fontWeight: '700' }}>En todo el Perú</Text>
             </View>
           </View>
 
-          <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', marginBottom: 4, lineHeight: 28 }}>
-            ¿Qué necesitas{'\n'}reparar hoy?
+          <Text style={{ fontSize: 28, fontWeight: '900', color: '#fff', marginBottom: 6, lineHeight: 34 }}>
+            ¿Qué necesitas{'\n'}resolver hoy?
           </Text>
-          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 }}>
-            El técnico ideal en minutos
+          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 18, fontWeight: '600' }}>
+            Conecta con el técnico ideal en minutos
           </Text>
 
           <View style={{
-            backgroundColor: 'rgba(255,255,255,0.25)',
-            borderRadius: 14,
-            padding: 4,
-            paddingLeft: 14,
+            backgroundColor: 'rgba(255,255,255,0.08)',
+            borderRadius: 20,
+            padding: 6,
+            paddingLeft: 18,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 8,
+            gap: 10,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.3)',
+            borderColor: 'rgba(255,255,255,0.1)',
           }}>
             <Ionicons name="search" size={16} color="rgba(255,255,255,0.7)" />
             <TextInput
@@ -179,7 +179,7 @@ export default function HomeScreen() {
                 }
               }}
               returnKeyType="search"
-              style={{ flex: 1, color: '#fff', fontSize: 13, paddingVertical: 10 }}
+              style={{ flex: 1, color: '#fff', fontSize: 14, paddingVertical: 14, fontWeight: '600' }}
             />
             <TouchableOpacity
               onPress={() => {
@@ -190,18 +190,18 @@ export default function HomeScreen() {
                   router.push('/buscar')
                 }
               }}
-              style={{ backgroundColor: '#F26B21', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginRight: 2 }}
+              style={{ backgroundColor: '#EA580C', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14, marginRight: 2, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}
             >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Buscar</Text>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13 }}>BUSCAR</Text>
             </TouchableOpacity>
           </View>
 
           {/* Trust stats */}
-          <View style={{ flexDirection: 'row', marginTop: 14, gap: 6 }}>
+          <View style={{ flexDirection: 'row', marginTop: 18, gap: 8 }}>
             {TRUST_STATS.map((stat) => (
-              <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 8, alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{stat.value}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '600', marginTop: 1 }}>{stat.label}</Text>
+              <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
+                <Text style={{ color: '#fff', fontSize: 17, fontWeight: '900' }}>{stat.value}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '700', marginTop: 2 }}>{stat.label}</Text>
               </View>
             ))}
           </View>
@@ -213,27 +213,27 @@ export default function HomeScreen() {
             onPress={() => router.push('/solicitar')}
             activeOpacity={0.85}
             style={{
-              flex: 1, backgroundColor: COLORS.pri, borderRadius: 14,
-              paddingVertical: 16, paddingHorizontal: 16,
+              flex: 1, backgroundColor: '#EA580C', borderRadius: 18,
+              paddingVertical: 18, paddingHorizontal: 16,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              elevation: 6,
+              elevation: 8, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12,
             }}
           >
-            <Ionicons name="build" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Solicitar técnico</Text>
+            <Ionicons name="build" size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Solicitar técnico</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/urgencias')}
             activeOpacity={0.85}
             style={{
-              flex: 1, backgroundColor: '#DC2626', borderRadius: 14,
-              paddingVertical: 16, paddingHorizontal: 16,
+              flex: 1, backgroundColor: '#DC2626', borderRadius: 18,
+              paddingVertical: 18, paddingHorizontal: 16,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              elevation: 6,
+              elevation: 8, shadowColor: '#DC2626', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12,
             }}
           >
-            <Ionicons name="flash" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Emergencia 24/7</Text>
+            <Ionicons name="flash" size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Emergencia 24/7</Text>
           </TouchableOpacity>
         </View>
 
