@@ -90,10 +90,11 @@ export default function HomeScreen() {
         .limit(5)
       if (error) throw error
       setTopTechs(data || [])
-      setOffline(false)
+      if (offline) setOffline(false)
     } catch (err) {
       logger.error('Error loading techs:', err)
-      setOffline(true)
+      // Solo mostrar offline después del primer intento fallido, no al cargar
+      if (!loading) setOffline(true)
     } finally {
       setLoading(false)
       Animated.timing(fadeAnim, {
@@ -204,38 +205,34 @@ export default function HomeScreen() {
         </LinearGradient>
 
         {/* Quick actions */}
-        <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: -12 }}>
-          <PressableCard
+        <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: -14 }}>
+          <TouchableOpacity
             onPress={() => router.push('/solicitar')}
+            activeOpacity={0.85}
             style={{
-              flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, paddingVertical: 14,
-              alignItems: 'center', justifyContent: 'center',
-              shadowColor: COLORS.pri,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
+              flex: 1, backgroundColor: COLORS.pri, borderRadius: 14,
+              paddingVertical: 16, paddingHorizontal: 16,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
               elevation: 6,
             }}
           >
             <Ionicons name="build" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11, marginTop: 4 }}>Solicitar técnico</Text>
-          </PressableCard>
-          <PressableCard
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Solicitar técnico</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => router.push('/registro')}
+            activeOpacity={0.85}
             style={{
-              flex: 1, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14,
-              alignItems: 'center', justifyContent: 'center',
+              flex: 1, backgroundColor: '#fff', borderRadius: 14,
+              paddingVertical: 16, paddingHorizontal: 16,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
               borderWidth: 1.5, borderColor: '#E2E8F0',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 6,
               elevation: 3,
             }}
           >
             <Ionicons name="person-add" size={18} color={COLORS.dark} />
-            <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 11, marginTop: 4 }}>Soy técnico</Text>
-          </PressableCard>
+            <Text style={{ color: COLORS.dark, fontWeight: '800', fontSize: 14 }}>Soy técnico</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Cerca de ti banner */}
