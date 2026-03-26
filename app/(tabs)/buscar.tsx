@@ -13,6 +13,7 @@ import { SearchSkeleton } from '../../src/components/SkeletonLoader'
 import { TechMapView } from '../../src/components/TechMapView'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { track } from '../../src/lib/analytics'
+import { useFavorites } from '../../src/lib/useFavorites'
 
 function FadeInView({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -51,7 +52,8 @@ export default function BuscarScreen() {
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [gpsActive, setGpsActive] = useState(false)
-  const [favorites, setFavorites] = useState<number[]>([])
+  const { favorites, toggleFavorite, isFavorite } = useFavorites()
+  const [filterFavorites, setFilterFavorites] = useState(false)
   const [filterRating, setFilterRating] = useState(false)
   const [filterVerified, setFilterVerified] = useState(false)
   const [sortPrice, setSortPrice] = useState(false)
@@ -67,13 +69,6 @@ export default function BuscarScreen() {
       ? SERVICIOS.filter(s => s.toLowerCase().includes(search.toLowerCase()))
       : []
     : []
-
-  // Load favorites from storage
-  useEffect(() => {
-    AsyncStorage.getItem('solu_favorites').then((stored) => {
-      if (stored) try { setFavorites(JSON.parse(stored)) } catch {}
-    })
-  }, [])
 
   // Load search history from storage
   useEffect(() => {
@@ -106,17 +101,10 @@ export default function BuscarScreen() {
     AsyncStorage.removeItem('solu_search_history')
   }
 
-  function toggleFavorite(techId: number) {
-    setFavorites(prev => {
-      const next = prev.includes(techId) ? prev.filter(id => id !== techId) : [...prev, techId]
-      AsyncStorage.setItem('solu_favorites', JSON.stringify(next))
-      return next
-    })
-  }
-
   // Apply client-side filters
-  const anyFilterActive = filterRating || filterVerified || sortPrice || filterAvailable || sortBy !== ''
+  const anyFilterActive = filterRating || filterVerified || sortPrice || filterAvailable || sortBy !== '' || filterFavorites
   const filteredTechs = techs.filter(t => {
+    if (filterFavorites && !isFavorite(t.id)) return false
     if (filterRating && (t.calificacion || 0) < 4.5) return false
     if (filterVerified && !t.verificado) return false
     if (filterAvailable && !t.disponible) return false
@@ -128,6 +116,7 @@ export default function BuscarScreen() {
   })
 
   function clearAllFilters() {
+    setFilterFavorites(false)
     setFilterRating(false)
     setFilterVerified(false)
     setSortPrice(false)
@@ -551,6 +540,7 @@ export default function BuscarScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 44, paddingHorizontal: 16, marginBottom: 4 }}>
         <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
           {[
+            { key: 'favorites', label: 'Favoritos', active: filterFavorites, onPress: () => setFilterFavorites(!filterFavorites), color: '#EF4444' },
             { key: 'rating', label: '★ 4.5+', active: filterRating, onPress: () => setFilterRating(!filterRating), color: '#1E3A5F' },
             { key: 'verified', label: 'Verificados', active: filterVerified, onPress: () => setFilterVerified(!filterVerified), color: '#1E3A5F' },
             { key: 'price', label: 'Menor precio', active: sortPrice, onPress: () => setSortPrice(!sortPrice), color: '#1E3A5F' },
@@ -597,7 +587,7 @@ export default function BuscarScreen() {
         <ScrollView style={{ flex: 1, padding: 16 }}>
           {filteredTechs.map((tech, index) => (
             <FadeInView key={`${tech.id}-${resultsKey.current}`} delay={index * 60}>
-              <TechCard tech={tech} />
+              <TechCard tech={tech} onToggleFavorite={toggleFavorite} isFavorite={isFavorite(tech.id)} />
             </FadeInView>
           ))}
           {filteredTechs.length === 0 && (

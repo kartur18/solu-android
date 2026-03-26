@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
@@ -15,6 +16,39 @@ export default function CalificarScreen() {
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [fotos, setFotos] = useState<string[]>([])
+
+  async function pickFoto() {
+    if (fotos.length >= 2) return Alert.alert('Límite', 'Máximo 2 fotos por reseña')
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: false,
+    })
+    if (!result.canceled && result.assets[0]) {
+      setFotos(prev => [...prev, result.assets[0].uri])
+    }
+  }
+
+  async function uploadFoto(uri: string): Promise<string | null> {
+    try {
+      const ext = uri.split('.').pop() || 'jpg'
+      const fileName = `resenas/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      const response = await fetch(uri)
+      const blob = await response.blob()
+      const arrayBuffer = await new Response(blob).arrayBuffer()
+      const { error } = await supabase.storage.from('fotos').upload(fileName, arrayBuffer, {
+        contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+        upsert: false,
+      })
+      if (error) throw error
+      const { data } = supabase.storage.from('fotos').getPublicUrl(fileName)
+      return data.publicUrl
+    } catch (err) {
+      console.error('Error uploading foto:', err)
+      return null
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -31,6 +65,13 @@ export default function CalificarScreen() {
     if (submitting || !service) return
     setSubmitting(true)
 
+    // Upload photos first
+    const uploadedUrls: string[] = []
+    for (const uri of fotos) {
+      const url = await uploadFoto(uri)
+      if (url) uploadedUrls.push(url)
+    }
+
     const { error } = await supabase.from('resenas').insert({
       tecnico_id: service.tecnico_asignado,
       nombre_cliente: service.nombre,
@@ -39,6 +80,7 @@ export default function CalificarScreen() {
       comentario: comment,
       servicio: service.servicio,
       codigo_servicio: service.codigo,
+      fotos_url: uploadedUrls.length > 0 ? uploadedUrls : undefined,
     })
 
     if (!error) {
@@ -118,6 +160,50 @@ export default function CalificarScreen() {
           }}
           placeholderTextColor={COLORS.gray2}
         />
+
+        {/* Photo section */}
+        <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Fotos (opcional)</Text>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          {fotos.map((uri, idx) => (
+            <View key={idx} style={{ position: 'relative' }}>
+              <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+              <TouchableOpacity
+                onPress={() => setFotos(prev => prev.filter((_, i) => i !== idx))}
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  right: -6,
+                  backgroundColor: '#EF4444',
+                  borderRadius: 10,
+                  width: 20,
+                  height: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="close" size={12} color={COLORS.white} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {fotos.length < 2 && (
+            <TouchableOpacity
+              onPress={pickFoto}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 8,
+                borderWidth: 1.5,
+                borderColor: COLORS.border,
+                borderStyle: 'dashed',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="camera-outline" size={24} color={COLORS.gray2} />
+              <Text style={{ fontSize: 10, color: COLORS.gray2, marginTop: 4 }}>Agregar foto</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         <TouchableOpacity
           onPress={submit}

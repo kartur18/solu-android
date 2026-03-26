@@ -39,7 +39,9 @@ export default function ChatScreen() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [otherTyping, setOtherTyping] = useState(false)
   const flatListRef = useRef<FlatList>(null)
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const headerTitle = senderType === 'cliente'
     ? `Chat con ${techName}`
@@ -91,12 +93,30 @@ export default function ChatScreen() {
           return [...prev, newMsg]
         })
       })
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        if (payload.payload?.sender !== senderType) {
+          setOtherTyping(true)
+          if (typingTimeout.current) clearTimeout(typingTimeout.current)
+          typingTimeout.current = setTimeout(() => setOtherTyping(false), 3000)
+        }
+      })
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
+      if (typingTimeout.current) clearTimeout(typingTimeout.current)
     }
-  }, [solicitudId])
+  }, [solicitudId, senderType])
+
+  // Send typing indicator when user types
+  function handleTextChange(value: string) {
+    setText(value)
+    supabase.channel(`chat-${solicitudId}`).send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { sender: senderType },
+    }).catch(() => {})
+  }
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -297,6 +317,21 @@ export default function ChatScreen() {
           />
         )}
 
+        {/* Typing indicator */}
+        {otherTyping && (
+          <View style={{ paddingHorizontal: 16, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ flexDirection: 'row', gap: 3 }}>
+              {[0, 1, 2].map((i) => (
+                <View key={i} style={{
+                  width: 6, height: 6, borderRadius: 3, backgroundColor: '#94A3B8',
+                  opacity: 0.6,
+                }} />
+              ))}
+            </View>
+            <Text style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>escribiendo...</Text>
+          </View>
+        )}
+
         {/* Input bar */}
         <View style={{
           flexDirection: 'row',
@@ -310,7 +345,7 @@ export default function ChatScreen() {
         }}>
           <TextInput
             value={text}
-            onChangeText={setText}
+            onChangeText={handleTextChange}
             placeholder="Escribe un mensaje..."
             placeholderTextColor={COLORS.gray2}
             multiline

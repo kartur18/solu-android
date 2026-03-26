@@ -9,6 +9,8 @@ import type { Tecnico } from '../lib/types'
 
 type Props = {
   tech: Tecnico
+  onToggleFavorite?: (techId: number) => void
+  isFavorite?: boolean
 }
 
 const PLAN_COLORS: Record<string, { bg: string; text: string; label: string; border: string; gradient: [string, string] }> = {
@@ -42,7 +44,7 @@ function StarRating({ rating }: { rating: number }) {
   return <View style={{ flexDirection: 'row', gap: 1 }}>{stars}</View>
 }
 
-export const TechCard = React.memo(function TechCard({ tech }: Props) {
+export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, isFavorite }: Props) {
   const router = useRouter()
   const planStyle = PLAN_COLORS[tech.plan] || null
   const avatarGradient = AVATAR_GRADIENTS[(tech.id || 0) % AVATAR_GRADIENTS.length]
@@ -74,6 +76,32 @@ export const TechCard = React.memo(function TechCard({ tech }: Props) {
       <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: leftBorderColor, borderTopLeftRadius: 18, borderBottomLeftRadius: 18 }} />
 
       <View style={{ padding: 16, paddingLeft: 20 }}>
+        {/* Favorite heart button */}
+        {onToggleFavorite && (
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation(); onToggleFavorite(tech.id) }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 10,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: isFavorite ? '#FEE2E2' : '#F1F5F9',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons
+              name={isFavorite ? 'heart' : 'heart-outline'}
+              size={18}
+              color={isFavorite ? '#EF4444' : '#9CA3AF'}
+            />
+          </TouchableOpacity>
+        )}
+
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           {/* Avatar with gradient background */}
           <View style={{ position: 'relative' }}>

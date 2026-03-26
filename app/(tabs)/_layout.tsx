@@ -136,8 +136,14 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Hidden tabs */}
-      <Tabs.Screen name="servicios" options={{ href: null }} />
+      <Tabs.Screen
+        name="servicios"
+        options={{
+          title: 'Mis Servicios',
+          tabBarLabel: 'Servicios',
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} iconFilled="clipboard" iconOutline="clipboard-outline" />,
+        }}
+      />
       <Tabs.Screen name="cuenta" options={{ href: null }} />
       <Tabs.Screen name="vecinos" options={{ href: null }} />
     </Tabs>

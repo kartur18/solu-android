@@ -359,58 +359,61 @@ export default function CuentaScreen() {
   // LOGIN SCREEN
   if (!loggedIn) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', padding: 24 }}>
-        <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
-          <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 }}>
-            <Ionicons name="person" size={28} color="#fff" />
+      <View style={{ flex: 1, backgroundColor: '#1A1A2E', justifyContent: 'center', padding: 24 }}>
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 28, padding: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+          {/* Logo SOLU */}
+          <View style={{ width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 20, overflow: 'hidden' }}>
+            <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 32, fontWeight: '900', color: '#fff' }}>S</Text>
+            </View>
           </View>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark, textAlign: 'center', marginBottom: 4 }}>Mi cuenta</Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginBottom: 24 }}>Ingresa con tu email o WhatsApp</Text>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 4 }}>Bienvenido, Técnico</Text>
+          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginBottom: 28 }}>Ingresa para gestionar tus servicios</Text>
 
-          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Email o WhatsApp</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>Email o WhatsApp</Text>
           <TextInput
             placeholder="correo@email.com o 999888777"
             value={loginId}
             onChangeText={setLoginId}
             keyboardType="email-address"
             autoCapitalize="none"
-            style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 12, fontWeight: '600' }}
-            placeholderTextColor={COLORS.gray2}
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 18, fontSize: 16, marginBottom: 14, fontWeight: '700', color: '#fff', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+            placeholderTextColor="rgba(255,255,255,0.3)"
           />
 
-          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Contraseña</Text>
-          <View style={{ position: 'relative', marginBottom: 4 }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>Contraseña</Text>
+          <View style={{ position: 'relative', marginBottom: 6 }}>
             <TextInput
               placeholder="Tu contraseña"
               value={loginPassword}
               onChangeText={setLoginPassword}
               secureTextEntry={!showLoginPassword}
-              style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, paddingRight: 48, fontSize: 15, fontWeight: '600' }}
-              placeholderTextColor={COLORS.gray2}
+              style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 18, paddingRight: 52, fontSize: 16, fontWeight: '700', color: '#fff', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+              placeholderTextColor="rgba(255,255,255,0.3)"
             />
             <TouchableOpacity
               onPress={() => setShowLoginPassword(!showLoginPassword)}
-              style={{ position: 'absolute', right: 14, top: 16 }}
+              style={{ position: 'absolute', right: 16, top: 18 }}
             >
-              <Ionicons name={showLoginPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
+              <Ionicons name={showLoginPassword ? 'eye-off' : 'eye'} size={22} color="rgba(255,255,255,0.4)" />
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity
             onPress={() => router.push('/recuperar')}
-            style={{ alignSelf: 'flex-end', marginBottom: 16 }}
+            style={{ alignSelf: 'flex-end', marginBottom: 20 }}
           >
-            <Text style={{ fontSize: 11, color: '#1E3A5F', fontWeight: '600' }}>¿Olvidaste tu contraseña?</Text>
+            <Text style={{ fontSize: 12, color: '#EA580C', fontWeight: '700' }}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={doLogin}
             disabled={loading}
-            style={{ backgroundColor: '#1E3A5F', borderRadius: 14, padding: 16, alignItems: 'center' }}
+            style={{ backgroundColor: '#EA580C', borderRadius: 18, padding: 18, alignItems: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 }}
           >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>{loading ? 'Buscando...' : 'Ingresar'}</Text>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 }}>{loading ? 'Verificando...' : 'INGRESAR'}</Text>
           </TouchableOpacity>
-          <Text style={{ textAlign: 'center', fontSize: 11, color: COLORS.gray2, marginTop: 12 }}>
+          <Text style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 16 }}>
             ¿No tienes cuenta? Regístrate desde la pantalla de inicio
           </Text>
         </View>
@@ -431,22 +434,27 @@ export default function CuentaScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1E3A5F" />}
       >
-        {/* Header */}
-        <View style={{ backgroundColor: '#1E3A5F', padding: 20, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <View>
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Bienvenido</Text>
-              <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff' }}>{tech.nombre}</Text>
+        {/* Header Premium */}
+        <View style={{ backgroundColor: '#1A1A2E', padding: 24, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff' }}>S</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>Bienvenido</Text>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff' }}>{tech.nombre}</Text>
+              </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
                 onPress={() => setShowNotifications(true)}
-                style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
-                <Ionicons name="notifications-outline" size={18} color="rgba(255,255,255,0.7)" />
+                <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.7)" />
                 {unreadCount > 0 && (
-                  <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}>
-                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#1A1A2E' }}>
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -455,15 +463,15 @@ export default function CuentaScreen() {
                   { text: 'Cancelar', style: 'cancel' },
                   { text: 'Salir', style: 'destructive', onPress: () => { setLoggedIn(false); setTech(null); setTab('dashboard') } },
                 ])}
-                style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
-                <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
+                <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Stats row */}
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
             <StatCard value={`★ ${tech.calificacion?.toFixed(1) || '0.0'}`} label="Rating" />
             <StatCard value={String(tech.num_resenas || 0)} label="Reseñas" />
             <StatCard value={String(tech.servicios_completados || 0)} label="Servicios" />
@@ -471,15 +479,15 @@ export default function CuentaScreen() {
           </View>
 
           {/* Plan badge */}
-          <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={{ backgroundColor: isExpired ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: isExpired ? '#FCA5A5' : COLORS.green }}>
+          <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ backgroundColor: isExpired ? 'rgba(239,68,68,0.2)' : 'rgba(234,88,12,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: isExpired ? '#FCA5A5' : '#F97316' }}>
                 {level.emoji} {level.name} · Plan {tech.plan?.toUpperCase() || 'TRIAL'}
               </Text>
             </View>
             {tech.verificado && (
-              <View style={{ backgroundColor: 'rgba(16,185,129,0.15)', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 5 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: COLORS.green }}>✅ Verificado</Text>
+              <View style={{ backgroundColor: 'rgba(16,185,129,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#34D399' }}>✅ Verificado</Text>
               </View>
             )}
           </View>
@@ -1238,19 +1246,19 @@ export default function CuentaScreen() {
 
 function StatCard({ value, label, expired }: { value: string; label: string; expired?: boolean }) {
   return (
-    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 10, alignItems: 'center' }}>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: expired ? '#FCA5A5' : '#fff' }}>{value}</Text>
-      <Text style={{ fontSize: 9, color: expired ? '#FCA5A5' : 'rgba(255,255,255,0.5)', fontWeight: '600', marginTop: 2 }}>{label}</Text>
+    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
+      <Text style={{ fontSize: 18, fontWeight: '900', color: expired ? '#FCA5A5' : '#fff' }}>{value}</Text>
+      <Text style={{ fontSize: 10, color: expired ? '#FCA5A5' : 'rgba(255,255,255,0.4)', fontWeight: '700', marginTop: 3 }}>{label}</Text>
     </View>
   )
 }
 
 function QuickStat({ icon, color, value, label }: { icon: string; color: string; value: string; label: string }) {
   return (
-    <View style={{ flex: 1, backgroundColor: color + '10', borderRadius: 12, padding: 12, alignItems: 'center' }}>
-      <Ionicons name={icon as any} size={18} color={color} />
-      <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark, marginTop: 4 }}>{value}</Text>
-      <Text style={{ fontSize: 9, color: COLORS.gray2, fontWeight: '600' }}>{label}</Text>
+    <View style={{ flex: 1, backgroundColor: color + '12', borderRadius: 16, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: color + '20' }}>
+      <Ionicons name={icon as any} size={20} color={color} />
+      <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.dark, marginTop: 6 }}>{value}</Text>
+      <Text style={{ fontSize: 10, color: COLORS.gray2, fontWeight: '700' }}>{label}</Text>
     </View>
   )
 }
@@ -1306,38 +1314,40 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
   const nextStatus = NEXT_STATUS[lead.estado]
 
   return (
-    <View style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: color + '15', alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="build" size={18} color={color} />
+    <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 4, borderLeftWidth: 4, borderLeftColor: color }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: color + '15', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="build" size={22} color={color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{lead.nombre}</Text>
-          <Text style={{ fontSize: 10, color: COLORS.gray }}>{lead.servicio} · {lead.distrito}</Text>
-          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{lead.codigo} · {new Date(lead.created_at).toLocaleDateString()}</Text>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>{lead.nombre}</Text>
+          <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 2 }}>{lead.servicio} · {lead.distrito}</Text>
+          <Text style={{ fontSize: 10, color: COLORS.gray2, marginTop: 1 }}>{lead.codigo} · {new Date(lead.created_at).toLocaleDateString()}</Text>
         </View>
-        <View style={{ backgroundColor: color + '15', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-          <Text style={{ fontSize: 10, fontWeight: '700', color }}>{statusLabels[lead.estado] || lead.estado}</Text>
+        <View style={{ backgroundColor: color + '18', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color }}>{statusLabels[lead.estado] || lead.estado}</Text>
         </View>
       </View>
 
       {lead.descripcion ? (
-        <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 8, fontStyle: 'italic' }} numberOfLines={2}>"{lead.descripcion}"</Text>
+        <View style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: 10, marginTop: 10 }}>
+          <Text style={{ fontSize: 12, color: COLORS.gray, fontStyle: 'italic' }} numberOfLines={2}>"{lead.descripcion}"</Text>
+        </View>
       ) : null}
 
-      {/* Action buttons */}
+      {/* Action buttons Premium */}
       {isActive && (
-        <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
           {/* WhatsApp */}
           <TouchableOpacity
             onPress={() => {
               const msg = `Hola ${lead.nombre}, soy tu técnico de SOLU. Sobre tu solicitud de ${lead.servicio} (${lead.codigo}).`
               Linking.openURL(`https://wa.me/51${lead.whatsapp}?text=${encodeURIComponent(msg)}`)
             }}
-            style={{ flex: 1, backgroundColor: '#25D366', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+            style={{ flex: 1, backgroundColor: '#25D366', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, shadowColor: '#25D366', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
           >
-            <Ionicons name="logo-whatsapp" size={14} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>WhatsApp</Text>
+            <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>WhatsApp</Text>
           </TouchableOpacity>
 
           {/* Chat */}
@@ -1354,30 +1364,30 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
                   senderId: tech.id.toString(),
                 },
               })}
-              style={{ flex: 1, backgroundColor: '#1E3A5F', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+              style={{ flex: 1, backgroundColor: '#1A1A2E', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
-              <Ionicons name="chatbubbles" size={14} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Chat</Text>
+              <Ionicons name="chatbubbles" size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Chat</Text>
             </TouchableOpacity>
           )}
 
-          {/* Next status */}
+          {/* Next status - GRAN BOTÓN */}
           {nextStatus && (
             <TouchableOpacity
               onPress={() => updateStatus(nextStatus)}
-              style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+              style={{ flex: 1.3, backgroundColor: nextStatus === 'Completado' ? '#10B981' : '#EA580C', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, shadowColor: nextStatus === 'Completado' ? '#10B981' : '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 6 }}
             >
-              <Ionicons name="arrow-forward" size={14} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{nextStatus}</Text>
+              <Ionicons name={nextStatus === 'Completado' ? 'checkmark-circle' : 'arrow-forward'} size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>{nextStatus === 'Completado' ? '✓ COBRAR' : nextStatus}</Text>
             </TouchableOpacity>
           )}
 
           {/* Cancel */}
           <TouchableOpacity
             onPress={cancelLead}
-            style={{ backgroundColor: '#FEE2E2', borderRadius: 8, padding: 8, alignItems: 'center', justifyContent: 'center' }}
+            style={{ backgroundColor: '#FEE2E2', borderRadius: 14, padding: 12, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Ionicons name="close" size={14} color="#EF4444" />
+            <Ionicons name="close" size={16} color="#EF4444" />
           </TouchableOpacity>
         </View>
       )}

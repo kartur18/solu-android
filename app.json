@@ -28,11 +28,26 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tracking" },
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tecnico" },
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/calificar" }
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/tracking"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/tecnico"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/calificar"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "adaptiveIcon": {
@@ -62,7 +77,9 @@
           "locationAlwaysPermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti.",
           "locationWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti."
         }
-      ]
+      ],
+      "expo-font",
+      "@sentry/react-native"
     ],
     "extra": {
       "eas": {
