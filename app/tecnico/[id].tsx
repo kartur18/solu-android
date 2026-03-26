@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Linking, Image, Modal, FlatList, Dimensions, Share } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import type { Tecnico, Resena } from '../../src/lib/types'
+import { ProfileSkeleton } from '../../src/components/SkeletonLoader'
+import { RatingBreakdown } from '../../src/components/RatingBreakdown'
+import { optimizeUrl } from '../../src/lib/cloudinary'
 
 export default function TecnicoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -12,6 +15,7 @@ export default function TecnicoScreen() {
   const [tech, setTech] = useState<Tecnico | null>(null)
   const [reviews, setReviews] = useState<Resena[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -26,7 +30,7 @@ export default function TecnicoScreen() {
     load()
   }, [id])
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={COLORS.pri} /></View>
+  if (loading) return <ProfileSkeleton />
   if (!tech) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Técnico no encontrado</Text></View>
 
   return (
@@ -39,6 +43,16 @@ export default function TecnicoScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark }}>{tech.nombre}</Text>
           {tech.verificado && <Ionicons name="checkmark-circle" size={20} color={COLORS.acc} />}
+          <TouchableOpacity
+            onPress={() => Share.share({
+              message: `Mira a ${tech.nombre}, ${tech.oficio} verificado en SOLU. https://solu.pe/tecnico/${tech.id}`,
+              title: `${tech.nombre} - SOLU`,
+            })}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ marginLeft: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="share-social" size={16} color={COLORS.pri} />
+          </TouchableOpacity>
         </View>
         <Text style={{ fontSize: 14, color: COLORS.gray, marginTop: 2 }}>{tech.oficio}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
@@ -75,6 +89,31 @@ export default function TecnicoScreen() {
         </View>
       )}
 
+      {/* Galería de trabajos */}
+      {tech.galeria && tech.galeria.length > 0 && (
+        <View style={{ paddingVertical: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, marginBottom: 12 }}>
+            <Ionicons name="camera-outline" size={18} color={COLORS.dark} />
+            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Galería de trabajos</Text>
+          </View>
+          <FlatList
+            data={tech.galeria}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+            keyExtractor={(item, index) => `gallery-${index}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity activeOpacity={0.85} onPress={() => setSelectedPhoto(item)}>
+                <Image
+                  source={{ uri: optimizeUrl(item, { width: 320, height: 240 }) }}
+                  style={{ width: 160, height: 120, borderRadius: 12, backgroundColor: COLORS.border }}
+                />
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+
       {/* Contact */}
       <View style={{ paddingHorizontal: 20, gap: 10 }}>
         <TouchableOpacity
@@ -86,7 +125,7 @@ export default function TecnicoScreen() {
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
-            onPress={() => Linking.openURL(`tel:${tech.whatsapp}`)}
+            onPress={() => { const phone = tech.whatsapp.length === 9 ? '+51' + tech.whatsapp : '+' + tech.whatsapp; Linking.openURL(`tel:${phone}`) }}
             style={{ flex: 1, backgroundColor: COLORS.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.border }}
           >
             <Ionicons name="call" size={18} color={COLORS.pri} />
@@ -105,6 +144,7 @@ export default function TecnicoScreen() {
       {/* Reviews */}
       <View style={{ padding: 20 }}>
         <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>Reseñas ({reviews.length})</Text>
+        <RatingBreakdown reviews={reviews} averageRating={tech.calificacion || 0} totalReviews={tech.num_resenas || 0} />
         {reviews.map((r) => (
           <View key={r.id} style={{ backgroundColor: COLORS.white, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border }}>
             <View style={{ flexDirection: 'row', gap: 3, marginBottom: 6 }}>
@@ -122,6 +162,25 @@ export default function TecnicoScreen() {
       </View>
 
       <View style={{ height: 40 }} />
+
+      {/* Full-screen photo modal */}
+      <Modal visible={!!selectedPhoto} transparent animationType="fade" onRequestClose={() => setSelectedPhoto(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity
+            onPress={() => setSelectedPhoto(null)}
+            style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="close" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+          {selectedPhoto && (
+            <Image
+              source={{ uri: optimizeUrl(selectedPhoto, { width: Dimensions.get('window').width * 2 }) }}
+              style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').height * 0.7 }}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   )
 }

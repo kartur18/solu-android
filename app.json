@@ -23,6 +23,18 @@
     "android": {
       "package": "pe.solu.app",
       "versionCode": 1,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tracking" },
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tecnico" },
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/calificar" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
@@ -58,7 +70,7 @@
       },
       "router": {},
       "supabaseUrl": "https://umcisdghupovaaksbmix.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtY2lzZGdodXBvdmFha3NibWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzOTU2MTYsImV4cCI6MjA2Mzk3MTYxNn0.7MBf6c4BfnqGBTqwFTHKFvh4rlvjSdFCBarm_N0H_I0",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtY2lzZGdodXBvdmFha3NibWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMDc4NjksImV4cCI6MjA4OTY4Mzg2OX0.rMG0nimeeT15W22l9KltaFoj41qDxZS6BmnNwQVjz7o",
       "apiBaseUrl": "https://solu.pe/api",
       "cloudinaryCloudName": "dcwwvvb1e",
       "yapeNumber": "904518343"

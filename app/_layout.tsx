@@ -1,11 +1,31 @@
+import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import * as Sentry from '@sentry/react-native'
 import { COLORS } from '../src/lib/constants'
+import { ENV } from '../src/lib/env'
 import { ErrorBoundary } from '../src/components/ErrorBoundary'
+import { useAppUpdate } from '../src/lib/useAppUpdate'
+import { initAnalytics, track } from '../src/lib/analytics'
+import { OnboardingModal } from '../src/components/OnboardingModal'
+
+// Initialize Sentry for crash reporting
+Sentry.init({
+  dsn: ENV.SENTRY_DSN,
+  tracesSampleRate: 0.2,
+  enabled: !__DEV__,
+})
 
 export default function RootLayout() {
+  useAppUpdate()
+
+  useEffect(() => {
+    initAnalytics().then(() => track('App Opened'))
+  }, [])
+
   return (
     <ErrorBoundary>
+      <OnboardingModal />
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -28,7 +48,10 @@ export default function RootLayout() {
         <Stack.Screen name="fidelidad" options={{ title: 'Mi Fidelidad', presentation: 'modal' }} />
         <Stack.Screen name="urgencias" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="soporte" options={{ title: 'Soporte', presentation: 'modal' }} />
+        <Stack.Screen name="chat/[id]" options={{ title: 'Chat' }} />
         <Stack.Screen name="eliminar-cuenta" options={{ title: 'Eliminar cuenta', presentation: 'modal' }} />
+        <Stack.Screen name="recuperar" options={{ title: 'Recuperar contraseña', presentation: 'modal' }} />
+        <Stack.Screen name="registro-cliente" options={{ title: 'Crear cuenta', presentation: 'modal' }} />
       </Stack>
     </ErrorBoundary>
   )

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, waLink } from '../src/lib/constants'
+import { COLORS, waLink, SUPPORT_PHONE, ESTADOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 
 const REWARDS = [
@@ -27,7 +27,8 @@ export default function FidelidadScreen() {
   const [selectedReward, setSelectedReward] = useState<typeof REWARDS[0] | null>(null)
 
   async function loadPoints() {
-    if (!wa.trim()) return Alert.alert('Error', 'Ingresa tu WhatsApp')
+    const waClean = wa.replace(/\D/g, '')
+    if (!waClean || waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) return Alert.alert('Error', 'Ingresa un WhatsApp válido (9 dígitos, empieza con 9)')
     setLoading(true)
     try {
       // Count completed services as client
@@ -43,7 +44,7 @@ export default function FidelidadScreen() {
         .eq('whatsapp_cliente', wa)
 
       const solicitudes = services?.length || 0
-      const completados = services?.filter(s => s.estado === 'completado' || s.estado === 'calificado').length || 0
+      const completados = services?.filter(s => s.estado === ESTADOS.COMPLETADO || s.estado === ESTADOS.CALIFICADO).length || 0
       const resenasCount = reviews?.length || 0
 
       // Calculate points
@@ -62,7 +63,7 @@ export default function FidelidadScreen() {
       }
       services?.forEach(s => {
         hist.push({ type: `📋 Solicitud: ${s.servicio}`, pts: 10, date: s.created_at.split('T')[0] })
-        if (s.estado === 'completado' || s.estado === 'calificado') {
+        if (s.estado === ESTADOS.COMPLETADO || s.estado === ESTADOS.CALIFICADO) {
           hist.push({ type: `✅ Servicio completado`, pts: 15, date: s.created_at.split('T')[0] })
         }
       })
@@ -92,7 +93,7 @@ export default function FidelidadScreen() {
         {
           text: 'Canjear',
           onPress: () => {
-            Linking.openURL(waLink('904518343', msg))
+            Linking.openURL(waLink(SUPPORT_PHONE, msg))
           },
         },
       ]

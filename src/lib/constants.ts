@@ -240,6 +240,18 @@ export const DISTRITOS = [
   'Iquitos', 'Pucallpa', 'Tingo María', 'Yurimaguas', 'Bagua',
 ]
 
+export const SUPPORT_PHONE = '904518343'
+
+export const ESTADOS = {
+  NUEVO: 'Nuevo',
+  ASIGNADO: 'Asignado',
+  EN_CAMINO: 'En camino',
+  EN_PROCESO: 'En proceso',
+  COMPLETADO: 'Completado',
+  CALIFICADO: 'Calificado',
+  CANCELADO: 'Cancelado',
+} as const
+
 export const URGENCIAS = [
   { value: 'normal', label: 'Normal', color: COLORS.green },
   { value: 'urgente', label: 'Urgente', color: COLORS.yellow },
@@ -276,14 +288,13 @@ export const ACHIEVEMENTS = [
   { id: 'verified', emoji: '✅', name: 'Verificado', desc: 'DNI verificado', check: (t: any) => t.verificado },
   { id: 'fivestar', emoji: '⭐', name: 'Cinco estrellas', desc: 'Calificación perfecta', check: (t: any) => t.calificacion >= 5.0 },
   { id: 'popular', emoji: '💬', name: 'Popular', desc: '10+ reseñas', check: (t: any) => t.num_resenas >= 10 },
-  { id: 'pro', emoji: '🏆', name: 'Profesional', desc: 'Plan de pago activo', check: (t: any) => t.plan !== 'trial' },
+  { id: 'pro', emoji: '🏆', name: 'Profesional', desc: 'Plan de pago activo', check: (t: any) => !!t.plan },
 ]
 
 export const PLAN_FEATURES = {
-  trial: { name: 'Periodo de prueba', price: 0, culqiLink: '', features: ['Perfil básico', '1 zona', '1 foto', 'WhatsApp'] },
-  profesional: { name: 'Profesional', price: 49, culqiLink: 'https://express.culqi.com/pago/665378042F', features: ['Sello verificado', '3 zonas', '3 fotos', 'Estadísticas', 'Soporte WhatsApp'] },
-  premium: { name: 'Premium', price: 79, culqiLink: 'https://express.culqi.com/pago/FFEC22C71A', features: ['Sello PRO', '5 zonas', '5 fotos + galería', 'Prioridad alta', 'Sección "Recomendados"', 'Soporte prioritario'] },
-  elite: { name: 'Elite', price: 99, culqiLink: 'https://express.culqi.com/pago/80O22AAFF4', features: ['Sello ELITE', 'Zonas ilimitadas', '10 fotos + galería', 'Siempre top 5', 'Certificado digital', 'Promociones ilimitadas'] },
+  profesional: { name: 'Profesional', price: 49, culqiLink: 'https://express.culqi.com/pago/665378042F', features: ['Primer mes gratis', 'Sello verificado', '1 oficio', '2 zonas de cobertura', '3 fotos de trabajos', 'Reseñas de clientes', 'Notificaciones de solicitudes', 'Perfil público en la app', 'Estadísticas básicas', 'Soporte por WhatsApp'] },
+  premium: { name: 'Premium', price: 79, culqiLink: 'https://express.culqi.com/pago/FFEC22C71A', features: ['Primer mes gratis', 'Sello PRO destacado', 'Hasta 2 oficios', '4 zonas de cobertura', '5 fotos + galería', 'Reseñas de clientes', 'Prioridad alta en búsqueda', 'Apareces en "Recomendados"', 'Cotizaciones a clientes', 'Notificaciones de solicitudes', 'Estadísticas detalladas', 'Soporte prioritario'] },
+  elite: { name: 'Elite', price: 99, culqiLink: 'https://express.culqi.com/pago/80O22AAFF4', features: ['Primer mes gratis', 'Sello ELITE exclusivo', 'Oficios ilimitados', 'Zonas ilimitadas', '10 fotos + galería completa', 'Reseñas de clientes', 'Siempre en el top 5', 'Certificado digital verificado', 'Promociones ilimitadas', 'Cotizaciones ilimitadas', 'Estadísticas avanzadas', 'Soporte directo prioritario'] },
 }
 
 export function waLink(phone: string, msg: string): string {

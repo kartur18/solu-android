@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Linking, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, waLink, DISTRITOS } from '../src/lib/constants'
+import { COLORS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { useLocationDetection } from '../src/lib/useLocation'
 
@@ -35,7 +35,7 @@ export default function UrgenciasScreen() {
     if (!nombre.trim() || !whatsapp.trim()) return Alert.alert('Error', 'Completa nombre y WhatsApp')
 
     const waClean = whatsapp.replace(/\D/g, '')
-    if (waClean.length < 9) return Alert.alert('Error', 'WhatsApp inválido')
+    if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) return Alert.alert('Error', 'Ingresa un número de WhatsApp válido (9 dígitos, empieza con 9)')
 
     setLoading(true)
     try {
@@ -68,7 +68,7 @@ export default function UrgenciasScreen() {
         distrito,
         urgencia: 'emergencia',
         descripcion: `${selected.desc}${detalle ? '. ' + detalle : ''}${direccion ? '. Dirección: ' + direccion : ''}`,
-        estado: bestTech ? 'asignado' : 'nuevo',
+        estado: bestTech ? ESTADOS.ASIGNADO : ESTADOS.NUEVO,
         tecnico_asignado: bestTech?.id || null,
         codigo: code,
         created_at: new Date().toISOString(),
@@ -129,7 +129,7 @@ export default function UrgenciasScreen() {
               </View>
 
               <TouchableOpacity
-                onPress={() => Linking.openURL(waLink('904518343', `🚨 URGENCIA: Necesito ${selected?.name} urgente. Soy ${nombre}, mi WhatsApp es ${whatsapp}. ${direccion ? 'Dirección: ' + direccion : ''}`))}
+                onPress={() => Linking.openURL(waLink(SUPPORT_PHONE, `🚨 URGENCIA: Necesito ${selected?.name} urgente. Soy ${nombre}, mi WhatsApp es ${whatsapp}. ${direccion ? 'Dirección: ' + direccion : ''}`))}
                 style={{ backgroundColor: '#DC2626', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 12, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
               >
                 <Ionicons name="call" size={18} color="#fff" />
@@ -149,16 +149,20 @@ export default function UrgenciasScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 80 }}>
       {/* Header */}
-      <View style={{ backgroundColor: '#DC2626', padding: 20, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <View style={{ backgroundColor: '#DC2626', padding: 20, paddingBottom: 28, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff' }}>Urgencias 24/7</Text>
+          <Ionicons name="warning" size={26} color="#FDE68A" />
+          <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff' }}>Emergencia 24/7</Text>
         </View>
-        <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
+        <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', marginBottom: 6 }}>
           Conectamos con un técnico de emergencia en tu zona lo más rápido posible
         </Text>
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', marginTop: 4 }}>
+          <Text style={{ color: '#FDE68A', fontSize: 11, fontWeight: '800' }}>Respuesta garantizada en menos de 30 minutos</Text>
+        </View>
         {location.distrito && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' }}>
             <Ionicons name="navigate" size={12} color="#fff" />
@@ -168,6 +172,52 @@ export default function UrgenciasScreen() {
       </View>
 
       <View style={{ padding: 16 }}>
+        {/* Quick action buttons */}
+        <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 10 }}>Solicitar ahora</Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+          <TouchableOpacity
+            onPress={() => router.push('/solicitar?servicio=Gasfitería&urgencia=Emergencia' as any)}
+            style={{ flex: 1, backgroundColor: '#3B82F6', borderRadius: 14, padding: 14, alignItems: 'center', gap: 6 }}
+          >
+            <Ionicons name="water" size={28} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11, textAlign: 'center' }}>Gasfitero urgente</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/solicitar?servicio=Electricidad&urgencia=Emergencia' as any)}
+            style={{ flex: 1, backgroundColor: '#F59E0B', borderRadius: 14, padding: 14, alignItems: 'center', gap: 6 }}
+          >
+            <Ionicons name="flash" size={28} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11, textAlign: 'center' }}>Electricista urgente</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/solicitar?servicio=Cerrajería&urgencia=Emergencia' as any)}
+            style={{ flex: 1, backgroundColor: '#EF4444', borderRadius: 14, padding: 14, alignItems: 'center', gap: 6 }}
+          >
+            <Ionicons name="key" size={28} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11, textAlign: 'center' }}>Cerrajero urgente</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Direct contact buttons */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(`tel:+51${SUPPORT_PHONE}`)}
+            style={{ flex: 1, backgroundColor: '#1E3A5F', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <Ionicons name="call" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Llamar a soporte</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(waLink(SUPPORT_PHONE, '🚨 Necesito ayuda de emergencia urgente'))}
+            style={{ flex: 1, backgroundColor: '#25D366', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <Ionicons name="logo-whatsapp" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>WhatsApp directo</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 1, backgroundColor: '#E2E8F0', marginBottom: 16 }} />
+
         {/* Emergency type selection */}
         <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 10 }}>¿Qué emergencia tienes?</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>

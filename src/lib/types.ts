@@ -6,7 +6,7 @@ export interface Tecnico {
   dni: string
   oficio: string
   distrito: string
-  plan: 'trial' | 'profesional' | 'premium' | 'elite' | 'pro'
+  plan: 'profesional' | 'premium' | 'elite'
   disponible: boolean
   verificado: boolean
   calificacion: number
@@ -37,6 +37,16 @@ export interface Cliente {
   codigo: string
   estado: string
   tecnico_asignado?: number
+  created_at: string
+}
+
+export interface ClienteUser {
+  id: number
+  nombre: string
+  whatsapp: string
+  distrito?: string
+  password_hash: string
+  push_token?: string
   created_at: string
 }
 

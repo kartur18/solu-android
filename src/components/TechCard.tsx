@@ -146,14 +146,23 @@ export const TechCard = React.memo(function TechCard({ tech }: Props) {
           </View>
         </View>
 
-        {/* Badges row */}
+        {/* Trust metrics & badges row */}
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-          {(tech.servicios_completados || 0) > 10 && (
+          {/* Response time estimate based on completed services */}
+          {(tech.servicios_completados || 0) > 5 && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
               <Ionicons name="flash" size={11} color={COLORS.blue} />
-              <Text style={{ fontSize: 10, fontWeight: '700', color: COLORS.blue }}>Responde rápido</Text>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: COLORS.blue }}>Responde en ~1h</Text>
             </View>
           )}
+          {/* Times hired metric */}
+          {(tech.servicios_completados || 0) > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+              <Ionicons name="people" size={11} color="#10B981" />
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#059669' }}>Contratado {tech.servicios_completados}x</Text>
+            </View>
+          )}
+          {/* Price */}
           {tech.precio_desde ? (
             <View style={{ backgroundColor: COLORS.priLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
               <Text style={{ fontSize: 12, fontWeight: '800', color: COLORS.pri }}>
@@ -161,10 +170,11 @@ export const TechCard = React.memo(function TechCard({ tech }: Props) {
               </Text>
             </View>
           ) : null}
-          {(tech.servicios_completados || 0) > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-              <Ionicons name="checkmark-done" size={11} color="#10B981" />
-              <Text style={{ fontSize: 10, fontWeight: '600', color: '#059669' }}>{tech.servicios_completados} servicios</Text>
+          {/* Experience */}
+          {tech.experiencia && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FEF3C7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+              <Ionicons name="time" size={11} color="#92400E" />
+              <Text style={{ fontSize: 10, fontWeight: '600', color: '#92400E' }}>{tech.experiencia}</Text>
             </View>
           )}
         </View>

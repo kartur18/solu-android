@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, Keyboard } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SERVICIOS, DISTRITOS, expandSearchToOficios } from '../../src/lib/constants'
@@ -8,7 +9,10 @@ import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
+import { SearchSkeleton } from '../../src/components/SkeletonLoader'
 import { TechMapView } from '../../src/components/TechMapView'
+import { OfflineBanner } from '../../src/components/OfflineBanner'
+import { track } from '../../src/lib/analytics'
 
 function FadeInView({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -47,7 +51,89 @@ export default function BuscarScreen() {
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [gpsActive, setGpsActive] = useState(false)
+  const [favorites, setFavorites] = useState<number[]>([])
+  const [filterRating, setFilterRating] = useState(false)
+  const [filterVerified, setFilterVerified] = useState(false)
+  const [sortPrice, setSortPrice] = useState(false)
+  const [sortBy, setSortBy] = useState<'rating' | 'price' | 'services' | ''>('')
+  const [filterAvailable, setFilterAvailable] = useState(false)
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [searchHistory, setSearchHistory] = useState<string[]>([])
   const resultsKey = useRef(0)
+
+  const POPULAR_SEARCHES = SERVICIOS.slice(0, 5)
+  const suggestions = searchFocused
+    ? search.trim()
+      ? SERVICIOS.filter(s => s.toLowerCase().includes(search.toLowerCase()))
+      : []
+    : []
+
+  // Load favorites from storage
+  useEffect(() => {
+    AsyncStorage.getItem('solu_favorites').then((stored) => {
+      if (stored) try { setFavorites(JSON.parse(stored)) } catch {}
+    })
+  }, [])
+
+  // Load search history from storage
+  useEffect(() => {
+    AsyncStorage.getItem('solu_search_history').then((stored) => {
+      if (stored) try { setSearchHistory(JSON.parse(stored)) } catch {}
+    })
+  }, [])
+
+  function saveToHistory(term: string) {
+    const trimmed = term.trim()
+    if (!trimmed) return
+    setSearchHistory(prev => {
+      const filtered = prev.filter(s => s.toLowerCase() !== trimmed.toLowerCase())
+      const next = [trimmed, ...filtered].slice(0, 10)
+      AsyncStorage.setItem('solu_search_history', JSON.stringify(next))
+      return next
+    })
+  }
+
+  function removeFromHistory(term: string) {
+    setSearchHistory(prev => {
+      const next = prev.filter(s => s !== term)
+      AsyncStorage.setItem('solu_search_history', JSON.stringify(next))
+      return next
+    })
+  }
+
+  function clearHistory() {
+    setSearchHistory([])
+    AsyncStorage.removeItem('solu_search_history')
+  }
+
+  function toggleFavorite(techId: number) {
+    setFavorites(prev => {
+      const next = prev.includes(techId) ? prev.filter(id => id !== techId) : [...prev, techId]
+      AsyncStorage.setItem('solu_favorites', JSON.stringify(next))
+      return next
+    })
+  }
+
+  // Apply client-side filters
+  const anyFilterActive = filterRating || filterVerified || sortPrice || filterAvailable || sortBy !== ''
+  const filteredTechs = techs.filter(t => {
+    if (filterRating && (t.calificacion || 0) < 4.5) return false
+    if (filterVerified && !t.verificado) return false
+    if (filterAvailable && !t.disponible) return false
+    return true
+  }).sort((a, b) => {
+    if (sortBy === 'services') return (b.servicios_completados || 0) - (a.servicios_completados || 0)
+    if (sortPrice) return (a.precio_desde || 999) - (b.precio_desde || 999)
+    return 0
+  })
+
+  function clearAllFilters() {
+    setFilterRating(false)
+    setFilterVerified(false)
+    setSortPrice(false)
+    setSortBy('')
+    setFilterAvailable(false)
+  }
 
   const location = useLocationDetection()
 
@@ -86,6 +172,8 @@ export default function BuscarScreen() {
 
   async function loadTechs() {
     setLoading(true)
+    track('Search Performed', { query: search, distrito })
+    if (search.trim()) saveToHistory(search.trim())
     try {
       let query = supabase
         .from('tecnicos')
@@ -125,6 +213,7 @@ export default function BuscarScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.light }}>
+      <OfflineBanner />
       {/* Search bar */}
       <View style={{
         padding: 16,
@@ -156,6 +245,8 @@ export default function BuscarScreen() {
               placeholder="Buscar servicio o técnico..."
               value={search}
               onChangeText={setSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
               style={{ flex: 1, fontSize: 15, color: COLORS.dark, fontWeight: '500' }}
               placeholderTextColor={COLORS.gray2}
             />
@@ -302,6 +393,125 @@ export default function BuscarScreen() {
         </ScrollView>
       </View>
 
+      {/* Search suggestions dropdown */}
+      {searchFocused && (
+        <View style={{
+          backgroundColor: COLORS.white,
+          marginHorizontal: 16,
+          marginTop: 4,
+          borderRadius: 14,
+          shadowColor: '#1E3A5F',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 6,
+          zIndex: 20,
+          maxHeight: 320,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: '#E2E8F0',
+        }}>
+          {search.trim() ? (
+            suggestions.length > 0 ? (
+              <ScrollView keyboardShouldPersistTaps="handled">
+                {suggestions.map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    onPress={() => {
+                      setSearch(s)
+                      setSearchFocused(false)
+                      Keyboard.dismiss()
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#F1F5F9',
+                    }}
+                  >
+                    <Ionicons name="search" size={16} color={COLORS.gray2} />
+                    <Text style={{ fontSize: 14, color: COLORS.dark, fontWeight: '500' }}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : null
+          ) : (
+            <ScrollView keyboardShouldPersistTaps="handled" style={{ padding: 16 }}>
+              {/* Recent searches */}
+              {searchHistory.length > 0 && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray2, marginBottom: 10 }}>
+                    Recientes:
+                  </Text>
+                  {searchHistory.map((s) => (
+                    <View
+                      key={s}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#F1F5F9',
+                      }}
+                    >
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSearch(s)
+                          setSearchFocused(false)
+                          Keyboard.dismiss()
+                        }}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                      >
+                        <Ionicons name="time-outline" size={16} color={COLORS.gray2} />
+                        <Text style={{ fontSize: 14, color: COLORS.dark, fontWeight: '500' }}>{s}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => removeFromHistory(s)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name="close" size={16} color={COLORS.gray2} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <TouchableOpacity onPress={clearHistory} style={{ marginTop: 8 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.pri }}>Borrar historial</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Popular searches */}
+              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray2, marginBottom: 10 }}>
+                Busquedas populares:
+              </Text>
+              {POPULAR_SEARCHES.map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  onPress={() => {
+                    setSearch(s)
+                    setSearchFocused(false)
+                    Keyboard.dismiss()
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    paddingVertical: 10,
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#F1F5F9',
+                  }}
+                >
+                  <Ionicons name="trending-up" size={16} color={COLORS.pri} />
+                  <Text style={{ fontSize: 14, color: COLORS.dark, fontWeight: '500' }}>{s}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      )}
+
       {/* View toggle + Results */}
       <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 8, alignItems: 'center' }}>
         <TouchableOpacity
@@ -333,27 +543,64 @@ export default function BuscarScreen() {
           <Text style={{ fontSize: 12, fontWeight: '700', color: viewMode === 'map' ? COLORS.white : COLORS.gray }}>Mapa</Text>
         </TouchableOpacity>
         <Text style={{ flex: 1, textAlign: 'right', fontSize: 12, color: COLORS.gray, fontWeight: '600' }}>
-          {techs.length} resultado{techs.length !== 1 ? 's' : ''}
+          {filteredTechs.length} resultado{filteredTechs.length !== 1 ? 's' : ''}
         </Text>
       </View>
 
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#1E3A5F" />
-          <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.gray, fontWeight: '600' }}>Buscando técnicos...</Text>
+      {/* Filter pills */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 44, paddingHorizontal: 16, marginBottom: 4 }}>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          {[
+            { key: 'rating', label: '★ 4.5+', active: filterRating, onPress: () => setFilterRating(!filterRating), color: '#1E3A5F' },
+            { key: 'verified', label: 'Verificados', active: filterVerified, onPress: () => setFilterVerified(!filterVerified), color: '#1E3A5F' },
+            { key: 'price', label: 'Menor precio', active: sortPrice, onPress: () => setSortPrice(!sortPrice), color: '#1E3A5F' },
+            { key: 'available', label: 'Disponibles', active: filterAvailable, onPress: () => setFilterAvailable(!filterAvailable), color: '#16A34A' },
+            { key: 'services', label: 'Más contratados', active: sortBy === 'services', onPress: () => setSortBy(sortBy === 'services' ? '' : 'services'), color: '#1E3A5F' },
+          ].map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              onPress={f.onPress}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 4,
+                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+                backgroundColor: f.active ? f.color : '#fff',
+                borderWidth: 1, borderColor: f.active ? f.color : '#E2E8F0',
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '700', color: f.active ? '#fff' : COLORS.gray }}>{f.label}</Text>
+            </TouchableOpacity>
+          ))}
+          {anyFilterActive && (
+            <TouchableOpacity
+              onPress={clearAllFilters}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 4,
+                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+                backgroundColor: '#FEF2F2',
+                borderWidth: 1, borderColor: '#FECACA',
+              }}
+            >
+              <Ionicons name="close-circle" size={14} color="#EF4444" />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#EF4444' }}>Limpiar filtros</Text>
+            </TouchableOpacity>
+          )}
         </View>
+      </ScrollView>
+
+      {loading ? (
+        <SearchSkeleton />
       ) : viewMode === 'map' ? (
         <View style={{ padding: 16 }}>
-          <TechMapView techs={techs} />
+          <TechMapView techs={filteredTechs} />
         </View>
       ) : (
         <ScrollView style={{ flex: 1, padding: 16 }}>
-          {techs.map((tech, index) => (
+          {filteredTechs.map((tech, index) => (
             <FadeInView key={`${tech.id}-${resultsKey.current}`} delay={index * 60}>
               <TechCard tech={tech} />
             </FadeInView>
           ))}
-          {techs.length === 0 && (
+          {filteredTechs.length === 0 && (
             <View style={{
               padding: 50, alignItems: 'center',
               backgroundColor: COLORS.white, borderRadius: 20, marginTop: 20,
@@ -387,7 +634,7 @@ export default function BuscarScreen() {
               </TouchableOpacity>
             </View>
           )}
-          <View style={{ height: 300 }} />
+          <View style={{ height: 120 }} />
         </ScrollView>
       )}
     </View>

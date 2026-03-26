@@ -1,6 +1,6 @@
 import { View, Text, Image, TouchableOpacity, Linking } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, waLink } from '../lib/constants'
+import { COLORS, waLink, SUPPORT_PHONE } from '../lib/constants'
 import { ENV } from '../lib/env'
 
 type Props = {
@@ -16,7 +16,7 @@ export function YapeQR({ amount, reference, yapeNumber = ENV.YAPE_NUMBER, onConf
 
   function handleConfirm() {
     const msg = `Hola, ya realicé el pago por Yape.\n\nMonto: S/${amount}\nReferencia: ${reference}\nNúmero Yape: ${yapeNumber}\n\nPor favor activar mi plan.`
-    Linking.openURL(waLink(ENV.YAPE_NUMBER, msg))
+    Linking.openURL(waLink(SUPPORT_PHONE, msg))
     onConfirm?.()
   }
 

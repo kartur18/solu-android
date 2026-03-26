@@ -3,10 +3,12 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'reac
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS, SERVICIOS, DISTRITOS } from '../src/lib/constants'
+import { COLORS, SERVICIOS, DISTRITOS, PLAN_FEATURES } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { logger } from '../src/lib/logger'
-import { hashPassword } from '../src/lib/auth'
+import { ENV } from '../src/lib/env'
+import { verifyDNI, notifyTech, trackEvent } from '../src/lib/integrations'
+import { compressDNIPhoto } from '../src/lib/imageCompress'
 
 const OFICIOS = [
   'Gasfitero', 'Electricista', 'Pintor', 'Cerrajero', 'Técnico en refrigeración',
@@ -31,13 +33,18 @@ export default function RegistroScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Step 2
-  const [oficio, setOficio] = useState('')
-  const [distrito, setDistrito] = useState('')
+  const [selectedPlan, setSelectedPlan] = useState<'profesional' | 'premium' | 'elite'>('profesional')
+  const [oficios, setOficios] = useState<string[]>([])
+  const [distritos, setDistritos] = useState<string[]>([])
   const [precio, setPrecio] = useState('')
   const [experiencia, setExperiencia] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [showOficios, setShowOficios] = useState(false)
   const [showDistritos, setShowDistritos] = useState(false)
+
+  // Plan limits
+  const maxOficios = selectedPlan === 'profesional' ? 1 : selectedPlan === 'premium' ? 2 : 999
+  const maxDistritos = selectedPlan === 'profesional' ? 2 : selectedPlan === 'premium' ? 4 : 999
 
   // Step 3
   const [dniFront, setDniFront] = useState<string | null>(null)
@@ -53,7 +60,10 @@ export default function RegistroScreen() {
       mediaTypes: ['images'],
       quality: 0.7,
     })
-    if (!result.canceled) setter(result.assets[0].uri)
+    if (!result.canceled) {
+      const compressed = await compressDNIPhoto(result.assets[0].uri)
+      setter(compressed)
+    }
   }
 
   async function uploadDni(uri: string, side: string) {
@@ -98,47 +108,57 @@ export default function RegistroScreen() {
   }
 
   async function submit() {
-    if (!nombre || !whatsapp || !dni || !oficio || !distrito) {
+    if (!nombre || !whatsapp || !dni || oficios.length === 0 || distritos.length === 0) {
       return Alert.alert('Error', 'Completa todos los campos obligatorios')
     }
     if (!validateStep1()) return
     setLoading(true)
 
-    let dniFrenteUrl = null
-    let dniPosteriorUrl = null
+    try {
+      let dniFrenteUrl = null
+      let dniPosteriorUrl = null
 
-    if (dniFront) dniFrenteUrl = await uploadDni(dniFront, 'frente')
-    if (dniBack) dniPosteriorUrl = await uploadDni(dniBack, 'posterior')
+      if (dniFront) dniFrenteUrl = await uploadDni(dniFront, 'frente')
+      if (dniBack) dniPosteriorUrl = await uploadDni(dniBack, 'posterior')
 
-    const { error } = await supabase.from('tecnicos').insert({
-      nombre, whatsapp, email, dni, oficio, distrito,
-      precio_desde: precio ? parseInt(precio) : null,
-      experiencia, descripcion,
-      dni_frente_url: dniFrenteUrl,
-      dni_posterior_url: dniPosteriorUrl,
-      password_hash: password ? hashPassword(password) : null,
-      plan: 'trial',
-      disponible: true,
-      verificado: false,
-      calificacion: 0,
-      num_resenas: 0,
-      servicios_completados: 0,
-      fecha_vencimiento: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-    })
+      // Register via backend API (handles uniqueness checks, bcrypt hashing, free trial calc)
+      const res = await fetch(`${ENV.API_BASE_URL}/register-tech`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre,
+          whatsapp: whatsapp.replace(/\D/g, ''),
+          email: email || undefined,
+          dni,
+          password: password || undefined,
+          oficio: oficios[0],
+          oficios,
+          distrito: distritos[0],
+          zonas: distritos,
+          precio_desde: precio ? parseInt(precio) : undefined,
+          experiencia: experiencia || undefined,
+          descripcion: descripcion || undefined,
+          dni_frente_url: dniFrenteUrl,
+          dni_posterior_url: dniPosteriorUrl,
+          plan: selectedPlan,
+        }),
+      })
+      const result = await res.json()
 
-    if (error) {
-      const msg = error.message?.includes('duplicate')
-        ? 'Ya existe una cuenta con ese DNI o WhatsApp'
-        : 'No se pudo completar el registro. Verifica tu conexión e intenta de nuevo.'
-      Alert.alert('Error', msg)
-    } else {
-      Alert.alert(
-        '¡Registro exitoso!',
-        'Tu cuenta ha sido creada con 90 días de prueba gratuita. Te notificaremos cuando tu perfil sea verificado.',
-        [{ text: 'OK', onPress: () => router.back() }]
-      )
+      if (!res.ok) {
+        Alert.alert('Error', result.error || 'No se pudo completar el registro.')
+      } else {
+        Alert.alert(
+          '¡Registro exitoso!',
+          `Tu cuenta ha sido creada con el plan ${PLAN_FEATURES[selectedPlan].name}. Inicia sesión desde la pestaña Mi Cuenta.`,
+          [{ text: 'OK', onPress: () => router.back() }]
+        )
+      }
+    } catch {
+      Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -212,18 +232,72 @@ export default function RegistroScreen() {
 
         {step === 2 && (
           <>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Tu servicio</Text>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Tu servicio y plan</Text>
             <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 2 de 3</Text>
 
-            <Text style={styles.label}>Oficio *</Text>
+            {/* Plan selection */}
+            <Text style={styles.label}>Elige tu plan *</Text>
+            <View style={{ gap: 8, marginBottom: 16 }}>
+              {(['profesional', 'premium', 'elite'] as const).map((planKey) => {
+                const plan = PLAN_FEATURES[planKey]
+                const isSelected = selectedPlan === planKey
+                return (
+                  <TouchableOpacity
+                    key={planKey}
+                    onPress={() => setSelectedPlan(planKey)}
+                    style={{
+                      backgroundColor: isSelected ? '#1E3A5F' : '#fff',
+                      borderRadius: 14, padding: 14,
+                      borderWidth: 2, borderColor: isSelected ? '#1E3A5F' : '#E2E8F0',
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: isSelected ? '#fff' : COLORS.dark }}>{plan.name}</Text>
+                        <Text style={{ fontSize: 11, color: isSelected ? 'rgba(255,255,255,0.7)' : COLORS.gray, marginTop: 2 }}>
+                          {planKey === 'profesional' ? '1 oficio · 2 zonas' : planKey === 'premium' ? '2 oficios · 4 zonas' : 'Oficios y zonas ilimitados'}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: isSelected ? '#fff' : COLORS.pri }}>S/{plan.price}</Text>
+                        <Text style={{ fontSize: 9, color: isSelected ? 'rgba(255,255,255,0.6)' : COLORS.gray2 }}>Primer mes gratis</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+
+            <Text style={styles.label}>Oficios * {maxOficios < 999 ? `(máx ${maxOficios})` : '(ilimitados)'}</Text>
+            {oficios.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                {oficios.map((o, idx) => (
+                  <TouchableOpacity
+                    key={o}
+                    onPress={() => setOficios(oficios.filter((_, i) => i !== idx))}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: idx === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: idx === 0 ? '#fff' : '#1E3A5F' }}>{o}</Text>
+                    <Ionicons name="close-circle" size={14} color={idx === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             <TouchableOpacity onPress={() => setShowOficios(!showOficios)} style={styles.input}>
-              <Text style={{ color: oficio ? COLORS.dark : COLORS.gray2 }}>{oficio || 'Seleccionar oficio'}</Text>
+              <Text style={{ color: COLORS.gray2 }}>{oficios.length === 0 ? 'Seleccionar oficio' : 'Agregar otro oficio'}</Text>
             </TouchableOpacity>
             {showOficios && (
               <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 200, borderWidth: 1, borderColor: COLORS.border }}>
                 <ScrollView nestedScrollEnabled>
-                  {OFICIOS.map((o) => (
-                    <TouchableOpacity key={o} onPress={() => { setOficio(o); setShowOficios(false) }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+                  {OFICIOS.filter(o => !oficios.includes(o)).map((o) => (
+                    <TouchableOpacity key={o} onPress={() => {
+                      if (oficios.length >= maxOficios) {
+                        Alert.alert('Límite alcanzado', `Tu plan ${selectedPlan} permite máximo ${maxOficios} oficio${maxOficios > 1 ? 's' : ''}. Elige un plan superior para más oficios.`)
+                        return
+                      }
+                      setOficios([...oficios, o])
+                      setShowOficios(false)
+                    }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
                       <Text style={{ fontSize: 13, color: COLORS.dark }}>{o}</Text>
                     </TouchableOpacity>
                   ))}
@@ -231,15 +305,36 @@ export default function RegistroScreen() {
               </View>
             )}
 
-            <Text style={styles.label}>Distrito principal *</Text>
+            <Text style={styles.label}>Distritos * {maxDistritos < 999 ? `(máx ${maxDistritos})` : '(ilimitados)'}</Text>
+            {distritos.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                {distritos.map((d, idx) => (
+                  <TouchableOpacity
+                    key={d}
+                    onPress={() => setDistritos(distritos.filter((_, i) => i !== idx))}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: idx === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: idx === 0 ? '#fff' : '#1E3A5F' }}>{d}</Text>
+                    <Ionicons name="close-circle" size={14} color={idx === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             <TouchableOpacity onPress={() => setShowDistritos(!showDistritos)} style={styles.input}>
-              <Text style={{ color: distrito ? COLORS.dark : COLORS.gray2 }}>{distrito || 'Seleccionar distrito'}</Text>
+              <Text style={{ color: COLORS.gray2 }}>{distritos.length === 0 ? 'Seleccionar distrito' : 'Agregar otro distrito'}</Text>
             </TouchableOpacity>
             {showDistritos && (
               <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 200, borderWidth: 1, borderColor: COLORS.border }}>
                 <ScrollView nestedScrollEnabled>
-                  {DISTRITOS.map((d) => (
-                    <TouchableOpacity key={d} onPress={() => { setDistrito(d); setShowDistritos(false) }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+                  {DISTRITOS.filter(d => !distritos.includes(d)).map((d) => (
+                    <TouchableOpacity key={d} onPress={() => {
+                      if (distritos.length >= maxDistritos) {
+                        Alert.alert('Límite alcanzado', `Tu plan ${selectedPlan} permite máximo ${maxDistritos} distrito${maxDistritos > 1 ? 's' : ''}. Elige un plan superior para más zonas.`)
+                        return
+                      }
+                      setDistritos([...distritos, d])
+                      setShowDistritos(false)
+                    }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
                       <Text style={{ fontSize: 13, color: COLORS.dark }}>{d}</Text>
                     </TouchableOpacity>
                   ))}
@@ -260,7 +355,11 @@ export default function RegistroScreen() {
               <TouchableOpacity onPress={() => setStep(1)} style={{ flex: 1, backgroundColor: COLORS.white, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
                 <Text style={{ color: COLORS.gray, fontWeight: '700', fontSize: 14 }}>← Atrás</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setStep(3)} style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => {
+                if (oficios.length === 0) return Alert.alert('Error', 'Selecciona al menos un oficio')
+                if (distritos.length === 0) return Alert.alert('Error', 'Selecciona al menos un distrito')
+                setStep(3)
+              }} style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center' }}>
                 <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 14 }}>Siguiente →</Text>
               </TouchableOpacity>
             </View>

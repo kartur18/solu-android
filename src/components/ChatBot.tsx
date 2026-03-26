@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
@@ -43,7 +43,10 @@ export function ChatBot() {
           type: messages.length <= 1 ? 'recommend' : undefined,
           messages: newMessages.filter((m, i) => m.role !== 'assistant' || i > 0).slice(-6),
         }),
+        timeout: 15000,
       })
+
+      if (!res.ok) throw new Error('API error')
 
       const data = await res.json()
       let reply = data.reply || ''
@@ -54,9 +57,25 @@ export function ChatBot() {
         reply = `🔧 ${r.service}\n\n${r.explanation}\n\n⚡ Urgencia: ${r.urgency}${r.priceRange ? `\n💰 Precio estimado: ${r.priceRange}` : ''}\n\nToca "Buscar técnico" abajo para encontrar uno disponible.`
       }
 
-      setMessages([...newMessages, { role: 'assistant', content: reply || 'No pude procesar tu mensaje.' }])
+      setMessages([...newMessages, { role: 'assistant', content: reply || 'Describe tu problema y te recomiendo el técnico ideal.' }])
     } catch {
-      setMessages([...newMessages, { role: 'assistant', content: 'Error de conexión. Intenta de nuevo.' }])
+      // Fallback: respuesta local si la API falla
+      const lower = userMsg.toLowerCase()
+      let fallback = 'Lo siento, no pude conectarme al servidor. Mientras tanto, puedes buscar técnicos directamente desde la pestaña "Buscar".'
+      if (lower.includes('gas') || lower.includes('agua') || lower.includes('tuber') || lower.includes('fuga')) {
+        fallback = '🔧 Por lo que describes, necesitas un Gasfitero.\n\nToca "Buscar técnico" abajo o ve a la pestaña Buscar y filtra por "Gasfitería".'
+        setLastService('Gasfitería')
+      } else if (lower.includes('luz') || lower.includes('electric') || lower.includes('enchufe') || lower.includes('corto')) {
+        fallback = '⚡ Parece que necesitas un Electricista.\n\nToca "Buscar técnico" abajo para encontrar uno disponible.'
+        setLastService('Electricidad')
+      } else if (lower.includes('pintu') || lower.includes('pared')) {
+        fallback = '🎨 Necesitas un Pintor.\n\nToca "Buscar técnico" para ver pintores disponibles.'
+        setLastService('Pintura')
+      } else if (lower.includes('cerr') || lower.includes('llave') || lower.includes('puerta')) {
+        fallback = '🔑 Necesitas un Cerrajero.\n\nToca "Buscar técnico" para encontrar uno rápido.'
+        setLastService('Cerrajería')
+      }
+      setMessages([...newMessages, { role: 'assistant', content: fallback }])
     } finally {
       setLoading(false)
     }
@@ -67,8 +86,8 @@ export function ChatBot() {
       <TouchableOpacity
         onPress={() => setOpen(true)}
         style={{
-          position: 'absolute', bottom: 90, right: 16, width: 56, height: 56,
-          borderRadius: 28, backgroundColor: COLORS.dark, alignItems: 'center',
+          position: 'absolute', bottom: 16, right: 16, width: 56, height: 56,
+          borderRadius: 28, backgroundColor: COLORS.pri, alignItems: 'center',
           justifyContent: 'center', elevation: 6,
           shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6,
         }}
@@ -77,8 +96,6 @@ export function ChatBot() {
       </TouchableOpacity>
     )
   }
-
-  const handleSendCallback = useCallback(() => handleSend(), [input, loading, messages])
 
   return (
     <Modal visible={open} animationType="slide" transparent>

@@ -3,22 +3,22 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Sw
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink, DISTRITOS } from '../../src/lib/constants'
+import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS } from '../../src/lib/constants'
 import { ENV } from '../../src/lib/env'
-import { hashPassword } from '../../src/lib/auth'
-import { YapeQR } from '../../src/components/YapeQR'
-import { PlinQR } from '../../src/components/PlinQR'
+import { fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
+import NotificationCenter from '../../src/components/NotificationCenter'
 
-type Tab = 'dashboard' | 'servicios' | 'resenas' | 'plan' | 'perfil' | 'cotizaciones'
+type Tab = 'dashboard' | 'servicios' | 'resenas' | 'cotizaciones' | 'ingresos' | 'plan' | 'perfil'
 
 const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'dashboard', icon: 'grid', label: 'Inicio' },
   { key: 'servicios', icon: 'briefcase', label: 'Servicios' },
   { key: 'resenas', icon: 'star', label: 'Reseñas' },
   { key: 'cotizaciones', icon: 'document-text', label: 'Cotizaciones' },
+  { key: 'ingresos', icon: 'cash', label: 'Ingresos' },
   { key: 'plan', icon: 'diamond', label: 'Plan' },
   { key: 'perfil', icon: 'person', label: 'Perfil' },
 ]
@@ -62,7 +62,6 @@ export default function CuentaScreen() {
   const [reviews, setReviews] = useState<Resena[]>([])
   const [tab, setTab] = useState<Tab>('dashboard')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-  const [payMethod, setPayMethod] = useState<'yape' | 'plin'>('yape')
 
   // Edit profile state
   const [editing, setEditing] = useState(false)
@@ -79,6 +78,9 @@ export default function CuentaScreen() {
   // Gallery state
   const [galleryImages, setGalleryImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
+
+  // Pagos state
+  const [pagos, setPagos] = useState<any[]>([])
 
   // Cotizaciones state
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([])
@@ -102,43 +104,21 @@ export default function CuentaScreen() {
 
     setLoading(true)
     try {
-      let query = supabase.from('tecnicos').select('*')
+      const identifier = isEmail ? trimmedId : trimmedId.replace(/\s/g, '')
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/login-tech`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password: loginPassword || undefined }),
+      })
+      const result = await res.json()
 
-      if (isEmail) {
-        query = query.eq('email', trimmedId)
-      } else {
-        query = query.eq('whatsapp', trimmedId.replace(/\s/g, ''))
-      }
-
-      const { data, error } = await query.single()
-
-      if (error || !data) {
-        Alert.alert('No encontrado', isEmail
-          ? 'No hay cuenta de técnico con ese email'
-          : 'No hay cuenta de técnico con ese WhatsApp')
+      if (!res.ok) {
+        Alert.alert('Error', result.error || 'Error al iniciar sesión')
         setLoading(false)
         return
       }
 
-      // Password check
-      if (data.password_hash) {
-        // Tech has a password set — require it
-        if (!loginPassword) {
-          Alert.alert('Contraseña requerida', 'Esta cuenta tiene contraseña. Ingresa tu contraseña para continuar.')
-          setLoading(false)
-          return
-        }
-        const inputHash = hashPassword(loginPassword)
-        if (inputHash !== data.password_hash) {
-          Alert.alert('Error', 'Contraseña incorrecta')
-          setLoading(false)
-          return
-        }
-      } else if (isEmail && !isWhatsApp) {
-        // Legacy account without password, but logging in with email
-        // Allow login without password for backward compatibility
-      }
-      // Legacy WhatsApp-only login (no password_hash): allow through
+      const data = result.technician
 
       setTech(data)
       setLoggedIn(true)
@@ -160,11 +140,12 @@ export default function CuentaScreen() {
 
   async function loadData(techId: number) {
     try {
-      const [leadsRes, revRes, notifRes, cotRes] = await Promise.all([
+      const [leadsRes, revRes, notifRes, cotRes, pagosRes] = await Promise.all([
         supabase.from('clientes').select('*').eq('tecnico_asignado', techId).order('created_at', { ascending: false }).limit(30),
         supabase.from('resenas').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(30),
         supabase.from('notificaciones').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(50),
         supabase.from('cotizaciones').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(30),
+        supabase.from('pagos').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(20),
       ])
       setLeads(leadsRes.data || [])
       setReviews(revRes.data || [])
@@ -172,6 +153,7 @@ export default function CuentaScreen() {
       setNotifications(notifs)
       setUnreadCount(notifs.filter((n: Notificacion) => !n.leido).length)
       setCotizaciones(cotRes.data || [])
+      setPagos(pagosRes.data || [])
     } catch {
       // silent
     }
@@ -206,7 +188,7 @@ export default function CuentaScreen() {
       }).eq('id', tech.id)
 
       if (error) throw error
-      setTech({ ...tech, descripcion: editDesc || null, precio_desde: editPrecio ? parseInt(editPrecio) : null, disponible: editDisponible })
+      setTech({ ...tech, descripcion: editDesc || undefined, precio_desde: editPrecio ? parseInt(editPrecio) : undefined, disponible: editDisponible } as Tecnico)
       setEditing(false)
       Alert.alert('Guardado', 'Tu perfil se actualizó correctamente')
     } catch (err: any) {
@@ -337,7 +319,11 @@ export default function CuentaScreen() {
 
       if (error) throw error
 
-      Alert.alert('Cotización creada', 'La cotización se envió correctamente.')
+      // Auto-notify client via WhatsApp
+      const waMsg = `Hola ${selectedLead.nombre}, soy ${tech.nombre} de SOLU. Te envío una cotización por ${cotServicio || selectedLead.servicio}:\n\n💰 Monto: S/${cotMonto}\n📝 ${cotDescripcion}\n\nCódigo: ${selectedLead.codigo}\n\n¿Aceptas la cotización?`
+      Linking.openURL(`https://wa.me/51${selectedLead.whatsapp}?text=${encodeURIComponent(waMsg)}`)
+
+      Alert.alert('Cotización enviada', 'Se abrió WhatsApp para notificar al cliente.')
       setShowNewCotizacion(false)
       setCotLeadId('')
       setCotMonto('')
@@ -367,8 +353,8 @@ export default function CuentaScreen() {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
   }).length
 
-  const completedLeads = leads.filter(l => l.estado === 'completado' || l.estado === 'calificado').length
-  const activeLeads = leads.filter(l => l.estado !== 'completado' && l.estado !== 'calificado' && l.estado !== 'cancelado').length
+  const completedLeads = leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').length
+  const activeLeads = leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').length
 
   // LOGIN SCREEN
   if (!loggedIn) {
@@ -411,7 +397,7 @@ export default function CuentaScreen() {
           </View>
 
           <TouchableOpacity
-            onPress={() => Linking.openURL(waLink('999888777', 'Hola, olvidé mi contraseña de SOLU'))}
+            onPress={() => router.push('/recuperar')}
             style={{ alignSelf: 'flex-end', marginBottom: 16 }}
           >
             <Text style={{ fontSize: 11, color: '#1E3A5F', fontWeight: '600' }}>¿Olvidaste tu contraseña?</Text>
@@ -442,7 +428,7 @@ export default function CuentaScreen() {
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 300 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1E3A5F" />}
       >
         {/* Header */}
@@ -598,10 +584,48 @@ export default function CuentaScreen() {
                     </TouchableOpacity>
                   </View>
                   {leads.slice(0, 3).map((l) => (
-                    <LeadRow key={l.id} lead={l} />
+                    <LeadRow key={l.id} lead={l} tech={tech} router={router} />
                   ))}
                 </View>
               )}
+            </View>
+          )}
+
+          {/* ═══ PROMOCIONES (Premium/Elite in dashboard) ═══ */}
+          {tab === 'dashboard' && (tech.plan === 'premium' || tech.plan === 'elite') && (
+            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, marginTop: -4 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Mis promociones</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    Alert.prompt ? Alert.prompt('Nueva promoción', 'Describe tu descuento (ej: 20% en gasfitería)', async (text) => {
+                      if (text) {
+                        await supabase.from('promociones').insert({
+                          tecnico_id: tech.id, descripcion: text, activa: true,
+                          descuento: 10, tecnico_nombre: tech.nombre,
+                        })
+                        Alert.alert('Promoción creada', 'Tu promoción ya está visible para los clientes')
+                      }
+                    }) : Alert.alert('Crear promoción', 'Para crear una promoción, describe tu descuento y se publicará a los clientes.\n\nEjemplo: "20% de descuento en gasfitería esta semana"', [
+                      { text: 'Cancelar' },
+                      { text: 'Crear', onPress: async () => {
+                        await supabase.from('promociones').insert({
+                          tecnico_id: tech.id, descripcion: `Descuento especial de ${tech.nombre}`,
+                          activa: true, descuento: 10, tecnico_nombre: tech.nombre,
+                        })
+                        Alert.alert('Promoción creada', 'Tu promoción ya está visible')
+                      }},
+                    ])
+                  }}
+                  style={{ backgroundColor: COLORS.pri, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                >
+                  <Ionicons name="add" size={14} color="#fff" />
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>Nueva</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={{ fontSize: 11, color: COLORS.gray }}>
+                {tech.plan === 'premium' ? 'Plan Premium: 1 promoción activa por mes' : 'Plan Elite: Promociones ilimitadas'}
+              </Text>
             </View>
           )}
 
@@ -612,11 +636,11 @@ export default function CuentaScreen() {
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Servicios activos</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 10 }}>Solicitudes pendientes y en proceso</Text>
-                {leads.filter(l => l.estado !== 'completado' && l.estado !== 'calificado' && l.estado !== 'cancelado').length === 0 ? (
+                {leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').length === 0 ? (
                   <Text style={{ textAlign: 'center', color: COLORS.gray2, padding: 16, fontSize: 12 }}>No tienes servicios activos</Text>
                 ) : (
-                  leads.filter(l => l.estado !== 'completado' && l.estado !== 'calificado' && l.estado !== 'cancelado').map((l) => (
-                    <LeadRow key={l.id} lead={l} />
+                  leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').map((l) => (
+                    <LeadRow key={l.id} lead={l} onStatusChange={() => tech && loadData(tech.id)} tech={tech} router={router} />
                   ))
                 )}
               </View>
@@ -625,11 +649,11 @@ export default function CuentaScreen() {
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Historial</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 10 }}>Servicios completados</Text>
-                {leads.filter(l => l.estado === 'completado' || l.estado === 'calificado').length === 0 ? (
+                {leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').length === 0 ? (
                   <Text style={{ textAlign: 'center', color: COLORS.gray2, padding: 16, fontSize: 12 }}>Sin historial aún</Text>
                 ) : (
-                  leads.filter(l => l.estado === 'completado' || l.estado === 'calificado').map((l) => (
-                    <LeadRow key={l.id} lead={l} />
+                  leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').map((l) => (
+                    <LeadRow key={l.id} lead={l} tech={tech} router={router} />
                   ))
                 )}
               </View>
@@ -663,19 +687,132 @@ export default function CuentaScreen() {
           )}
 
           {/* ═══ PLAN ═══ */}
+          {/* ═══ INGRESOS ═══ */}
+          {tab === 'ingresos' && (
+            <View style={{ gap: 12 }}>
+              {/* Summary cards */}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.dark }}>{completedLeads}</Text>
+                  <Text style={{ fontSize: 10, color: COLORS.gray, fontWeight: '600' }}>Completados</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.pri }}>S/{completedLeads * (tech.precio_desde || 80)}</Text>
+                  <Text style={{ fontSize: 10, color: COLORS.gray, fontWeight: '600' }}>Ingresos est.</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 28, fontWeight: '900', color: '#F59E0B' }}>{tech.calificacion?.toFixed(1) || '0.0'}</Text>
+                  <Text style={{ fontSize: 10, color: COLORS.gray, fontWeight: '600' }}>Calificación</Text>
+                </View>
+              </View>
+
+              {/* Monthly breakdown */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>Últimos 6 meses</Text>
+                {(() => {
+                  const months: { label: string; count: number }[] = []
+                  for (let i = 5; i >= 0; i--) {
+                    const d = new Date()
+                    d.setMonth(d.getMonth() - i)
+                    const m = d.getMonth()
+                    const y = d.getFullYear()
+                    const count = leads.filter(l => {
+                      const ld = new Date(l.created_at)
+                      return ld.getMonth() === m && ld.getFullYear() === y && (l.estado === 'Completado' || l.estado === 'Calificado')
+                    }).length
+                    months.push({ label: d.toLocaleDateString('es-PE', { month: 'short' }), count })
+                  }
+                  const maxCount = Math.max(...months.map(m => m.count), 1)
+                  return months.map((m, i) => (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <Text style={{ width: 35, fontSize: 11, fontWeight: '600', color: COLORS.gray, textTransform: 'capitalize' }}>{m.label}</Text>
+                      <View style={{ flex: 1, height: 24, backgroundColor: '#F1F5F9', borderRadius: 6, overflow: 'hidden' }}>
+                        <View style={{ width: `${(m.count / maxCount) * 100}%`, height: '100%', backgroundColor: COLORS.pri, borderRadius: 6, minWidth: m.count > 0 ? 20 : 0, justifyContent: 'center', paddingLeft: 6 }}>
+                          {m.count > 0 && <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{m.count}</Text>}
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                })()}
+              </View>
+
+              {/* Premium/Elite: Monthly trend */}
+              {(tech.plan === 'premium' || tech.plan === 'elite') && (
+                <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Tendencia</Text>
+                  {(() => {
+                    const thisM = leads.filter(l => { const d = new Date(l.created_at); const n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear() }).length
+                    const lastM = leads.filter(l => { const d = new Date(l.created_at); const n = new Date(); n.setMonth(n.getMonth() - 1); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear() }).length
+                    const diff = thisM - lastM
+                    return (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ionicons name={diff >= 0 ? 'trending-up' : 'trending-down'} size={24} color={diff >= 0 ? '#10B981' : '#EF4444'} />
+                        <View>
+                          <Text style={{ fontSize: 16, fontWeight: '800', color: diff >= 0 ? '#10B981' : '#EF4444' }}>
+                            {diff >= 0 ? '+' : ''}{diff} solicitudes vs mes anterior
+                          </Text>
+                          <Text style={{ fontSize: 11, color: COLORS.gray }}>Este mes: {thisM} · Mes anterior: {lastM}</Text>
+                        </View>
+                      </View>
+                    )
+                  })()}
+                </View>
+              )}
+
+              {/* Elite: Best services */}
+              {tech.plan === 'elite' && (
+                <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Servicios más solicitados</Text>
+                  {(() => {
+                    const serviceCounts: Record<string, number> = {}
+                    leads.forEach(l => { serviceCounts[l.servicio] = (serviceCounts[l.servicio] || 0) + 1 })
+                    const top = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
+                    return top.length > 0 ? top.map(([svc, count], i) => (
+                      <View key={svc} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < top.length - 1 ? 1 : 0, borderBottomColor: '#F1F5F9' }}>
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.dark }}>{svc}</Text>
+                        <View style={{ backgroundColor: COLORS.pri + '15', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.pri }}>{count}</Text>
+                        </View>
+                      </View>
+                    )) : <Text style={{ fontSize: 12, color: COLORS.gray2 }}>Sin datos aún</Text>
+                  })()}
+                </View>
+              )}
+
+              {/* Info */}
+              <View style={{ backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14 }}>
+                <Text style={{ fontSize: 11, color: '#1E40AF', lineHeight: 16 }}>
+                  {tech.plan === 'elite' ? 'Estadísticas avanzadas: tendencia, servicios top y desglose mensual.' :
+                   tech.plan === 'premium' ? 'Estadísticas detalladas: tendencia mensual y desglose. Mejora a Elite para ver servicios más solicitados.' :
+                   'Estadísticas básicas. Mejora tu plan para ver tendencias y análisis detallado.'}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* ═══ PLAN ═══ */}
           {tab === 'plan' && (
             <View style={{ gap: 12 }}>
-              {/* Current plan */}
+              {/* Current plan status */}
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Tu plan actual</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
-                    <Text style={{ fontWeight: '800', color: '#1E3A5F' }}>{planInfo?.name || 'Periodo de prueba'}</Text>
+                  <View style={{ backgroundColor: isExpired ? '#FEE2E2' : '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
+                    <Text style={{ fontWeight: '800', color: isExpired ? '#EF4444' : '#1E3A5F' }}>{planInfo?.name || 'Profesional'}</Text>
                   </View>
-                  {!isExpired && daysLeft > 0 && (
-                    <Text style={{ fontSize: 11, color: COLORS.gray2 }}>{daysLeft} días restantes</Text>
-                  )}
+                  {isExpired ? (
+                    <Text style={{ fontSize: 11, color: '#EF4444', fontWeight: '700' }}>Vencido</Text>
+                  ) : daysLeft > 0 ? (
+                    <Text style={{ fontSize: 11, color: daysLeft <= 7 ? '#F59E0B' : COLORS.gray2 }}>
+                      {daysLeft} día{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
+                    </Text>
+                  ) : null}
                 </View>
+                {tech.fecha_vencimiento && (
+                  <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 6 }}>
+                    Vigente hasta: {new Date(tech.fecha_vencimiento).toLocaleDateString('es-PE')}
+                  </Text>
+                )}
                 <View style={{ marginTop: 12 }}>
                   {(planInfo?.features || []).map((f: string, i: number) => (
                     <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -686,24 +823,44 @@ export default function CuentaScreen() {
                 </View>
               </View>
 
-              {/* Upgrade */}
-              {(tech.plan === 'trial' || tech.plan === 'profesional' || tech.plan === 'premium') && (
+              {/* Expired warning */}
+              {isExpired && (
+                <View style={{ backgroundColor: '#FEF3C7', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#FDE68A' }}>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#92400E', marginBottom: 4 }}>Tu plan ha vencido</Text>
+                  <Text style={{ fontSize: 12, color: '#92400E', lineHeight: 18 }}>
+                    Renueva para seguir apareciendo en las búsquedas y recibir solicitudes de clientes.
+                  </Text>
+                </View>
+              )}
+
+              {/* Renew / Change plan - only shown when expired */}
+              {isExpired && (
                 <View>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Mejora tu plan</Text>
-                  {(['profesional', 'premium', 'elite'] as const)
-                    .filter(planKey => {
-                      const rank: Record<string, number> = { trial: 0, profesional: 1, premium: 2, elite: 3 }
-                      return (rank[planKey] || 0) > (rank[tech.plan] || 0)
-                    })
-                    .map((planKey) => {
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>
+                    Renovar plan
+                  </Text>
+                  <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 12 }}>
+                    Tu plan anterior: {planInfo?.name}. Puedes renovarlo o elegir otro.
+                  </Text>
+
+                  {(['profesional', 'premium', 'elite'] as const).map((planKey) => {
                     const plan = PLAN_FEATURES[planKey]
+                    const isCurrent = planKey === tech.plan
                     return (
-                      <View key={planKey} style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 8 }}>
+                      <View key={planKey} style={{
+                        backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 8,
+                        borderWidth: isCurrent ? 2 : 1, borderColor: isCurrent ? COLORS.pri : '#E2E8F0',
+                      }}>
+                        {isCurrent && (
+                          <View style={{ backgroundColor: COLORS.pri, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 6 }}>
+                            <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>TU PLAN</Text>
+                          </View>
+                        )}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>{plan.name}</Text>
                           <Text style={{ fontSize: 16, fontWeight: '900', color: COLORS.pri }}>S/{plan.price}/mes</Text>
                         </View>
-                        {plan.features.map((f, i) => (
+                        {plan.features.filter(f => !f.includes('Primer mes')).map((f, i) => (
                           <View key={i} style={{ flexDirection: 'row', gap: 6, marginBottom: 2 }}>
                             <Ionicons name="checkmark" size={12} color={COLORS.green} />
                             <Text style={{ fontSize: 11, color: COLORS.gray }}>{f}</Text>
@@ -711,43 +868,93 @@ export default function CuentaScreen() {
                         ))}
                         <TouchableOpacity
                           onPress={() => Linking.openURL(`${plan.culqiLink}?metadata[tecnico_id]=${tech.id}&metadata[plan]=${planKey}`)}
-                          style={{ backgroundColor: '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                          style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
                         >
                           <Ionicons name="card-outline" size={18} color="#fff" />
-                          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Pagar con tarjeta S/{plan.price}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => setSelectedPlan(selectedPlan === planKey ? null : planKey)}
-                          style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 6 }}
-                        >
-                          <Text style={{ color: COLORS.gray, fontWeight: '600', fontSize: 12 }}>
-                            {selectedPlan === planKey ? 'Ocultar' : 'Pagar con Yape o Plin'}
+                          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+                            {isCurrent ? `Renovar S/${plan.price}` : `Cambiar a ${plan.name} S/${plan.price}`}
                           </Text>
                         </TouchableOpacity>
-                        {selectedPlan === planKey && (
-                          <View style={{ marginTop: 12 }}>
-                            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                              <TouchableOpacity onPress={() => setPayMethod('yape')} style={{ flex: 1, padding: 10, borderRadius: 10, alignItems: 'center', borderWidth: 2, borderColor: payMethod === 'yape' ? '#6C2EB9' : '#E2E8F0' }}>
-                                <Text style={{ fontSize: 18 }}>💜</Text>
-                                <Text style={{ fontSize: 11, fontWeight: '600' }}>Yape</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity onPress={() => setPayMethod('plin')} style={{ flex: 1, padding: 10, borderRadius: 10, alignItems: 'center', borderWidth: 2, borderColor: payMethod === 'plin' ? '#00BFA5' : '#E2E8F0' }}>
-                                <Text style={{ fontSize: 18 }}>💚</Text>
-                                <Text style={{ fontSize: 11, fontWeight: '600' }}>Plin</Text>
-                              </TouchableOpacity>
-                            </View>
-                            {payMethod === 'yape' ? (
-                              <YapeQR amount={plan.price} reference={`PLAN-${planKey.toUpperCase()}-${tech.id}`} />
-                            ) : (
-                              <PlinQR amount={plan.price} reference={`PLAN-${planKey.toUpperCase()}-${tech.id}`} />
-                            )}
-                          </View>
-                        )}
+                        <View style={{ backgroundColor: '#F0FDF4', borderRadius: 8, padding: 8, marginTop: 6, alignItems: 'center' }}>
+                          <Text style={{ fontSize: 10, color: '#065F46' }}>Acepta tarjeta, Yape y más · Pago seguro con Culqi</Text>
+                        </View>
                       </View>
                     )
                   })}
                 </View>
               )}
+
+              {/* Elite: Digital Certificate */}
+              {tech.plan === 'elite' && !isExpired && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(`https://solu.pe/api/certificado?tecnicoId=${tech.id}`)}
+                  style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 2, borderColor: '#FFD700' }}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="ribbon" size={24} color="#F59E0B" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Certificado Digital SOLU</Text>
+                    <Text style={{ fontSize: 11, color: COLORS.gray }}>Descarga tu certificado de técnico verificado</Text>
+                  </View>
+                  <Ionicons name="download-outline" size={20} color={COLORS.pri} />
+                </TouchableOpacity>
+              )}
+
+              {/* Active plan - no changes allowed */}
+              {!isExpired && (
+                <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, padding: 14 }}>
+                  <Text style={{ fontSize: 11, color: '#065F46', lineHeight: 16 }}>
+                    Tu plan está activo. Cuando se acerque la fecha de vencimiento podrás renovar o cambiar de plan.
+                  </Text>
+                </View>
+              )}
+
+              {/* Auto-renewal info */}
+              <View style={{ backgroundColor: '#EFF6FF', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <Ionicons name="information-circle" size={18} color="#2563EB" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E40AF' }}>Información de pago</Text>
+                </View>
+                <Text style={{ fontSize: 12, color: '#1E40AF', lineHeight: 18 }}>
+                  Los pagos se procesan a través de Culqi. Al pagar con tarjeta, tu plan se activa automáticamente.
+                </Text>
+              </View>
+
+              {/* Payment history */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <Ionicons name="receipt-outline" size={18} color={COLORS.dark} />
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Historial de pagos</Text>
+                </View>
+                {pagos.length === 0 ? (
+                  <View style={{ alignItems: 'center', padding: 20 }}>
+                    <Ionicons name="wallet-outline" size={32} color={COLORS.gray2} />
+                    <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 8 }}>Sin pagos registrados</Text>
+                  </View>
+                ) : (
+                  pagos.map((pago: any) => {
+                    const methodColors: Record<string, string> = { culqi: '#7C3AED', yape: '#9333EA', tarjeta: '#2563EB' }
+                    const methodColor = methodColors[pago.metodo] || COLORS.gray
+                    return (
+                      <View key={pago.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+                        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: methodColor + '15', alignItems: 'center', justifyContent: 'center' }}>
+                          <Ionicons name={pago.metodo === 'yape' ? 'phone-portrait' : 'card'} size={18} color={methodColor} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>
+                            Plan {pago.plan ? pago.plan.charAt(0).toUpperCase() + pago.plan.slice(1) : 'N/A'}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: COLORS.gray }}>
+                            {new Date(pago.created_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })} · {pago.metodo || 'N/A'}
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#10B981' }}>S/{pago.monto || '0'}</Text>
+                      </View>
+                    )
+                  })
+                )}
+              </View>
             </View>
           )}
 
@@ -1015,55 +1222,16 @@ export default function CuentaScreen() {
       </ScrollView>
 
       {/* Notifications Modal */}
-      <Modal visible={showNotifications} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%', minHeight: 300 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark }}>Notificaciones</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)}>
-                <Ionicons name="close" size={24} color={COLORS.gray} />
-              </TouchableOpacity>
-            </View>
-
-            {notifications.length === 0 ? (
-              <View style={{ padding: 40, alignItems: 'center' }}>
-                <Ionicons name="notifications-off-outline" size={40} color={COLORS.gray2} />
-                <Text style={{ fontSize: 13, color: COLORS.gray2, marginTop: 12 }}>Sin notificaciones</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={notifications}
-                keyExtractor={(item) => String(item.id)}
-                contentContainerStyle={{ padding: 16 }}
-                renderItem={({ item }) => {
-                  const iconName = NOTIF_ICONS[item.tipo] || 'notifications'
-                  const iconColor = NOTIF_COLORS[item.tipo] || COLORS.gray
-                  return (
-                    <TouchableOpacity
-                      onPress={() => { if (!item.leido) markNotifRead(item.id) }}
-                      style={{ flexDirection: 'row', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
-                    >
-                      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: iconColor + '15', alignItems: 'center', justifyContent: 'center' }}>
-                        <Ionicons name={iconName as any} size={20} color={iconColor} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, flex: 1 }}>{item.titulo}</Text>
-                          {!item.leido && (
-                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#2563EB' }} />
-                          )}
-                        </View>
-                        <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 2 }}>{item.mensaje}</Text>
-                        <Text style={{ fontSize: 10, color: COLORS.gray2, marginTop: 4 }}>{timeAgo(item.created_at)}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  )
-                }}
-              />
-            )}
-          </View>
-        </View>
-      </Modal>
+      {tech && (
+        <NotificationCenter
+          visible={showNotifications}
+          onClose={() => {
+            setShowNotifications(false)
+            if (tech) loadData(tech.id)
+          }}
+          techId={tech.id}
+        />
+      )}
     </View>
   )
 }
@@ -1087,24 +1255,132 @@ function QuickStat({ icon, color, value, label }: { icon: string; color: string;
   )
 }
 
-function LeadRow({ lead }: { lead: Cliente }) {
+function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStatusChange?: () => void; tech?: Tecnico | null; router?: any }) {
   const statusColors: Record<string, string> = {
-    nuevo: '#2563EB', asignado: '#F59E0B', en_camino: '#8B5CF6',
-    en_proceso: '#F97316', completado: '#10B981', calificado: '#10B981', cancelado: '#EF4444',
+    Nuevo: '#2563EB', Asignado: '#F59E0B', 'En camino': '#8B5CF6',
+    'En proceso': '#F97316', Completado: '#10B981', Calificado: '#10B981', Cancelado: '#EF4444',
+  }
+  const statusLabels: Record<string, string> = {
+    Nuevo: 'Nuevo', Asignado: 'Asignado', 'En camino': 'En camino',
+    'En proceso': 'En proceso', Completado: 'Completado', Calificado: 'Calificado', Cancelado: 'Cancelado',
   }
   const color = statusColors[lead.estado] || COLORS.gray
+  const isActive = lead.estado !== 'Completado' && lead.estado !== 'Calificado' && lead.estado !== 'Cancelado'
+
+  const NEXT_STATUS: Record<string, string> = {
+    Asignado: 'En camino',
+    'En camino': 'En proceso',
+    'En proceso': 'Completado',
+  }
+
+  async function updateStatus(newStatus: string) {
+    const { error } = await supabase.from('clientes').update({ estado: newStatus }).eq('id', lead.id)
+    if (error) {
+      Alert.alert('Error', 'No se pudo actualizar el estado')
+    } else {
+      try {
+        const { data: cu } = await supabase.from('clientes_users').select('push_token').eq('whatsapp', lead.whatsapp).single()
+        if (cu?.push_token) {
+          const msgs: Record<string, string> = { 'En camino': 'Tu técnico está en camino', 'En proceso': 'El técnico está trabajando', Completado: '¡Servicio completado!' }
+          fetch('https://exp.host/--/api/v2/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: cu.push_token, sound: 'default', title: `Servicio ${newStatus}`, body: msgs[newStatus] || `Estado: ${newStatus}` }) }).catch(() => {})
+        }
+      } catch {}
+      Alert.alert('Actualizado', `Estado cambiado a: ${newStatus}`)
+      onStatusChange?.()
+    }
+  }
+
+  async function cancelLead() {
+    Alert.alert('Cancelar servicio', `¿Seguro que quieres cancelar el servicio de ${lead.nombre}?`, [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sí, cancelar', style: 'destructive',
+        onPress: async () => {
+          await supabase.from('clientes').update({ estado: 'Cancelado' }).eq('id', lead.id)
+          onStatusChange?.()
+        },
+      },
+    ])
+  }
+
+  const nextStatus = NEXT_STATUS[lead.estado]
+
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
-      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: color + '15', alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name="build" size={16} color={color} />
+    <View style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: color + '15', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="build" size={18} color={color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{lead.nombre}</Text>
+          <Text style={{ fontSize: 10, color: COLORS.gray }}>{lead.servicio} · {lead.distrito}</Text>
+          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{lead.codigo} · {new Date(lead.created_at).toLocaleDateString()}</Text>
+        </View>
+        <View style={{ backgroundColor: color + '15', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <Text style={{ fontSize: 10, fontWeight: '700', color }}>{statusLabels[lead.estado] || lead.estado}</Text>
+        </View>
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{lead.nombre}</Text>
-        <Text style={{ fontSize: 10, color: COLORS.gray }}>{lead.servicio} · {lead.distrito}</Text>
-      </View>
-      <View style={{ backgroundColor: color + '15', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-        <Text style={{ fontSize: 9, fontWeight: '700', color }}>{lead.estado?.replace('_', ' ')}</Text>
-      </View>
+
+      {lead.descripcion ? (
+        <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 8, fontStyle: 'italic' }} numberOfLines={2}>"{lead.descripcion}"</Text>
+      ) : null}
+
+      {/* Action buttons */}
+      {isActive && (
+        <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
+          {/* WhatsApp */}
+          <TouchableOpacity
+            onPress={() => {
+              const msg = `Hola ${lead.nombre}, soy tu técnico de SOLU. Sobre tu solicitud de ${lead.servicio} (${lead.codigo}).`
+              Linking.openURL(`https://wa.me/51${lead.whatsapp}?text=${encodeURIComponent(msg)}`)
+            }}
+            style={{ flex: 1, backgroundColor: '#25D366', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+          >
+            <Ionicons name="logo-whatsapp" size={14} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>WhatsApp</Text>
+          </TouchableOpacity>
+
+          {/* Chat */}
+          {router && tech && (
+            <TouchableOpacity
+              onPress={() => router.push({
+                pathname: '/chat/[id]',
+                params: {
+                  id: lead.id.toString(),
+                  techId: tech.id.toString(),
+                  techName: tech.nombre,
+                  clientName: lead.nombre,
+                  senderType: 'tecnico',
+                  senderId: tech.id.toString(),
+                },
+              })}
+              style={{ flex: 1, backgroundColor: '#1E3A5F', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+            >
+              <Ionicons name="chatbubbles" size={14} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Chat</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Next status */}
+          {nextStatus && (
+            <TouchableOpacity
+              onPress={() => updateStatus(nextStatus)}
+              style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+            >
+              <Ionicons name="arrow-forward" size={14} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{nextStatus}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Cancel */}
+          <TouchableOpacity
+            onPress={cancelLead}
+            style={{ backgroundColor: '#FEE2E2', borderRadius: 8, padding: 8, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="close" size={14} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   )
 }
@@ -1121,7 +1397,7 @@ function LegalSection({ router }: { router: any }) {
         ].map((item, i) => (
           <TouchableOpacity
             key={i}
-            onPress={() => item.route ? router.push(item.route) : Linking.openURL('https://wa.me/51904518343?text=Hola,%20necesito%20soporte%20con%20SOLU')}
+            onPress={() => item.route ? router.push(item.route) : Linking.openURL(waLink(SUPPORT_PHONE, 'Hola, necesito soporte con SOLU'))}
             style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: i < 3 ? 1 : 0, borderBottomColor: '#F1F5F9' }}
           >
             <Ionicons name={item.icon as any} size={18} color={item.color} />

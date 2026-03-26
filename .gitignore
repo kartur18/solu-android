@@ -33,8 +33,14 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Claude Code
+.claude/
+
 # typescript
 *.tsbuildinfo
+
+# Firebase config (contains API keys)
+google-services.json
 
 # generated native folders
 /ios

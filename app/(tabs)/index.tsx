@@ -10,6 +10,7 @@ import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
 import { ChatBot } from '../../src/components/ChatBot'
+import { track } from '../../src/lib/analytics'
 
 const { width } = Dimensions.get('window')
 const CARD_SIZE = (width - 60) / 4
@@ -126,13 +127,13 @@ export default function HomeScreen() {
       )}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 300 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.blue} />}
       >
         {/* Hero */}
         <LinearGradient
           colors={['#1E3A5F', '#162D4A', '#0F2035']}
-          style={{ padding: 20, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}
+          style={{ padding: 20, paddingTop: 40, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
@@ -149,11 +150,11 @@ export default function HomeScreen() {
             ¿Qué necesitas{'\n'}reparar hoy?
           </Text>
           <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 }}>
-            Técnicos verificados con DNI · Contacto directo
+            El técnico ideal en minutos
           </Text>
 
           <View style={{
-            backgroundColor: 'rgba(255,255,255,0.12)',
+            backgroundColor: 'rgba(255,255,255,0.25)',
             borderRadius: 14,
             padding: 4,
             paddingLeft: 14,
@@ -161,12 +162,12 @@ export default function HomeScreen() {
             alignItems: 'center',
             gap: 8,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.15)',
+            borderColor: 'rgba(255,255,255,0.3)',
           }}>
-            <Ionicons name="search" size={16} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="search" size={16} color="rgba(255,255,255,0.7)" />
             <TextInput
               placeholder="Buscar servicio o técnico..."
-              placeholderTextColor="rgba(255,255,255,0.5)"
+              placeholderTextColor="rgba(255,255,255,0.7)"
               value={heroSearch}
               onChangeText={setHeroSearch}
               onSubmitEditing={() => {
@@ -180,17 +181,19 @@ export default function HomeScreen() {
               returnKeyType="search"
               style={{ flex: 1, color: '#fff', fontSize: 13, paddingVertical: 10 }}
             />
-            {heroSearch.trim() ? (
-              <TouchableOpacity
-                onPress={() => {
+            <TouchableOpacity
+              onPress={() => {
+                if (heroSearch.trim()) {
                   router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() } })
                   setHeroSearch('')
-                }}
-                style={{ backgroundColor: '#F26B21', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginRight: 2 }}
-              >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Buscar</Text>
-              </TouchableOpacity>
-            ) : null}
+                } else {
+                  router.push('/buscar')
+                }
+              }}
+              style={{ backgroundColor: '#F26B21', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginRight: 2 }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Buscar</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Trust stats */}
@@ -220,18 +223,17 @@ export default function HomeScreen() {
             <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Solicitar técnico</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push('/registro')}
+            onPress={() => router.push('/urgencias')}
             activeOpacity={0.85}
             style={{
-              flex: 1, backgroundColor: '#fff', borderRadius: 14,
+              flex: 1, backgroundColor: '#DC2626', borderRadius: 14,
               paddingVertical: 16, paddingHorizontal: 16,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              borderWidth: 1.5, borderColor: '#E2E8F0',
-              elevation: 3,
+              elevation: 6,
             }}
           >
-            <Ionicons name="person-add" size={18} color={COLORS.dark} />
-            <Text style={{ color: COLORS.dark, fontWeight: '800', fontSize: 14 }}>Soy técnico</Text>
+            <Ionicons name="flash" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Emergencia 24/7</Text>
           </TouchableOpacity>
         </View>
 
@@ -267,7 +269,7 @@ export default function HomeScreen() {
             {CATEGORIES.map((cat) => (
               <PressableCard
                 key={cat.name}
-                onPress={() => router.push({ pathname: '/buscar', params: { servicio: cat.name } })}
+                onPress={() => { track('Category Clicked', { category: cat.name }); router.push({ pathname: '/buscar', params: { servicio: cat.name } }) }}
                 style={{
                   width: CARD_SIZE,
                   backgroundColor: '#fff', borderRadius: 14,
@@ -307,9 +309,9 @@ export default function HomeScreen() {
             shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
           }}>
             {[
-              { icon: 'shield-checkmark' as const, color: COLORS.green, title: 'Verificados con DNI', desc: 'Identidad confirmada de cada técnico' },
-              { icon: 'logo-whatsapp' as const, color: '#25D366', title: 'Contacto directo', desc: 'Habla por WhatsApp sin intermediarios' },
-              { icon: 'cash' as const, color: COLORS.pri, title: 'Paga como prefieras', desc: 'Yape, Plin, efectivo o transferencia' },
+              { icon: 'shield-checkmark' as const, color: COLORS.green, title: 'Profesionales confiables', desc: 'Verificados, calificados y con garantía' },
+              { icon: 'time' as const, color: '#2563EB', title: 'Respuesta inmediata', desc: 'Conecta con un técnico en minutos' },
+              { icon: 'cash' as const, color: COLORS.pri, title: 'Precios transparentes', desc: 'Sin sorpresas · Yape, Plin o efectivo' },
             ].map((item, i) => (
               <View key={i} style={{
                 flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -328,24 +330,25 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Urgencias 24/7 banner */}
+
+        {/* Promo banner */}
         <PressableCard
-          onPress={() => router.push('/urgencias')}
+          onPress={() => router.push({ pathname: '/(tabs)/micuenta' })}
           style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}
         >
           <LinearGradient
-            colors={['#DC2626', '#991B1B']}
+            colors={['#1E3A5F', '#0F2035']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={{ padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
           >
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="warning" size={24} color="#fff" />
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="gift" size={24} color="#FFD700" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>Urgencias 24/7</Text>
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>Técnico de emergencia en tu zona ahora</Text>
+              <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>¿Eres técnico? Primer mes GRATIS</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>Regístrate y empieza a recibir clientes hoy</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.8)" />
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" />
           </LinearGradient>
         </PressableCard>
 
@@ -403,6 +406,12 @@ export default function HomeScreen() {
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Registrarme gratis →</Text>
             </PressableCard>
           </View>
+        </View>
+
+        {/* Footer */}
+        <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>SOLU v1.0 · CITYLAND GROUP E.I.R.L.</Text>
+          <Text style={{ fontSize: 9, color: COLORS.gray2, marginTop: 2 }}>Técnicos verificados en todo el Perú</Text>
         </View>
       </ScrollView>
       <ChatBot />
