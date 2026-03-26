@@ -241,24 +241,37 @@ export default function SolicitarScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }} contentContainerStyle={{ paddingBottom: 40 }}>
-      <View style={{ padding: 20 }}>
-        {/* Steps indicator */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>1</Text>
-            </View>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.dark }}>Completa el formulario</Text>
+    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 40 }}>
+      {/* Header Premium */}
+      <View style={{ backgroundColor: '#1A1A2E', padding: 24, paddingTop: 48, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="build" size={18} color="#fff" />
           </View>
-          <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0' }} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: COLORS.gray, fontSize: 11, fontWeight: '800' }}>2</Text>
-            </View>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.gray }}>Te asignamos técnico</Text>
+          <View>
+            <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff' }}>Solicitar Técnico</Text>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Completa el formulario y te asignamos uno</Text>
           </View>
         </View>
+        {/* Steps indicator premium */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>1</Text>
+            </View>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Completa datos</Text>
+          </View>
+          <View style={{ flex: 1, height: 2, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 1 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '900' }}>2</Text>
+            </View>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.5)' }}>Te asignamos técnico</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={{ paddingHorizontal: 20 }}>
 
         <Text style={styles.label}>Nombre *</Text>
         <TextInput placeholder="Tu nombre" value={nombre} onChangeText={setNombre} style={styles.input} placeholderTextColor={COLORS.gray2} />
@@ -367,17 +380,17 @@ export default function SolicitarScreen() {
         <TouchableOpacity
           onPress={submit}
           disabled={loading}
-          style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8 }}
+          style={{ backgroundColor: '#EA580C', borderRadius: 20, padding: 20, alignItems: 'center', marginTop: 12, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 }}
         >
-          <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>
-            {loading ? 'Enviando solicitud...' : 'Solicitar técnico →'}
+          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.5 }}>
+            {loading ? 'ENVIANDO...' : 'SOLICITAR TÉCNICO →'}
           </Text>
         </TouchableOpacity>
 
         {/* Info */}
-        <View style={{ marginTop: 16, padding: 14, backgroundColor: '#EFF6FF', borderRadius: 12 }}>
-          <Text style={{ fontSize: 11, color: '#1E40AF', lineHeight: 16 }}>
-            Al enviar tu solicitud, buscaremos al mejor técnico disponible en tu zona y lo conectaremos contigo por WhatsApp. El servicio es gratuito para clientes.
+        <View style={{ marginTop: 16, padding: 16, backgroundColor: 'rgba(234,88,12,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(234,88,12,0.15)' }}>
+          <Text style={{ fontSize: 12, color: '#9A3412', lineHeight: 18, fontWeight: '600' }}>
+            🛡️ Al enviar tu solicitud, buscaremos al mejor técnico verificado en tu zona y lo conectaremos contigo por WhatsApp. El servicio es gratuito para clientes.
           </Text>
         </View>
       </View>
@@ -626,15 +639,16 @@ async function sendPushNotification(expoPushToken: string, title: string, body: 
 }
 
 const styles = {
-  label: { fontSize: 13, fontWeight: '700' as const, color: COLORS.dark, marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '800' as const, color: '#1A1A2E', marginBottom: 8 },
   input: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 14,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 15,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.dark,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    color: '#1A1A2E',
+    fontWeight: '600' as const,
   },
 }

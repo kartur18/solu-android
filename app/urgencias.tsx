@@ -148,25 +148,27 @@ export default function UrgenciasScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 80 }}>
-      {/* Header */}
-      <View style={{ backgroundColor: '#DC2626', padding: 20, paddingBottom: 28, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
+      {/* Header Emergencia Premium */}
+      <View style={{ backgroundColor: '#7F1D1D', padding: 24, paddingTop: 48, paddingBottom: 32, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="arrow-back" size={20} color="#fff" />
           </TouchableOpacity>
-          <Ionicons name="warning" size={26} color="#FDE68A" />
-          <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff' }}>Emergencia 24/7</Text>
+          <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 8 }}>
+            <Ionicons name="warning" size={24} color="#FDE68A" />
+          </View>
+          <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff' }}>Emergencia 24/7</Text>
         </View>
-        <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', marginBottom: 6 }}>
+        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginBottom: 10, fontWeight: '600', lineHeight: 20 }}>
           Conectamos con un técnico de emergencia en tu zona lo más rápido posible
         </Text>
-        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', marginTop: 4 }}>
-          <Text style={{ color: '#FDE68A', fontSize: 11, fontWeight: '800' }}>Respuesta garantizada en menos de 30 minutos</Text>
+        <View style={{ backgroundColor: 'rgba(220,38,38,0.4)', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8, alignSelf: 'flex-start' }}>
+          <Text style={{ color: '#FDE68A', fontSize: 12, fontWeight: '900' }}>⚡ Respuesta en menos de 30 min</Text>
         </View>
         {location.distrito && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' }}>
-            <Ionicons name="navigate" size={12} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 10, fontWeight: '600' }}>📍 {location.distrito}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, alignSelf: 'flex-start' }}>
+            <Ionicons name="navigate" size={14} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>📍 {location.distrito}</Text>
           </View>
         )}
       </View>
@@ -280,19 +282,19 @@ export default function UrgenciasScreen() {
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={loading}
-              style={{ backgroundColor: '#DC2626', borderRadius: 12, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+              style={{ backgroundColor: '#DC2626', borderRadius: 20, padding: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, shadowColor: '#DC2626', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.45, shadowRadius: 16, elevation: 10 }}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <Ionicons name="warning" size={20} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Solicitar técnico urgente</Text>
+                  <Ionicons name="warning" size={22} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.5 }}>ENVIAR URGENCIA</Text>
                 </>
               )}
             </TouchableOpacity>
 
-            <Text style={{ fontSize: 9, color: COLORS.gray2, textAlign: 'center', marginTop: 8 }}>
+            <Text style={{ fontSize: 10, color: COLORS.gray2, textAlign: 'center', marginTop: 10, fontWeight: '600' }}>
               Te asignaremos el técnico más cercano disponible
             </Text>
           </View>
