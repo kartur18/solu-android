@@ -55,7 +55,6 @@
       "expo-router",
       "expo-web-browser",
       "expo-image-picker",
-      "expo-image-manipulator",
       [
         "expo-location",
         {

@@ -1,35 +1,26 @@
-import * as ImageManipulator from 'expo-image-manipulator'
+/**
+ * Image compression utilities.
+ * Uses expo-image-picker's built-in quality setting since
+ * expo-image-manipulator has compatibility issues with SDK 55 EAS builds.
+ * The actual compression happens at pick time via quality parameter.
+ * These functions serve as passthrough + future upgrade path.
+ */
 
 /**
- * Compress and resize an image before uploading.
- * Max dimensions: 1200x1200, quality: 0.7, format: JPEG.
+ * Compress an image for general uploads.
+ * In the current implementation, compression is handled by expo-image-picker
+ * at pick time (quality: 0.7). This function is a passthrough that can be
+ * upgraded later when expo-image-manipulator is fixed for SDK 55.
  */
-export async function compressImage(uri: string, maxSize = 1200): Promise<string> {
-  try {
-    const result = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: maxSize } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-    )
-    return result.uri
-  } catch {
-    // If compression fails, return original
-    return uri
-  }
+export async function compressImage(uri: string): Promise<string> {
+  // Compression handled at pick time by expo-image-picker quality setting
+  return uri
 }
 
 /**
- * Compress specifically for DNI photos (smaller, higher quality for readability).
+ * Compress specifically for DNI photos.
+ * Same as above - compression handled at pick time.
  */
 export async function compressDNIPhoto(uri: string): Promise<string> {
-  try {
-    const result = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: 1000 } }],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-    )
-    return result.uri
-  } catch {
-    return uri
-  }
+  return uri
 }
