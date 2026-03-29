@@ -10,15 +10,35 @@
     },
     "preview": {
       "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      }
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": false }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "distribution": "store",
+        "credentialsSource": "remote"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "carlosrtr18@icloud.com",
+        "ascAppId": "6761320996",
+        "appleTeamId": "R6BSX2298H"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "production"
+      }
+    }
   }
 }
+
