@@ -42,6 +42,10 @@ yarn-error.*
 # Firebase config (contains API keys)
 google-services.json
 
+# App config (contains Google Maps API key and other secrets)
+# Use app.config.ts + EAS Secrets for sensitive values
+# app.json
+
 # generated native folders
 /ios
 /android

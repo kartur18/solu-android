@@ -17,7 +17,7 @@
       "bundleIdentifier": "pe.solu.app",
       "buildNumber": "1",
       "config": {
-        "googleMapsApiKey": "AIzaSyB2UsKGEIT7V99BuFtqbZbBt5YD8gT-0N8"
+        "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
       },
       "associatedDomains": [
         "applinks:solu.pe",
@@ -36,7 +36,7 @@
       "versionCode": 1,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyB2UsKGEIT7V99BuFtqbZbBt5YD8gT-0N8"
+          "apiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
         }
       },
       "intentFilters": [
@@ -100,7 +100,7 @@
       [
         "react-native-maps",
         {
-          "googleMapsApiKey": "AIzaSyB2UsKGEIT7V99BuFtqbZbBt5YD8gT-0N8"
+          "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
         }
       ]
     ],
