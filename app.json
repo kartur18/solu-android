@@ -112,7 +112,6 @@
         }
       ],
       "expo-font",
-      "@sentry/react-native",
       [
         "react-native-maps",
         {
