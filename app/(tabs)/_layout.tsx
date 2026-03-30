@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 
-const ACTIVE_COLOR = '#1E3A5F'
+const ACTIVE_COLOR = '#F26B21'
 const INACTIVE_COLOR = '#9CA3AF'
 
 type IconName = React.ComponentProps<typeof Ionicons>['name']
@@ -35,7 +35,7 @@ function TabIcon({ focused, iconFilled, iconOutline }: { focused: boolean; iconF
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets()
-  const bottomPad = Math.max(insets.bottom, 10)
+  const bottomPad = Math.max(insets.bottom, 16)
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
@@ -61,15 +61,16 @@ export default function TabLayout() {
         tabBarInactiveTintColor: INACTIVE_COLOR,
         tabBarStyle: {
           backgroundColor: COLORS.white,
-          borderTopWidth: 0,
-          height: 60 + bottomPad,
+          borderTopWidth: 1,
+          borderTopColor: '#F1F5F9',
+          height: 64 + bottomPad,
           paddingBottom: bottomPad,
-          paddingTop: 6,
-          shadowColor: '#1E3A5F',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          elevation: 10,
+          paddingTop: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 12,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginTop: 2 },
         headerStyle: { backgroundColor: COLORS.white, shadowColor: 'transparent', elevation: 0 },

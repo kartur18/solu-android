@@ -79,6 +79,9 @@ export default function CuentaScreen() {
   const [galleryImages, setGalleryImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
 
+  // Documents state
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null)
+
   // Pagos state
   const [pagos, setPagos] = useState<any[]>([])
 
@@ -290,6 +293,61 @@ export default function CuentaScreen() {
         }
       },
     ])
+  }
+
+  // --- Document upload ---
+  async function pickAndUploadDoc(tipo: 'antecedentes_penales' | 'antecedentes_policiales' | 'certificado_estudios') {
+    if (!tech) return
+    const TIPO_LABELS: Record<string, string> = {
+      antecedentes_penales: 'Antecedentes Penales',
+      antecedentes_policiales: 'Antecedentes Policiales',
+      certificado_estudios: 'Certificado de Estudios',
+    }
+    const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permResult.granted) {
+      return Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir documentos.')
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.85,
+    })
+    if (result.canceled || !result.assets?.[0]) return
+    setUploadingDoc(tipo)
+    try {
+      const asset = result.assets[0]
+      const ext = asset.uri.split('.').pop() || 'jpg'
+      const fileName = `doc_${tech.id}_${tipo}_${Date.now()}.${ext}`
+      const response = await fetch(asset.uri)
+      const blob = await response.blob()
+      const { error: uploadError } = await supabase.storage
+        .from('fotos')
+        .upload(`documentos/${fileName}`, blob, { contentType: `image/${ext}`, upsert: false })
+      if (uploadError) throw uploadError
+      const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(`documentos/${fileName}`)
+      const pubUrl = urlData.publicUrl
+      const ESTADO_FIELD: Record<string, string> = {
+        antecedentes_penales: 'antecedentes_penales_estado',
+        antecedentes_policiales: 'antecedentes_policiales_estado',
+        certificado_estudios: 'certificado_estudios_estado',
+      }
+      const URL_FIELD: Record<string, string> = {
+        antecedentes_penales: 'antecedentes_penales_url',
+        antecedentes_policiales: 'antecedentes_policiales_url',
+        certificado_estudios: 'certificado_estudios_url',
+      }
+      const { error: dbError } = await supabase.from('tecnicos').update({
+        [URL_FIELD[tipo]]: pubUrl,
+        [ESTADO_FIELD[tipo]]: 'pendiente',
+      }).eq('id', tech.id)
+      if (dbError) throw dbError
+      setTech({ ...tech, [URL_FIELD[tipo]]: pubUrl, [ESTADO_FIELD[tipo]]: 'pendiente' } as any)
+      Alert.alert('¡Documento subido!', `Tu ${TIPO_LABELS[tipo]} fue enviado para revisión. El equipo de SOLU lo verificará en 24-48 horas.`)
+    } catch (err: any) {
+      Alert.alert('Error', 'No se pudo subir el documento: ' + (err?.message || 'Intenta de nuevo'))
+    } finally {
+      setUploadingDoc(null)
+    }
   }
 
   // --- Cotizacion functions ---
@@ -1206,6 +1264,76 @@ export default function CuentaScreen() {
                     )}
                   </View>
                 )}
+              </View>
+
+              {/* ─── DOCUMENTOS DE VERIFICACIÓN ─── */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <Ionicons name="shield-checkmark" size={18} color='#10B981' />
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Documentos de seguridad</Text>
+                </View>
+                <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 14, lineHeight: 16 }}>
+                  Sube tus documentos para que los clientes vean que eres un profesional confiable y verificado por SOLU.
+                </Text>
+
+                {([
+                  { tipo: 'antecedentes_penales' as const,    label: 'Antecedentes Penales',    sub: 'Certificado INPE', icon: 'document-text' },
+                  { tipo: 'antecedentes_policiales' as const,  label: 'Antecedentes Policiales', sub: 'Certificado PNP',  icon: 'shield' },
+                  { tipo: 'certificado_estudios' as const,     label: 'Certificado de Estudios', sub: 'Título técnico',    icon: 'school' },
+                ]).map((doc) => {
+                  const estadoField = `${doc.tipo}_estado` as keyof typeof tech
+                  const estado = ((tech as any)[estadoField]) || 'sin_subir'
+                  const estadoColors: Record<string, string> = {
+                    sin_subir: COLORS.gray2, pendiente: '#F59E0B', verificado: '#10B981', rechazado: '#EF4444'
+                  }
+                  const estadoLabels: Record<string, string> = {
+                    sin_subir: 'Sin subir', pendiente: '⏳ En revisión', verificado: '✅ Verificado', rechazado: '❌ Rechazado'
+                  }
+                  const isUploading = uploadingDoc === doc.tipo
+                  return (
+                    <View key={doc.tipo} style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 12,
+                      paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9',
+                    }}>
+                      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: estadoColors[estado] + '15', alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name={doc.icon as any} size={18} color={estadoColors[estado]} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark }}>{doc.label}</Text>
+                        <Text style={{ fontSize: 10, color: COLORS.gray }}>{doc.sub}</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '600', color: estadoColors[estado], marginTop: 2 }}>
+                          {estadoLabels[estado]}
+                        </Text>
+                      </View>
+                      {estado !== 'verificado' && (
+                        <TouchableOpacity
+                          onPress={() => pickAndUploadDoc(doc.tipo)}
+                          disabled={isUploading}
+                          style={{
+                            backgroundColor: isUploading ? '#F1F5F9' : COLORS.pri,
+                            borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+                            flexDirection: 'row', alignItems: 'center', gap: 4,
+                          }}
+                        >
+                          {isUploading ? (
+                            <ActivityIndicator size="small" color={COLORS.pri} />
+                          ) : (
+                            <Ionicons name="cloud-upload-outline" size={14} color="#fff" />
+                          )}
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: isUploading ? COLORS.gray : '#fff' }}>
+                            {isUploading ? 'Subiendo...' : estado === 'rechazado' ? 'Volver a subir' : 'Subir'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )
+                })}
+
+                <View style={{ backgroundColor: '#F0FDF4', borderRadius: 10, padding: 10, marginTop: 8 }}>
+                  <Text style={{ fontSize: 10, color: '#065F46', lineHeight: 14 }}>
+                    🔒 Tus documentos son revisados manualmente por el equipo de SOLU antes de mostrarse. Los clientes solo ven los badges de verificación, no el documento.
+                  </Text>
+                </View>
               </View>
 
               {/* Danger zone */}

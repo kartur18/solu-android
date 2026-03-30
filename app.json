@@ -21,7 +21,8 @@
       },
       "associatedDomains": [
         "applinks:solu.pe",
-        "webcredentials:solu.pe"
+        "webcredentials:solu.pe",
+        "applinks:www.solu.pe"
       ],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "SOLU necesita acceso a tus fotos para subir tu foto de perfil y DNI.",
@@ -58,6 +59,21 @@
               "scheme": "https",
               "host": "solu.pe",
               "pathPrefix": "/calificar"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/solicitar"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/fidelidad"
             }
           ],
           "category": [

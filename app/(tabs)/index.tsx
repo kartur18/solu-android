@@ -16,20 +16,20 @@ const { width } = Dimensions.get('window')
 const CARD_SIZE = (width - 60) / 4
 
 const CATEGORIES = [
-  { name: 'Gasfitería', icon: 'water' as const, color: '#3B82F6', gradientEnd: '#60A5FA' },
-  { name: 'Electricidad', icon: 'flash' as const, color: '#F59E0B', gradientEnd: '#FBBF24' },
-  { name: 'Pintura', icon: 'color-palette' as const, color: '#8B5CF6', gradientEnd: '#A78BFA' },
-  { name: 'Cerrajería', icon: 'key' as const, color: '#EF4444', gradientEnd: '#F87171' },
-  { name: 'Limpieza', icon: 'sparkles' as const, color: '#10B981', gradientEnd: '#34D399' },
-  { name: 'Carpintería', icon: 'hammer' as const, color: '#F97316', gradientEnd: '#FB923C' },
-  { name: 'Refrigeración', icon: 'snow' as const, color: '#06B6D4', gradientEnd: '#22D3EE' },
-  { name: 'Albañilería', icon: 'construct' as const, color: '#78716C', gradientEnd: '#A8A29E' },
+  { name: 'Gasfitería',    icon: 'water'         as const, color: '#F26B21', bg: '#FFF3EC' },
+  { name: 'Electricidad', icon: 'flash'          as const, color: '#D45A16', bg: '#FEF1E8' },
+  { name: 'Pintura',      icon: 'color-palette'  as const, color: '#F26B21', bg: '#FFF3EC' },
+  { name: 'Cerrajería',   icon: 'key'            as const, color: '#B84D12', bg: '#FEEDE3' },
+  { name: 'Limpieza',     icon: 'sparkles'       as const, color: '#F26B21', bg: '#FFF3EC' },
+  { name: 'Carpintería',  icon: 'hammer'         as const, color: '#D45A16', bg: '#FEF1E8' },
+  { name: 'Refrigeración',icon: 'snow'           as const, color: '#F26B21', bg: '#FFF3EC' },
+  { name: 'Albañilería',  icon: 'construct'      as const, color: '#B84D12', bg: '#FEEDE3' },
 ]
 
 const TRUST_STATS = [
   { label: 'Técnicos', value: '50+', icon: 'people' as const },
   { label: 'Servicios', value: '100+', icon: 'construct' as const },
-  { label: 'Distritos', value: '95+', icon: 'location' as const },
+  { label: 'Distritos', value: '95', icon: 'location' as const },
 ]
 
 function PressableCard({ children, onPress, style }: { children: React.ReactNode; onPress: () => void; style?: any }) {
@@ -128,7 +128,7 @@ export default function HomeScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.blue} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.pri} colors={[COLORS.pri]} />}
       >
         {/* Hero Premium */}
         <LinearGradient
@@ -272,25 +272,27 @@ export default function HomeScreen() {
                 onPress={() => { track('Category Clicked', { category: cat.name }); router.push({ pathname: '/buscar', params: { servicio: cat.name } }) }}
                 style={{
                   width: CARD_SIZE,
-                  backgroundColor: '#fff', borderRadius: 14,
-                  paddingVertical: 14, paddingHorizontal: 4,
+                  backgroundColor: '#fff', borderRadius: 16,
+                  paddingVertical: 16, paddingHorizontal: 4,
                   alignItems: 'center', marginBottom: 10,
-                  shadowColor: cat.color,
+                  shadowColor: '#F26B21',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.08,
                   shadowRadius: 6,
                   elevation: 2,
+                  borderWidth: 1,
+                  borderColor: '#FFF3EC',
                 }}
               >
-                <LinearGradient
-                  colors={[cat.color + '18', cat.gradientEnd + '10']}
+                <View
                   style={{
-                    width: 44, height: 44, borderRadius: 14,
+                    width: 46, height: 46, borderRadius: 15,
+                    backgroundColor: cat.bg,
                     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
                   }}
                 >
                   <Ionicons name={cat.icon} size={22} color={cat.color} />
-                </LinearGradient>
+                </View>
                 <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.dark, textAlign: 'center' }} numberOfLines={1}>
                   {cat.name}
                 </Text>
@@ -298,7 +300,7 @@ export default function HomeScreen() {
             ))}
           </View>
           <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7} style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 11 }}>Ver los 100+ servicios →</Text>
+            <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver los 100+ servicios →</Text>
           </TouchableOpacity>
         </View>
 
@@ -309,9 +311,9 @@ export default function HomeScreen() {
             shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
           }}>
             {[
-              { icon: 'shield-checkmark' as const, color: COLORS.green, title: 'Profesionales confiables', desc: 'Verificados, calificados y con garantía' },
-              { icon: 'time' as const, color: '#2563EB', title: 'Respuesta inmediata', desc: 'Conecta con un técnico en minutos' },
-              { icon: 'cash' as const, color: COLORS.pri, title: 'Precios transparentes', desc: 'Sin sorpresas · Yape, Plin o efectivo' },
+              { icon: 'shield-checkmark' as const, color: COLORS.pri, title: 'Profesionales verificados', desc: 'DNI verificado con RENIEC · garantía total' },
+              { icon: 'time' as const, color: '#1E3A5F', title: 'Respuesta inmediata', desc: 'Un técnico en tu puerta en minutos' },
+              { icon: 'star' as const, color: COLORS.pri, title: 'Pagás al técnico directo', desc: 'Yape, Plin, efectivo · sin cobros extra' },
             ].map((item, i) => (
               <View key={i} style={{
                 flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -357,11 +359,11 @@ export default function HomeScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Mejor valorados</Text>
             <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7}>
-              <Text style={{ color: COLORS.blue, fontWeight: '600', fontSize: 11 }}>Ver todos →</Text>
+              <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver todos →</Text>
             </TouchableOpacity>
           </View>
           {loading ? (
-            <ActivityIndicator size="large" color={COLORS.blue} style={{ marginVertical: 30 }} />
+            <ActivityIndicator size="large" color={COLORS.pri} style={{ marginVertical: 30 }} />
           ) : topTechs.length > 0 ? (
             <Animated.View style={{ opacity: fadeAnim }}>
               {topTechs.map((tech) => <TechCard key={tech.id} tech={tech} />)}
@@ -371,13 +373,13 @@ export default function HomeScreen() {
               backgroundColor: '#fff', borderRadius: 16, padding: 30, alignItems: 'center',
               shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
             }}>
-              <Ionicons name="search" size={36} color={COLORS.gray2} />
-              <Text style={{ color: COLORS.dark, marginTop: 8, fontSize: 13, fontWeight: '600' }}>Registra técnicos para verlos aquí</Text>
-              <Text style={{ color: COLORS.gray2, marginTop: 4, fontSize: 11, textAlign: 'center' }}>Los técnicos con mejor calificación aparecerán en esta sección</Text>
+              <Ionicons name="people" size={36} color={COLORS.gray2} />
+              <Text style={{ color: COLORS.dark, marginTop: 8, fontSize: 13, fontWeight: '700' }}>Registra técnicos para verlos aquí</Text>
+              <Text style={{ color: COLORS.gray2, marginTop: 4, fontSize: 11, textAlign: 'center' }}>Los técnicos con mejor calificación{`\n`}aparecerán en esta sección</Text>
               <TouchableOpacity
                 onPress={() => router.push('/buscar')}
                 activeOpacity={0.8}
-                style={{ marginTop: 12, backgroundColor: COLORS.blue, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
+                style={{ marginTop: 12, backgroundColor: COLORS.pri, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
               >
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Buscar técnicos →</Text>
               </TouchableOpacity>
