@@ -60,8 +60,34 @@ export default function CuentaScreen() {
   const [tech, setTech] = useState<Tecnico | null>(null)
   const [leads, setLeads] = useState<Cliente[]>([])
   const [reviews, setReviews] = useState<Resena[]>([])
+  const [isEditing, setIsEditing] = useState(false)
   const [tab, setTab] = useState<Tab>('dashboard')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [subscribingTo, setSubscribingTo] = useState<string | null>(null)
+
+  async function handleSubscribe(planKey: string) {
+    if (!tech) return
+    setSubscribingTo(planKey)
+    try {
+      const res = await fetch(`${ENV.API_BASE_URL}/flow-subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tecnicoId: tech.id, plan: planKey })
+      })
+      if (!res.ok) throw new Error('Error al conectar con la pasarela Flow')
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      if (data.url) {
+        Linking.openURL(data.url)
+      } else {
+        throw new Error('No se recibió el enlace de pago')
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'No se pudo iniciar el pago')
+    } finally {
+      setSubscribingTo(null)
+    }
+  }
 
   // Edit profile state
   const [editing, setEditing] = useState(false)
@@ -317,15 +343,34 @@ export default function CuentaScreen() {
     try {
       const asset = result.assets[0]
       const ext = asset.uri.split('.').pop() || 'jpg'
-      const fileName = `doc_${tech.id}_${tipo}_${Date.now()}.${ext}`
-      const response = await fetch(asset.uri)
-      const blob = await response.blob()
-      const { error: uploadError } = await supabase.storage
-        .from('fotos')
-        .upload(`documentos/${fileName}`, blob, { contentType: `image/${ext}`, upsert: false })
-      if (uploadError) throw uploadError
-      const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(`documentos/${fileName}`)
-      const pubUrl = urlData.publicUrl
+      const type = `image/${ext === 'pdf' ? 'pdf' : ext === 'png' ? 'png' : 'jpeg'}`
+      
+      const formData = new FormData()
+      formData.append('file', {
+        uri: asset.uri,
+        name: `doc_${tech.id}_${tipo}.${ext}`,
+        type,
+      } as any)
+      formData.append('tipo', tipo)
+      formData.append('tecnicoId', String(tech.id))
+
+      const uploadRes = await fetch(`${ENV.API_BASE_URL}/upload-doc`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (!uploadRes.ok) {
+        throw new Error('Error al subir documento en el servidor')
+      }
+
+      const resData = await uploadRes.json()
+      if (resData.error) throw new Error(resData.error)
+
+      const pubUrl = resData.url
+
       const ESTADO_FIELD: Record<string, string> = {
         antecedentes_penales: 'antecedentes_penales_estado',
         antecedentes_policiales: 'antecedentes_policiales_estado',
@@ -336,11 +381,7 @@ export default function CuentaScreen() {
         antecedentes_policiales: 'antecedentes_policiales_url',
         certificado_estudios: 'certificado_estudios_url',
       }
-      const { error: dbError } = await supabase.from('tecnicos').update({
-        [URL_FIELD[tipo]]: pubUrl,
-        [ESTADO_FIELD[tipo]]: 'pendiente',
-      }).eq('id', tech.id)
-      if (dbError) throw dbError
+      
       setTech({ ...tech, [URL_FIELD[tipo]]: pubUrl, [ESTADO_FIELD[tipo]]: 'pendiente' } as any)
       Alert.alert('¡Documento subido!', `Tu ${TIPO_LABELS[tipo]} fue enviado para revisión. El equipo de SOLU lo verificará en 24-48 horas.`)
     } catch (err: any) {
@@ -933,16 +974,23 @@ export default function CuentaScreen() {
                           </View>
                         ))}
                         <TouchableOpacity
-                          onPress={() => Linking.openURL(`${plan.culqiLink}?metadata[tecnico_id]=${tech.id}&metadata[plan]=${planKey}`)}
-                          style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                          disabled={subscribingTo === planKey}
+                          onPress={() => handleSubscribe(planKey)}
+                          style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: subscribingTo === planKey ? 0.7 : 1 }}
                         >
-                          <Ionicons name="card-outline" size={18} color="#fff" />
-                          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                            {isCurrent ? `Renovar S/${plan.price}` : `Cambiar a ${plan.name} S/${plan.price}`}
-                          </Text>
+                          {subscribingTo === planKey ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <>
+                              <Ionicons name="card-outline" size={18} color="#fff" />
+                              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+                                {isCurrent ? `Renovar S/${plan.price}` : `Cambiar a ${plan.name} S/${plan.price}`}
+                              </Text>
+                            </>
+                          )}
                         </TouchableOpacity>
                         <View style={{ backgroundColor: '#F0FDF4', borderRadius: 8, padding: 8, marginTop: 6, alignItems: 'center' }}>
-                          <Text style={{ fontSize: 10, color: '#065F46' }}>Acepta tarjeta, Yape y más · Pago seguro con Culqi</Text>
+                          <Text style={{ fontSize: 10, color: '#065F46' }}>Pago seguro y automatizado vía Flow.cl</Text>
                         </View>
                       </View>
                     )
@@ -980,10 +1028,10 @@ export default function CuentaScreen() {
               <View style={{ backgroundColor: '#EFF6FF', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <Ionicons name="information-circle" size={18} color="#2563EB" />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E40AF' }}>Información de pago</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E40AF' }}>Membresía Automática con Flow</Text>
                 </View>
                 <Text style={{ fontSize: 12, color: '#1E40AF', lineHeight: 18 }}>
-                  Los pagos se procesan a través de Culqi. Al pagar con tarjeta, tu plan se activa automáticamente.
+                  Tu plan se activará al momento o se renovará automáticamente usando el sistema seguro Flow. Podrás cancelarlo cuando quieras.
                 </Text>
               </View>
 

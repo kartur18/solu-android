@@ -58,20 +58,21 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
     <TouchableOpacity
       onPress={() => router.push(`/tecnico/${tech.id}`)}
       activeOpacity={0.85}
-      style={{
-        backgroundColor: COLORS.white,
-        borderRadius: 18,
-        padding: 0,
-        marginBottom: 14,
-        borderWidth: 0,
-        shadowColor: '#1E3A5F',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 4,
-        overflow: 'hidden',
-      }}
     >
+      <View style={{
+        backgroundColor: COLORS.white,
+        borderRadius: 20,
+        padding: 0,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.05,
+        shadowRadius: 16,
+        elevation: 3,
+        overflow: 'hidden',
+      }}>
       {/* Colored left border */}
       <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: leftBorderColor, borderTopLeftRadius: 18, borderBottomLeftRadius: 18 }} />
 
@@ -255,6 +256,7 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
           </TouchableOpacity>
         </View>
       </View>
+    </View>
     </TouchableOpacity>
   )
 })
