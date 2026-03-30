@@ -151,8 +151,8 @@ export default function UrgenciasScreen() {
       {/* Header Emergencia Premium */}
       <View style={{ backgroundColor: '#7F1D1D', padding: 24, paddingTop: 48, paddingBottom: 32, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="arrow-back" size={20} color="#fff" />
+          <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/') }} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center', shadowColor: '#DC2626', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 8 }}>
             <Ionicons name="warning" size={24} color="#FDE68A" />

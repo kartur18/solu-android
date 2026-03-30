@@ -86,7 +86,7 @@ export function ChatBot() {
       <TouchableOpacity
         onPress={() => setOpen(true)}
         style={{
-          position: 'absolute', bottom: 16, right: 16, width: 56, height: 56,
+          position: 'absolute', bottom: 90, right: 16, width: 56, height: 56,
           borderRadius: 28, backgroundColor: COLORS.pri, alignItems: 'center',
           justifyContent: 'center', elevation: 6,
           shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6,
@@ -100,7 +100,7 @@ export function ChatBot() {
   return (
     <Modal visible={open} animationType="slide" transparent>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1, justifyContent: 'flex-end' }}
       >
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setOpen(false)} />

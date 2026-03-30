@@ -77,7 +77,8 @@ function ClienteRedirect({ router, onBack }: { router: any; onBack: () => void }
     <View style={{ flex: 1 }}>
       <TouchableOpacity
         onPress={onBack}
-        style={{ position: 'absolute', top: 12, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        style={{ position: 'absolute', top: 32, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
       >
         <Ionicons name="arrow-back" size={20} color="#1E3A5F" />
       </TouchableOpacity>
@@ -92,7 +93,8 @@ function TecnicoRedirect({ router, onBack }: { router: any; onBack: () => void }
     <View style={{ flex: 1 }}>
       <TouchableOpacity
         onPress={onBack}
-        style={{ position: 'absolute', top: 12, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        style={{ position: 'absolute', top: 32, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
       >
         <Ionicons name="arrow-back" size={20} color="#1E3A5F" />
       </TouchableOpacity>

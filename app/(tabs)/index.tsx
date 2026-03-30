@@ -128,6 +128,7 @@ export default function HomeScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 120 }}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.pri} colors={[COLORS.pri]} />}
       >
         {/* Hero Premium */}
@@ -335,7 +336,7 @@ export default function HomeScreen() {
 
         {/* Promo banner */}
         <PressableCard
-          onPress={() => router.push({ pathname: '/(tabs)/micuenta' })}
+          onPress={() => router.push('/registro')}
           style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}
         >
           <LinearGradient

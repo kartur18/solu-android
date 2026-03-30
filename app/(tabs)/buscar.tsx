@@ -584,7 +584,7 @@ export default function BuscarScreen() {
           <TechMapView techs={filteredTechs} />
         </View>
       ) : (
-        <ScrollView style={{ flex: 1, padding: 16 }}>
+        <ScrollView style={{ flex: 1, padding: 16 }} keyboardShouldPersistTaps="handled">
           {filteredTechs.map((tech, index) => (
             <FadeInView key={`${tech.id}-${resultsKey.current}`} delay={index * 60}>
               <TechCard tech={tech} onToggleFavorite={toggleFavorite} isFavorite={isFavorite(tech.id)} />

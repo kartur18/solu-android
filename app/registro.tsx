@@ -162,7 +162,7 @@ export default function RegistroScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }}>
+    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }} keyboardShouldPersistTaps="handled">
       <View style={{ padding: 20 }}>
         {/* Progress */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>

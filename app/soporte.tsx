@@ -71,7 +71,7 @@ export default function SoporteScreen() {
     >
       {/* Header */}
       <View style={{ backgroundColor: '#1E3A5F', padding: 16, paddingTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/') }}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
