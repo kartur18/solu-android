@@ -100,11 +100,11 @@ export function ChatBot() {
   return (
     <Modal visible={open} animationType="slide" transparent>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
         style={{ flex: 1, justifyContent: 'flex-end' }}
       >
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setOpen(false)} />
-        <View style={{ height: '75%', backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', elevation: 10 }}>
+        <View style={{ flex: 0.8, backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', elevation: 10 }}>
           {/* Header */}
           <View style={{ backgroundColor: COLORS.dark, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -120,7 +120,12 @@ export function ChatBot() {
           </View>
 
           {/* Messages */}
-          <ScrollView ref={scrollRef} style={{ flex: 1, padding: 12 }} contentContainerStyle={{ gap: 8 }}>
+          <ScrollView
+            ref={scrollRef}
+            style={{ flex: 1, padding: 12 }}
+            contentContainerStyle={{ gap: 8 }}
+            keyboardShouldPersistTaps="handled"
+          >
             {messages.map((m, i) => (
               <View key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
                 <View style={{

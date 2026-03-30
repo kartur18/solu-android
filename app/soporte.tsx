@@ -67,7 +67,7 @@ export default function SoporteScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: '#F8FAFC' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
     >
       {/* Header */}
       <View style={{ backgroundColor: '#1E3A5F', padding: 16, paddingTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -84,7 +84,12 @@ export default function SoporteScreen() {
       </View>
 
       {/* Messages */}
-      <ScrollView ref={scrollRef} style={{ flex: 1, padding: 12 }} contentContainerStyle={{ gap: 8, paddingBottom: 20 }}>
+      <ScrollView
+        ref={scrollRef}
+        style={{ flex: 1, padding: 12 }}
+        contentContainerStyle={{ gap: 8, paddingBottom: 20 }}
+        keyboardShouldPersistTaps="handled"
+      >
         {messages.map((m, i) => (
           <View key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
             <View style={{

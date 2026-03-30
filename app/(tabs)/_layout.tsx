@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Tabs } from 'expo-router'
+import { Tabs, useRouter } from 'expo-router'
 import { View, Text, Platform } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -34,6 +34,7 @@ function TabIcon({ focused, iconFilled, iconOutline }: { focused: boolean; iconF
 }
 
 export default function TabLayout() {
+  const router = useRouter()
   const insets = useSafeAreaInsets()
   const bottomPad = Math.max(insets.bottom, 16)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -97,6 +98,12 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="urgencias-tab"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault()
+            router.push('/soporte')
+          },
+        }}
         options={{
           title: 'Soporte',
           headerShown: false,

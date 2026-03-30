@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Dimensions, Animated, TextInput } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Dimensions, Animated, TextInput, Platform } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -155,20 +155,23 @@ export default function HomeScreen() {
           </Text>
 
           <View style={{
-            backgroundColor: 'rgba(255,255,255,0.08)',
-            borderRadius: 20,
-            padding: 6,
-            paddingLeft: 18,
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            padding: 4,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 10,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.1)',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            elevation: 8,
           }}>
-            <Ionicons name="search" size={16} color="rgba(255,255,255,0.7)" />
+            <View style={{ paddingLeft: 12, paddingRight: 6 }}>
+              <Ionicons name="search" size={20} color="#9CA3AF" />
+            </View>
             <TextInput
               placeholder="Buscar servicio o técnico..."
-              placeholderTextColor="rgba(255,255,255,0.7)"
+              placeholderTextColor="#9CA3AF"
               value={heroSearch}
               onChangeText={setHeroSearch}
               onSubmitEditing={() => {
@@ -180,9 +183,10 @@ export default function HomeScreen() {
                 }
               }}
               returnKeyType="search"
-              style={{ flex: 1, color: '#fff', fontSize: 14, paddingVertical: 14, fontWeight: '600' }}
+              style={{ flex: 1, color: '#1E293B', fontSize: 15, fontWeight: '600', paddingVertical: Platform.OS === 'ios' ? 14 : 10 }}
             />
             <TouchableOpacity
+              activeOpacity={0.8}
               onPress={() => {
                 if (heroSearch.trim()) {
                   router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() } })
@@ -191,9 +195,9 @@ export default function HomeScreen() {
                   router.push('/buscar')
                 }
               }}
-              style={{ backgroundColor: '#EA580C', borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14, marginRight: 2, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}
+              style={{ backgroundColor: '#2563EB', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
             >
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13 }}>BUSCAR</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, letterSpacing: 0.5 }}>Buscar</Text>
             </TouchableOpacity>
           </View>
 

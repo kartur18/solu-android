@@ -282,7 +282,7 @@ export default function ChatScreen() {
       <Stack.Screen options={{ title: headerTitle }} />
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: '#F1F5F9' }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <OfflineBanner />
