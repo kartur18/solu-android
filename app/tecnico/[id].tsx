@@ -117,11 +117,18 @@ export default function TecnicoScreen() {
       {/* Contact */}
       <View style={{ paddingHorizontal: 20, gap: 10 }}>
         <TouchableOpacity
-          onPress={() => Linking.openURL(waLink(tech.whatsapp, `Hola ${tech.nombre}, te encontré en SOLU y necesito un servicio de ${tech.oficio}.`))}
-          style={{ backgroundColor: '#25D366', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          onPress={() => router.push({ pathname: '/solicitar', params: { tecnicoId: String(tech.id), tecnicoNombre: tech.nombre, tecnicoOficio: tech.oficio } })}
+          style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, shadowColor: COLORS.pri, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
         >
-          <Ionicons name="logo-whatsapp" size={22} color={COLORS.white} />
-          <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Contactar por WhatsApp</Text>
+          <Ionicons name="construct" size={22} color={COLORS.white} />
+          <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Solicitar servicio</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => Linking.openURL(waLink(tech.whatsapp, `Hola ${tech.nombre}, te encontré en SOLU y necesito un servicio de ${tech.oficio}.`))}
+          style={{ backgroundColor: '#25D366', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        >
+          <Ionicons name="logo-whatsapp" size={20} color={COLORS.white} />
+          <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 14 }}>Contactar por WhatsApp</Text>
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity

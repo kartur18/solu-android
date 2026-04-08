@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
@@ -12,10 +13,11 @@ export default function AgendarScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const [selectedTime, setSelectedTime] = useState<{ fecha: string; horaInicio: string; horaFin: string } | null>(null)
-  const [showYape, setShowYape] = useState(false)
   const [selectedPay, setSelectedPay] = useState('yape')
   const [booked, setBooked] = useState(false)
+  const [booking, setBooking] = useState(false)
   const [precio, setPrecio] = useState(60)
+  const referenceRef = useRef(`SOLU-${id}-${Date.now().toString(36).toUpperCase()}`)
 
   const techId = parseInt(id as string)
   useEffect(() => {
@@ -33,27 +35,32 @@ export default function AgendarScreen() {
     )
   }
 
-  async function handleTimeSelect(fecha: string, horaInicio: string, horaFin: string) {
+  function handleTimeSelect(fecha: string, horaInicio: string, horaFin: string) {
     setSelectedTime({ fecha, horaInicio, horaFin })
+  }
 
-    // Create appointment
+  async function confirmBooking() {
+    if (!selectedTime) return
+    setBooking(true)
     try {
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tecnicoId: techId,
-          fecha,
-          horaInicio,
-          horaFin,
+          fecha: selectedTime.fecha,
+          horaInicio: selectedTime.horaInicio,
+          horaFin: selectedTime.horaFin,
+          metodo_pago: selectedPay,
+          referencia_pago: referenceRef.current,
         }),
       })
       const data = await res.json()
       if (data.success) {
         setBooked(true)
         Alert.alert(
-          '¡Cita agendada!',
-          `Tu cita fue confirmada para el ${fecha} de ${horaInicio} a ${horaFin}`,
+          'Cita agendada',
+          `Tu cita fue confirmada para el ${selectedTime.fecha} de ${selectedTime.horaInicio} a ${selectedTime.horaFin}.\n\n${selectedPay === 'efectivo' ? 'Pagarás al técnico directamente.' : 'Recuerda enviar el comprobante de pago.'}`,
           [{ text: 'OK', onPress: () => router.back() }]
         )
       } else {
@@ -61,6 +68,8 @@ export default function AgendarScreen() {
       }
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
+    } finally {
+      setBooking(false)
     }
   }
 
@@ -70,15 +79,26 @@ export default function AgendarScreen() {
         <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Agendar servicio</Text>
         <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Elige el mejor horario para ti</Text>
 
+        {/* Step 1: Select time */}
         <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 20 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark, marginBottom: 12 }}>Selecciona fecha y hora</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: selectedTime ? COLORS.acc : COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
+              {selectedTime ? <Ionicons name="checkmark" size={14} color={COLORS.white} /> : <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 12 }}>1</Text>}
+            </View>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark }}>Selecciona fecha y hora</Text>
+          </View>
           <AvailabilityPicker tecnicoId={parseInt(id)} onSelect={handleTimeSelect} />
         </View>
 
-        {/* Payment option */}
-        {!booked && (
+        {/* Step 2: Payment method (only after time selected) */}
+        {selectedTime && !booked && (
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark, marginBottom: 12 }}>Método de pago</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 12 }}>2</Text>
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark }}>Método de pago</Text>
+            </View>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
               {[
                 { key: 'yape', icon: '💜', name: 'Yape' },
@@ -104,11 +124,40 @@ export default function AgendarScreen() {
               ))}
             </View>
             {selectedPay === 'yape' && (
-              <YapeQR amount={precio} reference={`SOLU-${techId}-${Date.now().toString(36).toUpperCase()}`} />
+              <YapeQR amount={precio} reference={referenceRef.current} onConfirm={confirmBooking} />
             )}
             {selectedPay === 'plin' && (
-              <PlinQR amount={precio} reference={`SOLU-${techId}-${Date.now().toString(36).toUpperCase()}`} />
+              <PlinQR amount={precio} reference={referenceRef.current} onConfirm={confirmBooking} />
             )}
+            {selectedPay === 'efectivo' && (
+              <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' }}>
+                <Text style={{ fontSize: 28, marginBottom: 8 }}>💵</Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Pago en efectivo</Text>
+                <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 16 }}>
+                  Pagarás S/{precio} directamente al técnico cuando llegue.
+                </Text>
+                <TouchableOpacity
+                  onPress={confirmBooking}
+                  disabled={booking}
+                  style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', width: '100%' }}
+                >
+                  <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>
+                    {booking ? 'Agendando...' : 'Confirmar cita'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Success state */}
+        {booked && (
+          <View style={{ backgroundColor: '#F0FDF4', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#BBF7D0', alignItems: 'center' }}>
+            <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>Cita confirmada</Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>
+              {selectedTime?.fecha} de {selectedTime?.horaInicio} a {selectedTime?.horaFin}
+            </Text>
           </View>
         )}
       </View>

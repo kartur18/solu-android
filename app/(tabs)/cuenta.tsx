@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
@@ -120,6 +121,38 @@ export default function CuentaScreen() {
   const [cotServicio, setCotServicio] = useState('')
   const [savingCotizacion, setSavingCotizacion] = useState(false)
 
+  // Auto-login from saved session
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem('solu_tech_session')
+        if (!saved) return
+        const session = JSON.parse(saved)
+        if (session?.id) {
+          setLoading(true)
+          const { data } = await supabase.from('tecnicos').select('*').eq('id', session.id).single()
+          if (data) {
+            setTech(data)
+            setLoggedIn(true)
+            setEditDesc(data.descripcion || '')
+            setEditPrecio(data.precio_desde?.toString() || '')
+            setEditDisponible(data.disponible)
+            setGalleryImages(data.galeria || [])
+            registerForPushNotifications().then(token => {
+              if (token) savePushToken(data.id, token)
+            })
+            await loadData(data.id)
+          } else {
+            await AsyncStorage.removeItem('solu_tech_session')
+          }
+          setLoading(false)
+        }
+      } catch {
+        setLoading(false)
+      }
+    })()
+  }, [])
+
   async function doLogin() {
     const trimmedId = loginId.trim()
     if (!trimmedId) return Alert.alert('Error', 'Ingresa tu email o WhatsApp')
@@ -155,6 +188,9 @@ export default function CuentaScreen() {
       setEditPrecio(data.precio_desde?.toString() || '')
       setEditDisponible(data.disponible)
       setGalleryImages(data.galeria || [])
+
+      // Persist session
+      await AsyncStorage.setItem('solu_tech_session', JSON.stringify({ id: data.id, nombre: data.nombre }))
 
       registerForPushNotifications().then(token => {
         if (token) savePushToken(data.id, token)
@@ -512,9 +548,12 @@ export default function CuentaScreen() {
           >
             <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 }}>{loading ? 'Verificando...' : 'INGRESAR'}</Text>
           </TouchableOpacity>
-          <Text style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 16 }}>
-            ¿No tienes cuenta? Regístrate desde la pantalla de inicio
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16, gap: 4 }}>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>¿No tienes cuenta?</Text>
+            <TouchableOpacity onPress={() => router.push('/registro')}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#EA580C' }}>Crear cuenta</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <LegalSection router={router} />
       </View>
@@ -560,7 +599,7 @@ export default function CuentaScreen() {
               <TouchableOpacity
                 onPress={() => Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
                   { text: 'Cancelar', style: 'cancel' },
-                  { text: 'Salir', style: 'destructive', onPress: () => { setLoggedIn(false); setTech(null); setTab('dashboard') } },
+                  { text: 'Salir', style: 'destructive', onPress: () => { AsyncStorage.removeItem('solu_tech_session'); setLoggedIn(false); setTech(null); setTab('dashboard') } },
                 ])}
                 style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
@@ -1390,7 +1429,7 @@ export default function CuentaScreen() {
                 <TouchableOpacity
                   onPress={() => Alert.alert('Cerrar sesión', '¿Seguro?', [
                     { text: 'Cancelar', style: 'cancel' },
-                    { text: 'Salir', style: 'destructive', onPress: () => { setLoggedIn(false); setTech(null); setTab('dashboard') } },
+                    { text: 'Salir', style: 'destructive', onPress: () => { AsyncStorage.removeItem('solu_tech_session'); setLoggedIn(false); setTech(null); setTab('dashboard') } },
                   ])}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 }}
                 >
@@ -1579,7 +1618,7 @@ function LegalSection({ router }: { router: any }) {
           { icon: 'shield-checkmark-outline', label: 'Política de Privacidad', route: '/privacidad', color: COLORS.gray },
           { icon: 'document-text-outline', label: 'Términos y Condiciones', route: '/terminos', color: COLORS.gray },
           { icon: 'chatbubble-ellipses-outline', label: 'Soporte por WhatsApp', route: null, color: COLORS.gray },
-          { icon: 'trash-outline', label: 'Eliminar mi cuenta', route: '/eliminar-cuenta', color: COLORS.red },
+          { icon: 'trash-outline', label: 'Eliminar mi cuenta', route: '/eliminar-cuenta', color: COLORS.gray },
         ].map((item, i) => (
           <TouchableOpacity
             key={i}
