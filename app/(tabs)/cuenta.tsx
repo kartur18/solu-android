@@ -815,6 +815,41 @@ export default function CuentaScreen() {
                 </View>
               </View>
 
+              {/* Today's calendar */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <Ionicons name="calendar" size={18} color="#2563EB" />
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Agenda de hoy</Text>
+                </View>
+                {(() => {
+                  const today = new Date().toISOString().split('T')[0]
+                  const todayLeads = leads.filter(l => {
+                    const d = l.created_at?.split('T')[0]
+                    return (l.estado === 'Asignado' || l.estado === 'En camino' || l.estado === 'En proceso') && d === today
+                  })
+                  if (todayLeads.length === 0) {
+                    return (
+                      <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                        <Ionicons name="checkmark-circle-outline" size={32} color="#10B981" />
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.dark, marginTop: 8 }}>Sin citas para hoy</Text>
+                        <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 2 }}>Tu agenda está libre</Text>
+                      </View>
+                    )
+                  }
+                  return todayLeads.map(l => (
+                    <View key={l.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: l.estado === 'En proceso' ? '#F97316' : l.estado === 'En camino' ? '#8B5CF6' : '#2563EB' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{l.nombre}</Text>
+                        <Text style={{ fontSize: 11, color: COLORS.gray }}>{l.servicio} · {l.distrito}</Text>
+                      </View>
+                      <View style={{ backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: '#2563EB' }}>{l.estado}</Text>
+                      </View>
+                    </View>
+                  ))
+                })()}
+              </View>
+
               {/* Recent leads preview */}
               {leads.length > 0 && (
                 <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
@@ -833,7 +868,7 @@ export default function CuentaScreen() {
           )}
 
           {/* ═══ PROMOCIONES (Premium/Elite in dashboard) ═══ */}
-          {tab === 'dashboard' && (tech.plan === 'premium' || tech.plan === 'elite') && (
+          {tab === 'dashboard' && (
             <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, marginTop: -4 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Mis promociones</Text>
@@ -867,6 +902,46 @@ export default function CuentaScreen() {
               <Text style={{ fontSize: 11, color: COLORS.gray }}>
                 {tech.plan === 'premium' ? 'Plan Premium: 1 promoción activa por mes' : 'Plan Elite: Promociones ilimitadas'}
               </Text>
+            </View>
+          )}
+
+          {/* ═══ TARJETA DIGITAL ═══ */}
+          {tab === 'dashboard' && (
+            <View style={{ backgroundColor: '#1A1A2E', borderRadius: 20, padding: 20, overflow: 'hidden' }}>
+              <View style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(234,88,12,0.15)' }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {tech.foto_url ? <Image source={{ uri: tech.foto_url }} style={{ width: 50, height: 50 }} /> : <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff' }}>{tech.nombre?.[0]}</Text>}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff' }}>{tech.nombre}</Text>
+                  <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{tech.oficio} · {tech.distrito}</Text>
+                </View>
+                {tech.verificado && <Ionicons name="checkmark-circle" size={20} color="#10B981" />}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>WhatsApp</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{tech.whatsapp}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Precio desde</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#EA580C' }}>S/{tech.precio_desde || '—'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Rating</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#F59E0B' }}>★ {tech.calificacion?.toFixed(1) || '0.0'}</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => Share.share({
+                  message: `🔧 ${tech.nombre}\n${tech.oficio} verificado en SOLU\n\n📍 ${tech.distrito}\n💰 Desde S/${tech.precio_desde || '—'}\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} estrellas\n📱 ${tech.whatsapp}\n\n👉 Ver perfil: https://solu.pe/tecnico/${tech.id}`,
+                })}
+                style={{ backgroundColor: '#EA580C', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <Ionicons name="share-social" size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Compartir mi tarjeta digital</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -944,6 +1019,25 @@ export default function CuentaScreen() {
                 <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center' }}>
                   <Text style={{ fontSize: 28, fontWeight: '900', color: '#F59E0B' }}>{tech.calificacion?.toFixed(1) || '0.0'}</Text>
                   <Text style={{ fontSize: 10, color: COLORS.gray, fontWeight: '600' }}>Calificación</Text>
+                </View>
+              </View>
+
+              {/* Conversion rate & projections */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>Rendimiento</Text>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1, backgroundColor: '#F0FDF4', borderRadius: 12, padding: 12, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#10B981' }}>{leads.length > 0 ? Math.round((completedLeads / leads.length) * 100) : 0}%</Text>
+                    <Text style={{ fontSize: 9, color: '#065F46', fontWeight: '600', marginTop: 2 }}>Tasa de conversión</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#2563EB' }}>S/{Math.round(completedLeads * (tech.precio_desde || 80) * 12 / Math.max(leads.length > 0 ? (new Set(leads.map(l => new Date(l.created_at).getMonth())).size) : 1, 1))}</Text>
+                    <Text style={{ fontSize: 9, color: '#1E40AF', fontWeight: '600', marginTop: 2 }}>Proyección mensual</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: '#FEF3C7', borderRadius: 12, padding: 12, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#92400E' }}>{profileViews}</Text>
+                    <Text style={{ fontSize: 9, color: '#78350F', fontWeight: '600', marginTop: 2 }}>Vistas esta semana</Text>
+                  </View>
                 </View>
               </View>
 
@@ -1503,26 +1597,35 @@ export default function CuentaScreen() {
                       </View>
 
                       {galleryImages.length > 0 ? (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                          {galleryImages.map((url, i) => (
-                            <View key={i} style={{ marginRight: 8, position: 'relative' }}>
-                              <Image
-                                source={{ uri: url }}
-                                style={{ width: 100, height: 75, borderRadius: 10, backgroundColor: '#F1F5F9' }}
-                              />
-                              <TouchableOpacity
-                                onPress={() => deleteGalleryImage(url)}
-                                style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#EF4444', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}
-                              >
-                                <Ionicons name="close" size={12} color="#fff" />
-                              </TouchableOpacity>
-                            </View>
-                          ))}
-                        </ScrollView>
+                        <View>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {galleryImages.map((url, i) => (
+                              <View key={i} style={{ marginRight: 10, position: 'relative' }}>
+                                <Image
+                                  source={{ uri: url }}
+                                  style={{ width: 140, height: 105, borderRadius: 12, backgroundColor: '#F1F5F9' }}
+                                />
+                                <TouchableOpacity
+                                  onPress={() => deleteGalleryImage(url)}
+                                  style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#EF4444', borderRadius: 10, width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Ionicons name="close" size={12} color="#fff" />
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                          </ScrollView>
+                          <TouchableOpacity
+                            onPress={() => Share.share({ message: `Mira mis trabajos en SOLU: https://solu.pe/tecnico/${tech.id}` })}
+                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, backgroundColor: '#EFF6FF', borderRadius: 10, padding: 10 }}
+                          >
+                            <Ionicons name="share-social-outline" size={14} color="#2563EB" />
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>Compartir portafolio con clientes</Text>
+                          </TouchableOpacity>
+                        </View>
                       ) : (
                         <View style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 20, alignItems: 'center' }}>
                           <Ionicons name="images-outline" size={28} color={COLORS.gray2} />
-                          <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 6 }}>Sube fotos de tus trabajos</Text>
+                          <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 6 }}>Sube fotos de tus trabajos para atraer más clientes</Text>
                         </View>
                       )}
                     </View>

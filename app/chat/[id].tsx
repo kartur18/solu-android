@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList,
+  View, Text, TextInput, TouchableOpacity, FlatList, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
 import { useLocalSearchParams, Stack } from 'expo-router'
@@ -330,6 +330,17 @@ export default function ChatScreen() {
             </View>
             <Text style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>escribiendo...</Text>
           </View>
+        )}
+
+        {/* Quick replies */}
+        {senderType === 'tecnico' && !text.trim() && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingVertical: 8, paddingHorizontal: 10 }} contentContainerStyle={{ gap: 6 }}>
+            {['Estoy en camino 🚗', 'Llego en 15 min', 'Ya llegué ✅', `Mi precio es S/${''} aprox`, 'Necesito ver el problema primero', 'Trabajo garantizado', '¿A qué hora le conviene?', 'Gracias por su confianza 🙏'].map(msg => (
+              <TouchableOpacity key={msg} onPress={() => { setText(msg); }} style={{ backgroundColor: '#EFF6FF', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                <Text style={{ fontSize: 12, color: '#1E40AF', fontWeight: '600' }}>{msg}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
 
         {/* Input bar */}

@@ -288,10 +288,16 @@ export const ACHIEVEMENTS = [
   { id: 'streak', emoji: '🔥', name: 'En racha', desc: '5 servicios completados', check: (t: any) => t.servicios_completados >= 5 },
   { id: 'unstoppable', emoji: '⚡', name: 'Imparable', desc: '10 servicios completados', check: (t: any) => t.servicios_completados >= 10 },
   { id: 'master', emoji: '👑', name: 'Maestro', desc: '50 servicios completados', check: (t: any) => t.servicios_completados >= 50 },
+  { id: 'legend', emoji: '🏅', name: 'Leyenda', desc: '100 servicios completados', check: (t: any) => t.servicios_completados >= 100 },
   { id: 'verified', emoji: '✅', name: 'Verificado', desc: 'DNI verificado', check: (t: any) => t.verificado },
   { id: 'fivestar', emoji: '⭐', name: 'Cinco estrellas', desc: 'Calificación perfecta', check: (t: any) => t.calificacion >= 5.0 },
+  { id: 'highrated', emoji: '🌟', name: 'Top valorado', desc: 'Calificación 4.5+', check: (t: any) => t.calificacion >= 4.5 },
   { id: 'popular', emoji: '💬', name: 'Popular', desc: '10+ reseñas', check: (t: any) => t.num_resenas >= 10 },
+  { id: 'viral', emoji: '📣', name: 'Viral', desc: '25+ reseñas', check: (t: any) => t.num_resenas >= 25 },
   { id: 'pro', emoji: '🏆', name: 'Profesional', desc: 'Plan de pago activo', check: (t: any) => !!t.plan },
+  { id: 'premium', emoji: '💎', name: 'Premium', desc: 'Plan Premium o Elite', check: (t: any) => t.plan === 'premium' || t.plan === 'elite' },
+  { id: 'gallery', emoji: '📸', name: 'Portafolio', desc: '5+ fotos de trabajos', check: (t: any) => t.galeria?.length >= 5 },
+  { id: 'multizone', emoji: '🗺️', name: 'Multi-zona', desc: '3+ zonas de cobertura', check: (t: any) => t.zonas?.length >= 3 },
 ]
 
 export const PLAN_FEATURES = {
