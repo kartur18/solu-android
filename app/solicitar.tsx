@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Image, Animated } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { COLORS, SERVICIOS, DISTRITOS, URGENCIAS } from '../src/lib/constants'
@@ -17,10 +17,12 @@ const DRAFT_KEY = 'solu_solicitar_draft'
 
 export default function SolicitarScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams<{ tecnicoId?: string; tecnicoNombre?: string; tecnicoOficio?: string }>()
   const [nombre, setNombre] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
+  const [preselectedTechId] = useState(params.tecnicoId ? parseInt(params.tecnicoId) : null)
 
-  // Auto-fill from logged-in client
+  // Auto-fill from logged-in client + tech params
   useEffect(() => {
     AsyncStorage.getItem('solu_client_session').then((stored) => {
       if (stored) {
@@ -32,8 +34,10 @@ export default function SolicitarScreen() {
         } catch {}
       }
     })
+    // Pre-fill service from tech profile
+    if (params.tecnicoOficio && !servicio) setServicio(params.tecnicoOficio)
   }, [])
-  const [servicio, setServicio] = useState('')
+  const [servicio, setServicio] = useState(params.tecnicoOficio || '')
   const [distrito, setDistrito] = useState('')
   const [urgencia, setUrgencia] = useState('normal')
   const [descripcion, setDescripcion] = useState('')
@@ -152,18 +156,29 @@ export default function SolicitarScreen() {
         }
       }
 
-      // Find best available technician in the district
-      const { data: techs } = await supabase
-        .from('tecnicos')
-        .select('id, nombre, whatsapp, push_token')
-        .eq('disponible', true)
-        .eq('distrito', distrito)
-        .order('plan', { ascending: false })
-        .order('calificacion', { ascending: false })
-        .limit(3)
+      // If coming from tech profile, assign directly
+      let assignedTech: { id: number; nombre: string; whatsapp: string; push_token?: string } | null = null
+      if (preselectedTechId) {
+        const { data: preselected } = await supabase
+          .from('tecnicos')
+          .select('id, nombre, whatsapp, push_token')
+          .eq('id', preselectedTechId)
+          .single()
+        if (preselected) assignedTech = preselected
+      }
 
-      // If no tech in district, try nearby
-      let assignedTech = techs?.[0] || null
+      // Otherwise find best available technician in the district
+      if (!assignedTech) {
+        const { data: techs } = await supabase
+          .from('tecnicos')
+          .select('id, nombre, whatsapp, push_token')
+          .eq('disponible', true)
+          .eq('distrito', distrito)
+          .order('plan', { ascending: false })
+          .order('calificacion', { ascending: false })
+          .limit(3)
+        assignedTech = techs?.[0] || null
+      }
       if (!assignedTech) {
         const { data: anyTechs } = await supabase
           .from('tecnicos')

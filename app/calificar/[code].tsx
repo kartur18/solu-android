@@ -21,7 +21,7 @@ export default function CalificarScreen() {
   async function pickFoto() {
     if (fotos.length >= 2) return Alert.alert('Límite', 'Máximo 2 fotos por reseña')
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.7,
       allowsEditing: false,
     })
