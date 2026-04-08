@@ -249,7 +249,7 @@ export default function HomeScreen() {
               <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark }}>
                 Técnicos cerca de {location.distrito}
               </Text>
-              <Text style={{ fontSize: 10, color: COLORS.gray }}>Toca para ver técnicos en tu zona</Text>
+              <Text style={{ fontSize: 10, color: COLORS.gray }}>Toca para ver profesionales en tu zona</Text>
             </View>
             <Ionicons name="chevron-forward" size={14} color={COLORS.blue} />
           </TouchableOpacity>
@@ -352,7 +352,7 @@ export default function HomeScreen() {
         {/* Top techs */}
         <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Técnicos destacados</Text>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Profesionales destacados</Text>
             <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7}>
               <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver todos →</Text>
             </TouchableOpacity>
@@ -408,7 +408,7 @@ export default function HomeScreen() {
         {/* Footer */}
         <View style={{ alignItems: 'center', paddingVertical: 20 }}>
           <Text style={{ fontSize: 10, color: COLORS.gray2 }}>SOLU v1.0 · CITYLAND GROUP E.I.R.L.</Text>
-          <Text style={{ fontSize: 9, color: COLORS.gray2, marginTop: 2 }}>Técnicos verificados en todo el Perú</Text>
+          <Text style={{ fontSize: 9, color: COLORS.gray2, marginTop: 2 }}>Profesionales verificados en todo el Perú</Text>
         </View>
       </ScrollView>
       <ChatBot />

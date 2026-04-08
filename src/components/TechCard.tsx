@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Linking, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Linking, Image, Share } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
@@ -54,6 +54,15 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
     ? planStyle.border
     : '#E2E8F0'
 
+  async function handleShare() {
+    try {
+      await Share.share({
+        message: `👷 ${tech.nombre} - ${tech.oficio} en SOLU\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} · ${tech.distrito}\n\nEncuéntralo en: https://solu.pe/buscar?tech=${tech.id}`,
+        title: `Técnico SOLU: ${tech.nombre}`,
+      })
+    } catch {}
+  }
+
   return (
     <TouchableOpacity
       onPress={() => router.push(`/tecnico/${tech.id}`)}
@@ -102,6 +111,26 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
             />
           </TouchableOpacity>
         )}
+
+        {/* Share button */}
+        <TouchableOpacity
+          onPress={(e) => { e.stopPropagation(); handleShare() }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: onToggleFavorite ? 48 : 10,
+            zIndex: 10,
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: '#F0F9FF',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="share-social-outline" size={16} color="#0EA5E9" />
+        </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           {/* Avatar with gradient background */}

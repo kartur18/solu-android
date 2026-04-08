@@ -162,7 +162,7 @@ export function ChatBot() {
           )}
 
           {/* Input */}
-          <View style={{ flexDirection: 'row', padding: 12, paddingBottom: Platform.OS === 'android' ? 24 : 12, gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white }}>
+          <View style={{ flexDirection: 'row', padding: 12, paddingBottom: Platform.OS === 'android' ? 56 : 12, gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white }}>
             <TextInput
               style={{ flex: 1, backgroundColor: COLORS.light, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 13, borderWidth: 1, borderColor: COLORS.border, color: COLORS.dark }}
               placeholder="Describe tu problema..."

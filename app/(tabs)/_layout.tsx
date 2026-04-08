@@ -147,9 +147,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="servicios"
         options={{
-          title: 'Mis Servicios',
-          tabBarLabel: 'Servicios',
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} iconFilled="clipboard" iconOutline="clipboard-outline" />,
+          href: null,
         }}
       />
       <Tabs.Screen name="cuenta" options={{ href: null }} />

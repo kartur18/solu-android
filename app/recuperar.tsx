@@ -28,7 +28,9 @@ export default function RecuperarScreen() {
 
     setLoading(true)
     try {
-      // First determine user type by checking both tables
+      let successResult: any = null
+
+      // Try as tecnico first
       const res = await fetch(`${ENV.API_BASE_URL}/password-reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -38,6 +40,7 @@ export default function RecuperarScreen() {
 
       if (res.ok) {
         setUserType('tecnico')
+        successResult = result
       } else if (res.status === 404) {
         // Try as client
         const res2 = await fetch(`${ENV.API_BASE_URL}/password-reset`, {
@@ -53,17 +56,29 @@ export default function RecuperarScreen() {
           return
         }
         setUserType('cliente')
+        successResult = result2
       } else {
         Alert.alert('Error', result.error || 'Error al generar código')
         setLoading(false)
         return
       }
 
-      Alert.alert(
-        'Código enviado',
-        'Se ha enviado un código de verificación a tu email registrado. Si no lo recibes, revisa tu carpeta de spam.',
-        [{ text: 'OK', onPress: () => setStep('code') }]
-      )
+      // If both WhatsApp and email failed, the API returns the code directly
+      if (successResult?.codigo) {
+        setInputCode(successResult.codigo)
+        Alert.alert(
+          '⚠️ Código de recuperación',
+          `No se pudo enviar el código por WhatsApp ni email.\n\nTu código es:\n\n${successResult.codigo}\n\nAnótalo ahora. Expira en 15 minutos.`,
+          [{ text: 'Entendido', onPress: () => setStep('code') }]
+        )
+      } else {
+        // Show the message from the API (WhatsApp or email sent)
+        Alert.alert(
+          'Código enviado',
+          successResult?.message || `Revisa tu WhatsApp terminado en ${waClean.slice(-4)}. Te hemos enviado un código de 6 dígitos.`,
+          [{ text: 'OK', onPress: () => setStep('code') }]
+        )
+      }
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
     } finally {

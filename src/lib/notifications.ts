@@ -67,3 +67,38 @@ export async function savePushToken(tecnicoId: number, token: string) {
     logger.error('Failed to save push token:', err)
   }
 }
+
+export async function saveClientPushToken(clienteUserId: number, token: string) {
+  try {
+    await supabase
+      .from('clientes_users')
+      .update({ push_token: token })
+      .eq('id', clienteUserId)
+  } catch (err) {
+    logger.error('Failed to save client push token:', err)
+  }
+}
+
+/** Send a local notification immediately (no server needed) */
+export async function sendLocalNotification(title: string, body: string, data?: Record<string, string>) {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: { title, body, data: data || {}, sound: 'default' },
+      trigger: null, // show immediately
+    })
+  } catch (err) {
+    logger.error('Failed to send local notification:', err)
+  }
+}
+
+/** Map service status to notification message */
+export function getStatusNotification(estado: string, servicio: string): { title: string; body: string } | null {
+  const messages: Record<string, { title: string; body: string }> = {
+    'Asignado':   { title: '👷 Técnico asignado', body: `Un técnico fue asignado a tu solicitud de ${servicio}` },
+    'En camino':  { title: '🚗 Tu técnico está en camino', body: `El técnico de ${servicio} ya va hacia tu ubicación` },
+    'En proceso': { title: '🔧 Trabajo iniciado', body: `Tu servicio de ${servicio} está en proceso` },
+    'Completado': { title: '✅ Servicio completado', body: `Tu ${servicio} fue completado. ¡Califica al técnico!` },
+    'Cancelado':  { title: '❌ Servicio cancelado', body: `Tu solicitud de ${servicio} fue cancelada` },
+  }
+  return messages[estado] || null
+}

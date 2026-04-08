@@ -8,7 +8,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const SLIDES = [
   {
     icon: 'construct' as const,
-    title: 'Encuentra tecnicos verificados',
+    title: 'Encuentra profesionales verificados',
     subtitle: 'Todos verificados con DNI por RENIEC',
   },
   {

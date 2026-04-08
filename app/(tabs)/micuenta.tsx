@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
@@ -78,7 +78,7 @@ function ClienteRedirect({ router, onBack }: { router: any; onBack: () => void }
       <TouchableOpacity
         onPress={onBack}
         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        style={{ position: 'absolute', top: 32, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
+        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
       >
         <Ionicons name="arrow-back" size={20} color="#1E3A5F" />
       </TouchableOpacity>
@@ -94,7 +94,7 @@ function TecnicoRedirect({ router, onBack }: { router: any; onBack: () => void }
       <TouchableOpacity
         onPress={onBack}
         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        style={{ position: 'absolute', top: 32, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
+        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
       >
         <Ionicons name="arrow-back" size={20} color="#1E3A5F" />
       </TouchableOpacity>

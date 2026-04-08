@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Linking, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Linking, ActivityIndicator, StatusBar } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink, ESTADOS } from '../src/lib/constants'
@@ -23,6 +24,19 @@ export default function UrgenciasScreen() {
   const [assignedTech, setAssignedTech] = useState<any>(null)
 
   useEffect(() => { location.detectLocation() }, [])
+
+  // Pre-fill from saved client session
+  useEffect(() => {
+    AsyncStorage.getItem('solu_client_session').then((stored) => {
+      if (stored) {
+        try {
+          const user = JSON.parse(stored)
+          if (user.nombre && !nombre) setNombre(user.nombre)
+          if (user.whatsapp && !whatsapp) setWhatsapp(user.whatsapp)
+        } catch {}
+      }
+    })
+  }, [])
 
   async function handleSearch() {
     if (!selected) return Alert.alert('Aviso', 'Por favor selecciona el tipo de emergencia')
@@ -77,7 +91,7 @@ export default function UrgenciasScreen() {
   // --- SUCCESS SCREEN (TECH FOUND) ---
   if (assignedTech) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 20, paddingTop: 60 }}>
+      <View style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 20, paddingTop: (StatusBar.currentHeight || 40) + 20 }}>
         <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, alignItems: 'center', elevation: 6 }}>
           <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
             <Ionicons name="checkmark-circle" size={40} color="#10B981" />
@@ -118,7 +132,7 @@ export default function UrgenciasScreen() {
   // --- SEARCH SCREEN ---
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 40 }}>
-      <View style={{ backgroundColor: '#7F1D1D', padding: 24, paddingTop: 60, paddingBottom: 40, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, elevation: 12 }}>
+      <View style={{ backgroundColor: '#7F1D1D', padding: 24, paddingTop: (StatusBar.currentHeight || 40) + 16, paddingBottom: 40, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, elevation: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <TouchableOpacity onPress={() => router.back()} style={{ width: 40, height: 40, justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
