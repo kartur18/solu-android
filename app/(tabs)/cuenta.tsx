@@ -78,8 +78,9 @@ export default function CuentaScreen() {
       if (!res.ok) throw new Error('Error al conectar con la pasarela Flow')
       const data = await res.json()
       if (data.error) throw new Error(data.error)
-      if (data.url) {
-        Linking.openURL(data.url)
+      const payUrl = data.redirectUrl || data.url || data.paymentUrl
+      if (payUrl) {
+        Linking.openURL(payUrl)
       } else {
         throw new Error('No se recibió el enlace de pago')
       }
