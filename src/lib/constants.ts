@@ -69,6 +69,37 @@ export const SERVICIOS = [
   // Otros
   'Mecánica automotriz', 'Electricidad automotriz', 'Planchado y pintura vehicular',
   'Confección y costura', 'Zapatería', 'Relojería',
+  // ── Belleza y Estética ──
+  'Manicure clásico', 'Manicure en gel', 'Uñas acrílicas', 'Pedicure',
+  'Maquillaje profesional', 'Maquillaje para eventos', 'Maquillaje de novia',
+  'Corte de cabello', 'Tinte y color', 'Alisado', 'Keratina',
+  'Barbería profesional', 'Depilación', 'Diseño de cejas', 'Extensión de pestañas',
+  // ── Clases y Tutorías ──
+  'Matemáticas', 'Física', 'Química', 'Inglés', 'Francés', 'Portugués',
+  'Guitarra', 'Piano', 'Canto', 'Refuerzo escolar', 'Preparación de exámenes', 'Danza',
+  // ── Delivery y Mandados ──
+  'Delivery mismo día', 'Compras de mercado', 'Trámites municipales',
+  'Recojo de paquetes', 'Envío de documentos', 'Mandados personalizados',
+  // ── Mascotas ──
+  'Baño y peluquería canina', 'Paseo de perros', 'Pet sitting',
+  'Entrenamiento canino', 'Veterinario a domicilio', 'Guardería de mascotas', 'Transporte de mascotas',
+  // ── Salud y Bienestar ──
+  'Masaje relajante', 'Masaje deportivo', 'Fisioterapia', 'Nutricionista',
+  'Yoga a domicilio', 'Pilates', 'Entrenador personal', 'Meditación guiada',
+  // ── Eventos ──
+  'Fotografía de eventos', 'Videografía', 'DJ profesional', 'Decoración de eventos',
+  'Catering', 'Animación infantil', 'Planificación de eventos', 'Músico en vivo',
+]
+
+// ── Categorías principales ──
+export const CATEGORIAS = [
+  { key: 'hogar', name: 'Hogar y Reparaciones', icon: '🔧', color: '#EA580C', desc: 'Gasfitería, electricidad, pintura y más' },
+  { key: 'belleza', name: 'Belleza y Estética', icon: '💅', color: '#EC4899', desc: 'Uñas, maquillaje, peluquería, barbería' },
+  { key: 'clases', name: 'Clases y Tutorías', icon: '📚', color: '#8B5CF6', desc: 'Matemáticas, inglés, música, refuerzo' },
+  { key: 'delivery', name: 'Delivery y Mandados', icon: '📦', color: '#F59E0B', desc: 'Delivery, compras, trámites, recojo' },
+  { key: 'mascotas', name: 'Mascotas', icon: '🐾', color: '#10B981', desc: 'Baño canino, paseo, pet sitting' },
+  { key: 'bienestar', name: 'Salud y Bienestar', icon: '💆', color: '#06B6D4', desc: 'Masajes, fisioterapia, yoga, nutrición' },
+  { key: 'eventos', name: 'Eventos', icon: '🎉', color: '#EF4444', desc: 'Fotografía, DJ, decoración, catering' },
 ]
 
 // Mapeo de servicios a oficios para mejorar búsqueda (100+ oficios)

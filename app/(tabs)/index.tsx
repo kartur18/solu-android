@@ -24,8 +24,8 @@ const CATEGORIES = [
   { name: 'Cerrajería',   icon: 'key'            as const, color: '#B84D12', bg: '#FEEDE3' },
   { name: 'Limpieza',     icon: 'sparkles'       as const, color: '#F26B21', bg: '#FFF3EC' },
   { name: 'Carpintería',  icon: 'hammer'         as const, color: '#D45A16', bg: '#FEF1E8' },
-  { name: 'Refrigeración',icon: 'snow'           as const, color: '#F26B21', bg: '#FFF3EC' },
-  { name: 'Albañilería',  icon: 'construct'      as const, color: '#B84D12', bg: '#FEEDE3' },
+  { name: 'Maquillaje',   icon: 'color-wand'     as const, color: '#EC4899', bg: '#FDF2F8' },
+  { name: 'Clases',       icon: 'book'           as const, color: '#8B5CF6', bg: '#F5F3FF' },
 ]
 
 // Stats will be loaded dynamically from Supabase
