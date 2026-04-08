@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, Keyboard } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, Keyboard, Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -198,7 +198,11 @@ export default function BuscarScreen() {
     }
   }
 
-  useEffect(() => { loadTechs() }, [search, distrito])
+  // Debounce search to prevent double execution
+  useEffect(() => {
+    const timer = setTimeout(() => { loadTechs() }, 300)
+    return () => clearTimeout(timer)
+  }, [search, distrito])
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.light }}>
@@ -235,8 +239,10 @@ export default function BuscarScreen() {
               value={search}
               onChangeText={setSearch}
               onFocus={() => setSearchFocused(true)}
-              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-              style={{ flex: 1, fontSize: 15, color: COLORS.dark, fontWeight: '500' }}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+              returnKeyType="search"
+              onSubmitEditing={() => Keyboard.dismiss()}
+              style={{ flex: 1, fontSize: 15, color: COLORS.dark, fontWeight: '500', paddingVertical: 12 }}
               placeholderTextColor={COLORS.gray2}
             />
             {search ? (

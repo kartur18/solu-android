@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Dimensions, Animated, TextInput, Platform } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Dimensions, Animated, TextInput, Platform, Keyboard } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,6 +9,8 @@ import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
+import { HomeTechSkeleton } from '../../src/components/SkeletonLoader'
+import { useFavorites } from '../../src/lib/useFavorites'
 import { ChatBot } from '../../src/components/ChatBot'
 import { track } from '../../src/lib/analytics'
 
@@ -26,11 +28,7 @@ const CATEGORIES = [
   { name: 'Albañilería',  icon: 'construct'      as const, color: '#B84D12', bg: '#FEEDE3' },
 ]
 
-const TRUST_STATS = [
-  { label: 'Técnicos', value: '50+', icon: 'people' as const },
-  { label: 'Servicios', value: '100+', icon: 'construct' as const },
-  { label: 'Distritos', value: '95', icon: 'location' as const },
-]
+// Stats will be loaded dynamically from Supabase
 
 function PressableCard({ children, onPress, style }: { children: React.ReactNode; onPress: () => void; style?: any }) {
   const scaleAnim = useRef(new Animated.Value(1)).current
@@ -74,11 +72,20 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [offline, setOffline] = useState(false)
   const [heroSearch, setHeroSearch] = useState('')
+  const [stats, setStats] = useState({ techs: 0, servs: 0 })
   const location = useLocationDetection()
   const fadeAnim = useRef(new Animated.Value(0)).current
+  const { toggleFavorite, isFavorite } = useFavorites()
 
   useEffect(() => {
     location.detectLocation()
+    // Load real stats
+    Promise.all([
+      supabase.from('tecnicos').select('id', { count: 'exact', head: true }),
+      supabase.from('clientes').select('id', { count: 'exact', head: true }),
+    ]).then(([tRes, cRes]) => {
+      setStats({ techs: tRes.count || 0, servs: cRes.count || 0 })
+    }).catch(() => {})
   }, [])
 
   async function loadTopTechs() {
@@ -175,35 +182,33 @@ export default function HomeScreen() {
               value={heroSearch}
               onChangeText={setHeroSearch}
               onSubmitEditing={() => {
-                if (heroSearch.trim()) {
-                  router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() } })
-                  setHeroSearch('')
-                } else {
-                  router.push('/buscar')
-                }
+                Keyboard.dismiss()
+                router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() || '' } })
+                setHeroSearch('')
               }}
               returnKeyType="search"
-              style={{ flex: 1, color: '#1E293B', fontSize: 15, fontWeight: '600', paddingVertical: Platform.OS === 'ios' ? 14 : 10 }}
+              style={{ flex: 1, color: '#1E293B', fontSize: 15, fontWeight: '600', paddingVertical: 14, paddingRight: 8 }}
             />
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => {
-                if (heroSearch.trim()) {
-                  router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() } })
-                  setHeroSearch('')
-                } else {
-                  router.push('/buscar')
-                }
+                Keyboard.dismiss()
+                router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() || '' } })
+                setHeroSearch('')
               }}
               style={{ backgroundColor: '#2563EB', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
             >
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, letterSpacing: 0.5 }}>Buscar</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, letterSpacing: 0.5 }}>Buscar</Text>
             </TouchableOpacity>
           </View>
 
           {/* Trust stats */}
           <View style={{ flexDirection: 'row', marginTop: 18, gap: 8 }}>
-            {TRUST_STATS.map((stat) => (
+            {[
+              { label: 'Técnicos', value: stats.techs > 0 ? `${stats.techs}+` : '—' },
+              { label: 'Servicios', value: '100+' },
+              { label: 'Distritos', value: '43+' },
+            ].map((stat) => (
               <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
                 <Text style={{ color: '#fff', fontSize: 17, fontWeight: '900' }}>{stat.value}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '700', marginTop: 2 }}>{stat.label}</Text>
@@ -362,16 +367,16 @@ export default function HomeScreen() {
         {/* Top techs */}
         <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Mejor valorados</Text>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Técnicos destacados</Text>
             <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7}>
               <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver todos →</Text>
             </TouchableOpacity>
           </View>
           {loading ? (
-            <ActivityIndicator size="large" color={COLORS.pri} style={{ marginVertical: 30 }} />
+            <HomeTechSkeleton />
           ) : topTechs.length > 0 ? (
             <Animated.View style={{ opacity: fadeAnim }}>
-              {topTechs.map((tech) => <TechCard key={tech.id} tech={tech} />)}
+              {topTechs.map((tech) => <TechCard key={tech.id} tech={tech} onToggleFavorite={toggleFavorite} isFavorite={isFavorite(tech.id)} />)}
             </Animated.View>
           ) : (
             <View style={{
