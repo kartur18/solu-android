@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, RefreshControl } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, RefreshControl, StatusBar } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, SUPPORT_PHONE, waLink } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import { ENV } from '../../src/lib/env'
-import { registerForPushNotifications } from '../../src/lib/notifications'
+import { registerForPushNotifications, sendLocalNotification, getStatusNotification } from '../../src/lib/notifications'
 import type { Cliente, ClienteUser } from '../../src/lib/types'
 
 const STATUS_INFO: Record<string, { label: string; color: string; icon: string }> = {
@@ -137,6 +137,27 @@ export default function MisServiciosScreen() {
   const activos = servicios.filter(s => s.estado !== 'Completado' && s.estado !== 'Calificado' && s.estado !== 'Cancelado')
   const historial = servicios.filter(s => s.estado === 'Completado' || s.estado === 'Calificado' || s.estado === 'Cancelado')
 
+  // Realtime subscription — notify when service status changes
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel(`servicios_cliente_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'clientes', filter: `whatsapp=eq.${user.whatsapp}` },
+        (payload) => {
+          const updated = payload.new as Cliente
+          // Update service in state
+          setServicios(prev => prev.map(s => s.id === updated.id ? updated : s))
+          // Send local notification for status change
+          const notif = getStatusNotification(updated.estado, updated.servicio)
+          if (notif) sendLocalNotification(notif.title, notif.body)
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id])
+
   // ═══ LOGIN SCREEN ═══
   if (!user) {
     return (
@@ -207,7 +228,7 @@ export default function MisServiciosScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1E3A5F" />}
     >
       {/* Header */}
-      <View style={{ backgroundColor: '#1E3A5F', padding: 20, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+      <View style={{ backgroundColor: '#1E3A5F', padding: 20, paddingTop: (StatusBar.currentHeight || 40) + 10, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
@@ -221,6 +242,20 @@ export default function MisServiciosScreen() {
           <TouchableOpacity onPress={logout} style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 8 }}>
             <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.8)" />
           </TouchableOpacity>
+        </View>
+
+        {/* Stats bar */}
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+          {[
+            { label: 'Activos', value: activos.length, color: '#10B981' },
+            { label: 'Completados', value: historial.filter(s => s.estado === 'Completado' || s.estado === 'Calificado').length, color: '#2563EB' },
+            { label: 'Total', value: servicios.length, color: 'rgba(255,255,255,0.6)' },
+          ].map((stat) => (
+            <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 10, alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff' }}>{stat.value}</Text>
+              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{stat.label}</Text>
+            </View>
+          ))}
         </View>
       </View>
 
@@ -281,6 +316,9 @@ export default function MisServiciosScreen() {
 function ServiceCard({ service: s, router, user }: { service: Cliente; router: any; user: ClienteUser | null }) {
   const info = STATUS_INFO[s.estado] || { label: s.estado, color: COLORS.gray, icon: 'help-circle' }
   const isActive = s.estado !== 'Completado' && s.estado !== 'Calificado' && s.estado !== 'Cancelado'
+  const isCompleted = s.estado === 'Completado' || s.estado === 'Calificado'
+  const date = new Date(s.created_at)
+  const dateStr = date.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
 
   return (
     <View
@@ -288,6 +326,10 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
         backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 10,
         borderLeftWidth: 4, borderLeftColor: info.color,
         elevation: isActive ? 3 : 1,
+        shadowColor: info.color,
+        shadowOffset: { width: 0, height: isActive ? 4 : 1 },
+        shadowOpacity: isActive ? 0.15 : 0.05,
+        shadowRadius: 8,
       }}
     >
       <TouchableOpacity
@@ -295,50 +337,75 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
         activeOpacity={0.7}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: info.color + '15', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: info.color + '15', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name={info.icon as any} size={22} color={info.color} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark }}>{s.servicio}</Text>
-            <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 2 }}>{s.distrito} · {new Date(s.created_at).toLocaleDateString()}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <View style={{ backgroundColor: info.color + '15', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: info.color }}>{info.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark, flex: 1 }} numberOfLines={1}>{s.servicio}</Text>
+              <View style={{ backgroundColor: info.color + '18', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 }}>
+                <Text style={{ fontSize: 9, fontWeight: '800', color: info.color }}>{info.label.toUpperCase()}</Text>
+              </View>
             </View>
+            <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 3 }}>
+              📍 {s.distrito}  ·  🗓 {dateStr}
+            </Text>
+            {s.codigo && (
+              <Text style={{ fontSize: 10, color: COLORS.gray2, marginTop: 2 }}>Código: {s.codigo}</Text>
+            )}
           </View>
         </View>
       </TouchableOpacity>
-      {isActive && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 10, gap: 8 }}>
-          {s.tecnico_asignado && user && (
-            <TouchableOpacity
-              onPress={() => router.push({
-                pathname: '/chat/[id]',
-                params: {
-                  id: s.id.toString(),
-                  techId: s.tecnico_asignado!.toString(),
-                  techName: 'Tecnico',
-                  clientName: user.nombre,
-                  senderType: 'cliente',
-                  senderId: user.id.toString(),
-                },
-              })}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E3A5F', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
-            >
-              <Ionicons name="chatbubbles" size={14} color="#fff" />
-              <Text style={{ fontSize: 11, color: '#fff', fontWeight: '600' }}>Chat</Text>
-            </TouchableOpacity>
-          )}
+
+      {/* Action buttons */}
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+        {isActive && s.tecnico_asignado && user && (
+          <TouchableOpacity
+            onPress={() => router.push({
+              pathname: '/chat/[id]',
+              params: {
+                id: s.id.toString(),
+                techId: s.tecnico_asignado!.toString(),
+                techName: 'Tecnico',
+                clientName: user.nombre,
+                senderType: 'cliente',
+                senderId: user.id.toString(),
+              },
+            })}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E3A5F', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, flex: 1, justifyContent: 'center' }}
+          >
+            <Ionicons name="chatbubbles" size={14} color="#fff" />
+            <Text style={{ fontSize: 12, color: '#fff', fontWeight: '700' }}>Chat</Text>
+          </TouchableOpacity>
+        )}
+        {isActive && (
           <TouchableOpacity
             onPress={() => router.push({ pathname: '/tracking/[code]', params: { code: s.codigo } })}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, flex: 1, justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 11, color: '#2563EB', fontWeight: '600' }}>Ver seguimiento</Text>
-            <Ionicons name="chevron-forward" size={14} color="#2563EB" />
+            <Ionicons name="navigate" size={14} color="#2563EB" />
+            <Text style={{ fontSize: 12, color: '#2563EB', fontWeight: '700' }}>Seguimiento</Text>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+        {isCompleted && (
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/solicitar', params: { servicio: s.servicio, distrito: s.distrito } })}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.priLight, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, flex: 1, justifyContent: 'center' }}
+          >
+            <Ionicons name="refresh" size={14} color={COLORS.pri} />
+            <Text style={{ fontSize: 12, color: COLORS.pri, fontWeight: '700' }}>Re-agendar</Text>
+          </TouchableOpacity>
+        )}
+        {s.estado === 'Completado' && (
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/calificar/[code]', params: { code: s.codigo } })}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF8E1', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, flex: 1, justifyContent: 'center' }}
+          >
+            <Ionicons name="star" size={14} color="#F59E0B" />
+            <Text style={{ fontSize: 12, color: '#92400E', fontWeight: '700' }}>Calificar</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   )
 }

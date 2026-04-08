@@ -36,8 +36,7 @@ export default function CalificarScreen() {
       const fileName = `resenas/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
       const response = await fetch(uri)
       const blob = await response.blob()
-      const arrayBuffer = await new Response(blob).arrayBuffer()
-      const { error } = await supabase.storage.from('fotos').upload(fileName, arrayBuffer, {
+      const { error } = await supabase.storage.from('fotos').upload(fileName, blob, {
         contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
         upsert: false,
       })

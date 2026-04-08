@@ -294,7 +294,7 @@ export default function CuentaScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.7,
@@ -371,7 +371,7 @@ export default function CuentaScreen() {
       return Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir documentos.')
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: false,
       quality: 0.85,
     })
@@ -564,7 +564,7 @@ export default function CuentaScreen() {
   if (!tech) return null
 
   const level = getTechLevel(tech.servicios_completados)
-  const planInfo = PLAN_FEATURES[tech.plan as keyof typeof PLAN_FEATURES]
+  const planInfo = PLAN_FEATURES[tech.plan as keyof typeof PLAN_FEATURES] || PLAN_FEATURES.profesional
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>

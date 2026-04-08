@@ -132,7 +132,7 @@ export default function TecnicoScreen() {
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
-            onPress={() => { const phone = tech.whatsapp.length === 9 ? '+51' + tech.whatsapp : tech.whatsapp; Linking.openURL(`tel:${phone}`) }}
+            onPress={() => { const phone = tech.whatsapp?.length === 9 ? '+51' + tech.whatsapp : (tech.whatsapp || ''); Linking.openURL(`tel:${phone}`) }}
             style={{ flex: 1, backgroundColor: COLORS.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.border }}
           >
             <Ionicons name="call" size={18} color={COLORS.pri} />
