@@ -1,16 +1,18 @@
 import { useState, useCallback, useEffect } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator, Share } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS } from '../../src/lib/constants'
+import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS, OFICIOS_LIST } from '../../src/lib/constants'
 import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 import NotificationCenter from '../../src/components/NotificationCenter'
+import { YapeQR } from '../../src/components/YapeQR'
+import { PlinQR } from '../../src/components/PlinQR'
 
 type Tab = 'dashboard' | 'servicios' | 'resenas' | 'cotizaciones' | 'ingresos' | 'plan' | 'perfil'
 
@@ -65,6 +67,13 @@ export default function CuentaScreen() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [subscribingTo, setSubscribingTo] = useState<string | null>(null)
+  const [profileViews, setProfileViews] = useState(0)
+  const [planPayMethod, setPlanPayMethod] = useState<'flow' | 'yape' | 'plin'>('flow')
+  const [editOficios, setEditOficios] = useState<string[]>([])
+  const [editZonas, setEditZonas] = useState<string[]>([])
+  const [showOficiosPicker, setShowOficiosPicker] = useState(false)
+  const [showZonasPicker, setShowZonasPicker] = useState(false)
+  const [zonaSearch, setZonaSearch] = useState('')
 
   async function handleSubscribe(planKey: string) {
     if (!tech) return
@@ -189,6 +198,8 @@ export default function CuentaScreen() {
       setEditPrecio(data.precio_desde?.toString() || '')
       setEditDisponible(data.disponible)
       setGalleryImages(data.galeria || [])
+      setEditOficios(data.oficios || [data.oficio].filter(Boolean))
+      setEditZonas(data.zonas || [data.distrito].filter(Boolean))
 
       // Persist session
       await AsyncStorage.setItem('solu_tech_session', JSON.stringify({ id: data.id, nombre: data.nombre }))
@@ -220,6 +231,12 @@ export default function CuentaScreen() {
       setUnreadCount(notifs.filter((n: Notificacion) => !n.leido).length)
       setCotizaciones(cotRes.data || [])
       setPagos(pagosRes.data || [])
+      // Load profile views count
+      try {
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
+        const { count } = await supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('tecnico_id', techId).gte('created_at', weekAgo)
+        setProfileViews(count || 0)
+      } catch { /* table might not exist */ }
     } catch {
       // silent
     }
@@ -247,14 +264,23 @@ export default function CuentaScreen() {
     if (!tech) return
     setSavingProfile(true)
     try {
-      const { error } = await supabase.from('tecnicos').update({
+      const updates: any = {
         descripcion: editDesc || null,
         precio_desde: editPrecio ? parseInt(editPrecio) : null,
         disponible: editDisponible,
-      }).eq('id', tech.id)
+      }
+      if (editOficios.length > 0) {
+        updates.oficios = editOficios
+        updates.oficio = editOficios[0]
+      }
+      if (editZonas.length > 0) {
+        updates.zonas = editZonas
+        updates.distrito = editZonas[0]
+      }
+      const { error } = await supabase.from('tecnicos').update(updates).eq('id', tech.id)
 
       if (error) throw error
-      setTech({ ...tech, descripcion: editDesc || undefined, precio_desde: editPrecio ? parseInt(editPrecio) : undefined, disponible: editDisponible } as Tecnico)
+      setTech({ ...tech, ...updates } as Tecnico)
       setEditing(false)
       Alert.alert('Guardado', 'Tu perfil se actualizó correctamente')
     } catch (err: any) {
@@ -607,15 +633,25 @@ export default function CuentaScreen() {
         <View style={{ backgroundColor: '#1A1A2E', padding: 24, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
-                <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff' }}>S</Text>
-              </View>
+              <TouchableOpacity onPress={pickAndUploadProfilePhoto} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
+                {tech.foto_url ? (
+                  <Image source={{ uri: tech.foto_url }} style={{ width: 48, height: 48 }} />
+                ) : (
+                  <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff' }}>{tech.nombre?.[0] || 'S'}</Text>
+                )}
+              </TouchableOpacity>
               <View>
                 <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>Bienvenido</Text>
                 <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff' }}>{tech.nombre}</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}`, title: `${tech.nombre} - SOLU` })}
+                style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+              >
+                <Ionicons name="share-social-outline" size={20} color="rgba(255,255,255,0.7)" />
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowNotifications(true)}
                 style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
@@ -667,6 +703,20 @@ export default function CuentaScreen() {
           <View style={{ margin: 16, backgroundColor: '#FEF2F2', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FECACA' }}>
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626' }}>⚠️ Tu plan venció</Text>
             <Text style={{ fontSize: 11, color: '#991B1B', marginTop: 4 }}>Tu perfil sigue visible pero perdiste prioridad y beneficios. Renueva para recibir más clientes.</Text>
+            <TouchableOpacity onPress={() => setTab('plan')} style={{ backgroundColor: '#DC2626', borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Renovar ahora</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Plan expiring soon warning */}
+        {!isExpired && daysLeft > 0 && daysLeft <= 7 && (
+          <View style={{ margin: 16, marginBottom: 0, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FDE68A' }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>⏰ Tu plan vence en {daysLeft} día{daysLeft > 1 ? 's' : ''}</Text>
+            <Text style={{ fontSize: 11, color: '#78350F', marginTop: 4 }}>Renueva para no perder tu posición y seguir recibiendo clientes.</Text>
+            <TouchableOpacity onPress={() => setTab('plan')} style={{ backgroundColor: '#F59E0B', borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Renovar ahora</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -705,6 +755,20 @@ export default function CuentaScreen() {
                   <QuickStat icon="checkmark-circle" color={COLORS.green} value={String(completedLeads)} label="Completados" />
                   <QuickStat icon="time" color={COLORS.pri} value={String(activeLeads)} label="Activos" />
                 </View>
+              </View>
+
+              {/* Profile views */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="eye-outline" size={22} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.dark }}>{profileViews}</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.gray }}>Vistas a tu perfil esta semana</Text>
+                </View>
+                <TouchableOpacity onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}` })} style={{ backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>Compartir</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Level progress */}
@@ -1043,25 +1107,35 @@ export default function CuentaScreen() {
                             <Text style={{ fontSize: 11, color: COLORS.gray }}>{f}</Text>
                           </View>
                         ))}
-                        <TouchableOpacity
-                          disabled={subscribingTo === planKey}
-                          onPress={() => handleSubscribe(planKey)}
-                          style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: subscribingTo === planKey ? 0.7 : 1 }}
-                        >
-                          {subscribingTo === planKey ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                          ) : (
-                            <>
-                              <Ionicons name="card-outline" size={18} color="#fff" />
-                              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                                {isCurrent ? `Renovar S/${plan.price}` : `Cambiar a ${plan.name} S/${plan.price}`}
-                              </Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                        <View style={{ backgroundColor: '#F0FDF4', borderRadius: 8, padding: 8, marginTop: 6, alignItems: 'center' }}>
-                          <Text style={{ fontSize: 10, color: '#065F46' }}>Pago seguro y automatizado vía Flow.cl</Text>
+                        {/* Payment method selector */}
+                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
+                          {([['flow','💳','Tarjeta'],['yape','💜','Yape'],['plin','💚','Plin']] as const).map(([key, icon, label]) => (
+                            <TouchableOpacity key={key} onPress={() => setPlanPayMethod(key as any)} style={{ flex: 1, alignItems: 'center', padding: 8, borderRadius: 10, borderWidth: 2, borderColor: planPayMethod === key ? (key === 'yape' ? '#6C2EB9' : key === 'plin' ? '#10B981' : '#2563EB') : '#E2E8F0', backgroundColor: planPayMethod === key ? '#F8FAFC' : '#fff' }}>
+                              <Text style={{ fontSize: 16 }}>{icon}</Text>
+                              <Text style={{ fontSize: 9, fontWeight: '700', color: COLORS.dark, marginTop: 2 }}>{label}</Text>
+                            </TouchableOpacity>
+                          ))}
                         </View>
+                        {planPayMethod === 'flow' ? (
+                          <TouchableOpacity
+                            disabled={subscribingTo === planKey}
+                            onPress={() => handleSubscribe(planKey)}
+                            style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8, flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: subscribingTo === planKey ? 0.7 : 1 }}
+                          >
+                            {subscribingTo === planKey ? (
+                              <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                              <>
+                                <Ionicons name="card-outline" size={18} color="#fff" />
+                                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{isCurrent ? `Renovar S/${plan.price}` : `Pagar S/${plan.price}`}</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        ) : planPayMethod === 'yape' ? (
+                          <View style={{ marginTop: 8 }}><YapeQR amount={plan.price} reference={`PLAN-${tech.id}-${planKey}-${Date.now().toString(36).toUpperCase()}`} /></View>
+                        ) : (
+                          <View style={{ marginTop: 8 }}><PlinQR amount={plan.price} reference={`PLAN-${tech.id}-${planKey}-${Date.now().toString(36).toUpperCase()}`} /></View>
+                        )}
                       </View>
                     )
                   })}
@@ -1339,6 +1413,70 @@ export default function CuentaScreen() {
                         trackColor={{ false: '#E2E8F0', true: '#86EFAC' }}
                         thumbColor={editDisponible ? COLORS.green : '#94A3B8'}
                       />
+                    </View>
+
+                    {/* Oficios editor */}
+                    <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Mis servicios/oficios</Text>
+                      {editOficios.length > 0 && (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                          {editOficios.map((o, i) => (
+                            <TouchableOpacity key={o} onPress={() => setEditOficios(editOficios.filter((_, idx) => idx !== i))} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: i === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
+                              <Text style={{ fontSize: 11, fontWeight: '600', color: i === 0 ? '#fff' : '#1E3A5F' }}>{o}</Text>
+                              <Ionicons name="close-circle" size={12} color={i === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                      <TouchableOpacity onPress={() => setShowOficiosPicker(!showOficiosPicker)} style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.gray2 }}>{editOficios.length === 0 ? 'Seleccionar oficio' : '+ Agregar oficio'}</Text>
+                      </TouchableOpacity>
+                      {showOficiosPicker && (
+                        <View style={{ backgroundColor: '#fff', borderRadius: 12, marginTop: 4, maxHeight: 180, borderWidth: 1, borderColor: COLORS.border }}>
+                          <ScrollView nestedScrollEnabled>
+                            {OFICIOS_LIST.filter(o => !editOficios.includes(o)).map(o => (
+                              <TouchableOpacity key={o} onPress={() => { setEditOficios([...editOficios, o]); setShowOficiosPicker(false) }} style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+                                <Text style={{ fontSize: 12, color: COLORS.dark }}>{o}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Zonas editor */}
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Zonas de cobertura</Text>
+                      {editZonas.length > 0 && (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                          {editZonas.map((z, i) => (
+                            <TouchableOpacity key={z} onPress={() => setEditZonas(editZonas.filter((_, idx) => idx !== i))} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: i === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
+                              <Text style={{ fontSize: 11, fontWeight: '600', color: i === 0 ? '#fff' : '#1E3A5F' }}>{z}</Text>
+                              <Ionicons name="close-circle" size={12} color={i === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                      <TouchableOpacity onPress={() => setShowZonasPicker(!showZonasPicker)} style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.gray2 }}>{editZonas.length === 0 ? 'Seleccionar distrito' : '+ Agregar distrito'}</Text>
+                      </TouchableOpacity>
+                      {showZonasPicker && (
+                        <View style={{ backgroundColor: '#fff', borderRadius: 12, marginTop: 4, maxHeight: 220, borderWidth: 1, borderColor: COLORS.border }}>
+                          <TextInput placeholder="Buscar distrito..." placeholderTextColor={COLORS.gray2} value={zonaSearch} onChangeText={setZonaSearch} style={{ padding: 10, fontSize: 13, borderBottomWidth: 1, borderBottomColor: COLORS.border }} autoFocus />
+                          <ScrollView nestedScrollEnabled style={{ maxHeight: 160 }}>
+                            {DISTRITOS.filter(d => !editZonas.includes(d) && (!zonaSearch || d.toLowerCase().includes(zonaSearch.toLowerCase()))).map(d => (
+                              <TouchableOpacity key={d} onPress={() => { setEditZonas([...editZonas, d]); setZonaSearch(''); setShowZonasPicker(false) }} style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+                                <Text style={{ fontSize: 12, color: COLORS.dark }}>{d}</Text>
+                              </TouchableOpacity>
+                            ))}
+                            {zonaSearch.trim() && !DISTRITOS.some(d => d.toLowerCase() === zonaSearch.toLowerCase()) && (
+                              <TouchableOpacity onPress={() => { setEditZonas([...editZonas, zonaSearch.trim()]); setZonaSearch(''); setShowZonasPicker(false) }} style={{ padding: 10, backgroundColor: '#EFF6FF' }}>
+                                <Text style={{ fontSize: 12, color: '#2563EB', fontWeight: '700' }}>+ Agregar "{zonaSearch.trim()}"</Text>
+                              </TouchableOpacity>
+                            )}
+                          </ScrollView>
+                        </View>
+                      )}
                     </View>
 
                     {/* Gallery section */}
@@ -1645,13 +1783,31 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
             </TouchableOpacity>
           )}
 
-          {/* Cancel */}
-          <TouchableOpacity
-            onPress={cancelLead}
-            style={{ backgroundColor: '#FEE2E2', borderRadius: 14, padding: 12, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Ionicons name="close" size={16} color="#EF4444" />
-          </TouchableOpacity>
+          {/* Reject (only when Asignado - return to pool) */}
+          {lead.estado === 'Asignado' && (
+            <TouchableOpacity
+              onPress={() => Alert.alert('Rechazar solicitud', '¿No puedes atender este servicio? Se reasignará a otro técnico.', [
+                { text: 'No', style: 'cancel' },
+                { text: 'Rechazar', style: 'destructive', onPress: async () => {
+                  await supabase.from('clientes').update({ estado: 'Nuevo', tecnico_asignado: null }).eq('id', lead.id)
+                  onStatusChange?.()
+                }},
+              ])}
+              style={{ backgroundColor: '#FEE2E2', borderRadius: 14, padding: 12, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="close" size={16} color="#EF4444" />
+            </TouchableOpacity>
+          )}
+
+          {/* Cancel (for other statuses) */}
+          {lead.estado !== 'Asignado' && (
+            <TouchableOpacity
+              onPress={cancelLead}
+              style={{ backgroundColor: '#FEE2E2', borderRadius: 14, padding: 12, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="close" size={16} color="#EF4444" />
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>

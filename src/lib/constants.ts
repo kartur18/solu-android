@@ -189,6 +189,9 @@ export const SERVICIO_TO_OFICIO: Record<string, string[]> = {
   'Relojería': ['Relojero'],
 }
 
+// Lista única de oficios para selector
+export const OFICIOS_LIST = [...new Set(Object.values(SERVICIO_TO_OFICIO).flat())].sort()
+
 // Expandir búsqueda: dado un término, devuelve oficios relacionados
 export function expandSearchToOficios(search: string): string[] {
   const lower = search.toLowerCase()
