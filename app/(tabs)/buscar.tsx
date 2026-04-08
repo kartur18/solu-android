@@ -14,6 +14,7 @@ import { TechMapView } from '../../src/components/TechMapView'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { track } from '../../src/lib/analytics'
 import { useFavorites } from '../../src/lib/useFavorites'
+import { cacheSearchResults, getCachedSearchResults } from '../../src/lib/offlineCache'
 
 function FadeInView({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -189,10 +190,14 @@ export default function BuscarScreen() {
       const { data, error } = await query
       if (error) throw error
       setTechs(data || [])
+      if (data && data.length > 0) cacheSearchResults(data)
       resultsKey.current += 1
     } catch (err) {
       logger.error('Error loading techs:', err)
-      setTechs([])
+      // Try loading from cache when offline
+      const cached = await getCachedSearchResults()
+      if (cached) setTechs(cached)
+      else setTechs([])
     } finally {
       setLoading(false)
     }

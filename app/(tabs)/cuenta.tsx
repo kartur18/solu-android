@@ -820,6 +820,10 @@ export default function CuentaScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <Ionicons name="calendar" size={18} color="#2563EB" />
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Agenda de hoy</Text>
+                  <TouchableOpacity onPress={() => Linking.openURL(`https://solu.pe/api/calendar-sync?tecnicoId=${tech.id}`)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="calendar-outline" size={14} color="#2563EB" />
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#2563EB' }}>Sincronizar</Text>
+                  </TouchableOpacity>
                 </View>
                 {(() => {
                   const today = new Date().toISOString().split('T')[0]
