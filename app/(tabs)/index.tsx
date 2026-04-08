@@ -161,46 +161,31 @@ export default function HomeScreen() {
             Conecta con el técnico ideal en minutos
           </Text>
 
-          <View style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 4,
-            flexDirection: 'row',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.15,
-            shadowRadius: 20,
-            elevation: 8,
-          }}>
-            <View style={{ paddingLeft: 12, paddingRight: 6 }}>
-              <Ionicons name="search" size={20} color="#9CA3AF" />
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => router.push('/buscar')}
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.15,
+              shadowRadius: 20,
+              elevation: 8,
+            }}
+          >
+            <Ionicons name="search" size={20} color="#9CA3AF" />
+            <Text style={{ flex: 1, color: '#9CA3AF', fontSize: 15, fontWeight: '600' }}>
+              Buscar servicio o técnico...
+            </Text>
+            <View style={{ backgroundColor: '#2563EB', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 }}>
+              <Ionicons name="arrow-forward" size={16} color="#fff" />
             </View>
-            <TextInput
-              placeholder="Buscar servicio o técnico..."
-              placeholderTextColor="#9CA3AF"
-              value={heroSearch}
-              onChangeText={setHeroSearch}
-              onSubmitEditing={() => {
-                Keyboard.dismiss()
-                router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() || '' } })
-                setHeroSearch('')
-              }}
-              returnKeyType="search"
-              style={{ flex: 1, color: '#1E293B', fontSize: 15, fontWeight: '600', paddingVertical: 14, paddingRight: 8 }}
-            />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                Keyboard.dismiss()
-                router.push({ pathname: '/buscar', params: { servicio: heroSearch.trim() || '' } })
-                setHeroSearch('')
-              }}
-              style={{ backgroundColor: '#2563EB', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 14, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, letterSpacing: 0.5 }}>Buscar</Text>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
 
           {/* Trust stats */}
           <View style={{ flexDirection: 'row', marginTop: 18, gap: 8 }}>
