@@ -45,6 +45,7 @@ export default function SolicitarScreen() {
   const [loading, setLoading] = useState(false)
   const [showServicios, setShowServicios] = useState(false)
   const [showDistritos, setShowDistritos] = useState(false)
+  const [distritoFilter, setDistritoFilter] = useState('')
   const [distritoAutoDetected, setDistritoAutoDetected] = useState(false)
   const locationDetection = useLocationDetection()
   const [result, setResult] = useState<{ codigo: string; techName?: string; techWhatsapp?: string } | null>(null)
@@ -322,13 +323,26 @@ export default function SolicitarScreen() {
           <Text style={{ color: distrito ? COLORS.dark : COLORS.gray2, fontSize: 14 }}>{distrito || 'Seleccionar distrito'}</Text>
         </TouchableOpacity>
         {showDistritos && (
-          <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 200, borderWidth: 1, borderColor: COLORS.border }}>
-            <ScrollView nestedScrollEnabled>
-              {DISTRITOS.map((d) => (
-                <TouchableOpacity key={d} onPress={() => { handleDistritoChange(d); setShowDistritos(false) }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+          <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 280, borderWidth: 1, borderColor: COLORS.border }}>
+            <TextInput
+              placeholder="Escribe para buscar distrito..."
+              placeholderTextColor="#9CA3AF"
+              value={distritoFilter}
+              onChangeText={setDistritoFilter}
+              style={{ padding: 12, fontSize: 14, color: COLORS.dark, borderBottomWidth: 1, borderBottomColor: COLORS.border }}
+              autoFocus
+            />
+            <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
+              {DISTRITOS.filter(d => !distritoFilter || d.toLowerCase().includes(distritoFilter.toLowerCase())).map((d) => (
+                <TouchableOpacity key={d} onPress={() => { handleDistritoChange(d); setDistritoFilter(''); setShowDistritos(false) }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
                   <Text style={{ fontSize: 13, color: COLORS.dark }}>{d}</Text>
                 </TouchableOpacity>
               ))}
+              {distritoFilter.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoFilter.toLowerCase()) && (
+                <TouchableOpacity onPress={() => { handleDistritoChange(distritoFilter.trim()); setDistritoFilter(''); setShowDistritos(false) }} style={{ padding: 12, backgroundColor: '#EFF6FF' }}>
+                  <Text style={{ fontSize: 13, color: '#2563EB', fontWeight: '700' }}>+ Agregar "{distritoFilter.trim()}"</Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </View>
         )}

@@ -41,6 +41,7 @@ export default function RegistroScreen() {
   const [descripcion, setDescripcion] = useState('')
   const [showOficios, setShowOficios] = useState(false)
   const [showDistritos, setShowDistritos] = useState(false)
+  const [distritoSearch, setDistritoSearch] = useState('')
 
   // Plan limits
   const maxOficios = selectedPlan === 'profesional' ? 1 : selectedPlan === 'premium' ? 2 : 999
@@ -324,20 +325,42 @@ export default function RegistroScreen() {
               <Text style={{ color: COLORS.gray2 }}>{distritos.length === 0 ? 'Seleccionar distrito' : 'Agregar otro distrito'}</Text>
             </TouchableOpacity>
             {showDistritos && (
-              <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 200, borderWidth: 1, borderColor: COLORS.border }}>
-                <ScrollView nestedScrollEnabled>
-                  {DISTRITOS.filter(d => !distritos.includes(d)).map((d) => (
+              <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 280, borderWidth: 1, borderColor: COLORS.border }}>
+                <TextInput
+                  placeholder="Escribe para buscar distrito..."
+                  placeholderTextColor={COLORS.gray2}
+                  value={distritoSearch}
+                  onChangeText={setDistritoSearch}
+                  style={{ padding: 12, fontSize: 14, color: COLORS.dark, borderBottomWidth: 1, borderBottomColor: COLORS.border }}
+                  autoFocus
+                />
+                <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
+                  {DISTRITOS.filter(d => !distritos.includes(d) && (!distritoSearch || d.toLowerCase().includes(distritoSearch.toLowerCase()))).map((d) => (
                     <TouchableOpacity key={d} onPress={() => {
                       if (distritos.length >= maxDistritos) {
                         Alert.alert('Límite alcanzado', `Tu plan ${selectedPlan} permite máximo ${maxDistritos} distrito${maxDistritos > 1 ? 's' : ''}. Elige un plan superior para más zonas.`)
                         return
                       }
                       setDistritos([...distritos, d])
+                      setDistritoSearch('')
                       setShowDistritos(false)
                     }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
                       <Text style={{ fontSize: 13, color: COLORS.dark }}>{d}</Text>
                     </TouchableOpacity>
                   ))}
+                  {distritoSearch.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoSearch.toLowerCase()) && (
+                    <TouchableOpacity onPress={() => {
+                      if (distritos.length >= maxDistritos) {
+                        Alert.alert('Límite alcanzado', `Tu plan ${selectedPlan} permite máximo ${maxDistritos} distrito${maxDistritos > 1 ? 's' : ''}`)
+                        return
+                      }
+                      setDistritos([...distritos, distritoSearch.trim()])
+                      setDistritoSearch('')
+                      setShowDistritos(false)
+                    }} style={{ padding: 12, backgroundColor: '#EFF6FF' }}>
+                      <Text style={{ fontSize: 13, color: '#2563EB', fontWeight: '700' }}>+ Agregar "{distritoSearch.trim()}"</Text>
+                    </TouchableOpacity>
+                  )}
                 </ScrollView>
               </View>
             )}
