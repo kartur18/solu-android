@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../src/lib/constants'
@@ -70,8 +70,8 @@ export default function SoporteScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
     >
       {/* Header */}
-      <View style={{ backgroundColor: '#1E3A5F', padding: 16, paddingTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/') }}>
+      <View style={{ backgroundColor: '#1E3A5F', padding: 16, paddingTop: (StatusBar.currentHeight || 40) + 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => router.dismiss()}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
@@ -117,7 +117,7 @@ export default function SoporteScreen() {
 
       {/* Input */}
       <View style={{
-        flexDirection: 'row', padding: 12, paddingBottom: Platform.OS === 'android' ? 24 : 12,
+        flexDirection: 'row', padding: 12, paddingBottom: Platform.OS === 'android' ? 56 : 12,
         gap: 8, borderTopWidth: 1, borderTopColor: '#E2E8F0', backgroundColor: '#fff',
       }}>
         <TextInput
