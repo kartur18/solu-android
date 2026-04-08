@@ -281,6 +281,36 @@ export default function CuentaScreen() {
     return 3
   }
 
+  async function pickAndUploadProfilePhoto() {
+    if (!tech) return
+    const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permResult.granted) {
+      return Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería.')
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    })
+    if (result.canceled || !result.assets?.[0]) return
+    try {
+      const asset = result.assets[0]
+      const ext = asset.uri.split('.').pop() || 'jpg'
+      const fileName = `profile_${tech.id}_${Date.now()}.${ext}`
+      const response = await fetch(asset.uri)
+      const blob = await response.blob()
+      const { error: uploadError } = await supabase.storage.from('fotos').upload(fileName, blob, { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`, upsert: true })
+      if (uploadError) throw uploadError
+      const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(fileName)
+      await supabase.from('tecnicos').update({ foto_url: urlData.publicUrl }).eq('id', tech.id)
+      setTech({ ...tech, foto_url: urlData.publicUrl })
+      Alert.alert('Listo', 'Foto de perfil actualizada')
+    } catch (err) {
+      Alert.alert('Error', 'No se pudo subir la foto')
+    }
+  }
+
   async function pickAndUploadImage() {
     if (!tech) return
     const maxPhotos = getMaxPhotos()
@@ -1233,6 +1263,23 @@ export default function CuentaScreen() {
           {/* ═══ PERFIL (Editable) ═══ */}
           {tab === 'perfil' && (
             <View style={{ gap: 12 }}>
+              {/* Profile photo */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, alignItems: 'center' }}>
+                <TouchableOpacity onPress={pickAndUploadProfilePhoto} style={{ alignItems: 'center' }}>
+                  <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8 }}>
+                    {tech.foto_url ? (
+                      <Image source={{ uri: tech.foto_url }} style={{ width: 80, height: 80 }} />
+                    ) : (
+                      <Text style={{ fontSize: 32, fontWeight: '900', color: COLORS.pri }}>{tech.nombre?.[0]}</Text>
+                    )}
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="camera-outline" size={14} color="#2563EB" />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>Cambiar foto de perfil</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Mi perfil</Text>
