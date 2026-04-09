@@ -1577,6 +1577,61 @@ export default function CuentaScreen() {
                       )}
                     </View>
 
+                    {/* Documentos de verificación */}
+                    <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginBottom: 4 }}>Documentos de verificación</Text>
+                      <Text style={{ fontSize: 10, color: COLORS.gray2, marginBottom: 12 }}>Sube tus documentos para generar más confianza</Text>
+                      {[
+                        { key: 'antecedentes_penales', label: 'Antecedentes Penales (INPE)', icon: '🔍', field: 'antecedentes_penales_estado' },
+                        { key: 'antecedentes_policiales', label: 'Antecedentes Policiales (PNP)', icon: '🛡️', field: 'antecedentes_policiales_estado' },
+                        { key: 'certificado_estudios', label: 'Certificado de Estudios', icon: '📜', field: 'certificado_estudios_estado' },
+                      ].map(doc => {
+                        const estado = (tech as any)?.[doc.field] || 'no_subido'
+                        return (
+                          <View key={doc.key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                              <Text style={{ fontSize: 18 }}>{doc.icon}</Text>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.dark }}>{doc.label}</Text>
+                                <Text style={{ fontSize: 9, fontWeight: '600', color: estado === 'verificado' ? '#10B981' : estado === 'pendiente' ? '#F59E0B' : COLORS.gray2 }}>
+                                  {estado === 'verificado' ? '✅ Verificado' : estado === 'pendiente' ? '⏳ En revisión' : 'No subido'}
+                                </Text>
+                              </View>
+                            </View>
+                            {estado !== 'verificado' && (
+                              <TouchableOpacity
+                                onPress={async () => {
+                                  const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+                                  if (!permResult.granted) return Alert.alert('Permiso requerido', 'Necesitamos acceso a tus archivos.')
+                                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 })
+                                  if (result.canceled || !result.assets?.[0]) return
+                                  try {
+                                    const asset = result.assets[0]
+                                    const formData = new FormData()
+                                    formData.append('file', { uri: asset.uri, name: `${doc.key}_${tech.id}.jpg`, type: 'image/jpeg' } as any)
+                                    formData.append('tipo', doc.key)
+                                    formData.append('tecnicoId', String(tech.id))
+                                    const res = await fetch(`${ENV.API_BASE_URL}/upload-doc`, { method: 'POST', body: formData })
+                                    const data = await res.json()
+                                    if (data.success) {
+                                      Alert.alert('Documento subido', 'Lo revisaremos pronto y te notificaremos.')
+                                      const { data: fresh } = await supabase.from('tecnicos').select('*').eq('id', tech.id).single()
+                                      if (fresh) setTech(fresh)
+                                    } else {
+                                      Alert.alert('Error', data.error || 'No se pudo subir')
+                                    }
+                                  } catch { Alert.alert('Error', 'Error de conexión') }
+                                }}
+                                style={{ backgroundColor: '#EFF6FF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                              >
+                                <Text style={{ fontSize: 10, fontWeight: '700', color: '#2563EB' }}>{estado === 'pendiente' ? 'Resubir' : 'Subir'}</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        )
+                      })}
+                    </View>
+
                     {/* Gallery section */}
                     <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
