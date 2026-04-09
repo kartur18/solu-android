@@ -89,18 +89,41 @@ export const SERVICIOS = [
   // ── Eventos ──
   'Fotografía de eventos', 'Videografía', 'DJ profesional', 'Decoración de eventos',
   'Catering', 'Animación infantil', 'Planificación de eventos', 'Músico en vivo',
+  'Payaso', 'Mago', 'Bartender', 'Mesero', 'Chef a domicilio', 'Maestro de ceremonias', 'Mariachi', 'Saxofonista',
+  // ── Belleza extra ──
+  'Tatuaje', 'Piercing', 'Microblading', 'Lash lifting', 'Trenzas y peinados',
+  // ── Clases extra ──
+  'Robótica', 'Programación', 'Excel y Office', 'Dibujo y pintura', 'Oratoria', 'Ajedrez', 'Natación', 'Repostería', 'Cocina',
+  // ── Delivery extra ──
+  'Chofer personal', 'Hacer cola por ti', 'Mudanza pequeña', 'Mensajería en moto',
+  // ── Mascotas extra ──
+  'Fotógrafo de mascotas', 'Paseador nocturno', 'Acuarios y peces',
+  // ── Bienestar extra ──
+  'Quiropráctico', 'Acupuntura', 'Reflexología', 'Coach de vida', 'Psicólogo',
+  // ── Automotriz ──
+  'Lavado de autos', 'Mecánico general', 'Electricista automotriz', 'Cambio de aceite',
+  'Alineamiento y balanceo', 'Polarizado', 'Detailing', 'Planchado y pintura vehicular', 'Alarma vehicular',
+  // ── Profesionales ──
+  'Contador', 'Asesoría legal', 'Notaría', 'Traductor', 'Diseñador gráfico', 'Community manager',
+  // ── Cuidado ──
+  'Niñera', 'Cuidador de adultos mayores', 'Enfermera a domicilio', 'Acompañante hospitalario',
 ]
 
 // ── Categorías principales ──
 export const CATEGORIAS = [
-  { key: 'hogar', name: 'Hogar y Reparaciones', icon: '🔧', color: '#EA580C', desc: 'Gasfitería, electricidad, pintura y más' },
-  { key: 'belleza', name: 'Belleza y Estética', icon: '💅', color: '#EC4899', desc: 'Uñas, maquillaje, peluquería, barbería' },
-  { key: 'clases', name: 'Clases y Tutorías', icon: '📚', color: '#8B5CF6', desc: 'Matemáticas, inglés, música, refuerzo' },
-  { key: 'delivery', name: 'Delivery y Mandados', icon: '📦', color: '#F59E0B', desc: 'Delivery, compras, trámites, recojo' },
+  { key: 'hogar', name: 'Hogar y Reparaciones', icon: '🔧', color: '#EA580C', desc: 'Gasfitería, electricidad, pintura, limpieza' },
+  { key: 'belleza', name: 'Belleza y Estética', icon: '💅', color: '#EC4899', desc: 'Uñas, maquillaje, peluquería, tatuaje' },
+  { key: 'clases', name: 'Clases y Tutorías', icon: '📚', color: '#8B5CF6', desc: 'Mate, inglés, música, programación' },
+  { key: 'delivery', name: 'Delivery y Mandados', icon: '📦', color: '#F59E0B', desc: 'Delivery, compras, chofer, mudanza' },
   { key: 'mascotas', name: 'Mascotas', icon: '🐾', color: '#10B981', desc: 'Baño canino, paseo, pet sitting' },
-  { key: 'bienestar', name: 'Salud y Bienestar', icon: '💆', color: '#06B6D4', desc: 'Masajes, fisioterapia, yoga, nutrición' },
-  { key: 'eventos', name: 'Eventos', icon: '🎉', color: '#EF4444', desc: 'Fotografía, DJ, decoración, catering' },
+  { key: 'bienestar', name: 'Salud y Bienestar', icon: '💆', color: '#06B6D4', desc: 'Masajes, fisio, yoga, psicología' },
+  { key: 'eventos', name: 'Eventos', icon: '🎉', color: '#EF4444', desc: 'Fotografía, DJ, catering, animación' },
+  { key: 'automotriz', name: 'Automotriz', icon: '🚗', color: '#6366F1', desc: 'Mecánico, lavado, polarizado' },
+  { key: 'profesionales', name: 'Servicios profesionales', icon: '👔', color: '#0EA5E9', desc: 'Contador, abogado, diseñador' },
+  { key: 'cuidado', name: 'Cuidado de personas', icon: '👶', color: '#F97316', desc: 'Niñera, cuidador, enfermera' },
 ]
+
+export const CATEGORIAS_DNI_OBLIGATORIO = ['hogar', 'delivery', 'cuidado']
 
 // Mapeo de servicios a oficios para mejorar búsqueda (100+ oficios)
 export const SERVICIO_TO_OFICIO: Record<string, string[]> = {
