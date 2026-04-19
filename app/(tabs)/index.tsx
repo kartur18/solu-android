@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Dimensions, Animated, TextInput, Platform, Keyboard } from 'react-native'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Dimensions, Animated, TextInput, Keyboard } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from '../../src/lib/constants'
+import { COLORS, SERVICIOS, DISTRITOS } from '../../src/lib/constants'
 import { logger } from '../../src/lib/logger'
 import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
@@ -13,6 +13,8 @@ import { HomeTechSkeleton } from '../../src/components/SkeletonLoader'
 import { useFavorites } from '../../src/lib/useFavorites'
 import { ChatBot } from '../../src/components/ChatBot'
 import { track } from '../../src/lib/analytics'
+import { useClientProfile } from '../../src/lib/useClientProfile'
+import { suggestServicios, detectServicio, detectUrgencia } from '../../src/lib/smartIntent'
 
 const { width } = Dimensions.get('window')
 const CARD_SIZE = (width - 60) / 4
@@ -27,8 +29,6 @@ const CATEGORIES = [
   { name: 'Maquillaje',   icon: 'color-wand'     as const, color: '#EC4899', bg: '#FDF2F8' },
   { name: 'Clases',       icon: 'book'           as const, color: '#8B5CF6', bg: '#F5F3FF' },
 ]
-
-// Stats will be loaded dynamically from Supabase
 
 function PressableCard({ children, onPress, style }: { children: React.ReactNode; onPress: () => void; style?: any }) {
   const scaleAnim = useRef(new Animated.Value(1)).current
@@ -71,21 +71,85 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [offline, setOffline] = useState(false)
-  const [heroSearch, setHeroSearch] = useState('')
-  const [stats, setStats] = useState({ techs: 0, servs: 0 })
+  const [query, setQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [stats, setStats] = useState<{ techs: number; servs: number; distritos: number }>({
+    techs: 0,
+    servs: SERVICIOS.length,
+    distritos: DISTRITOS.length,
+  })
   const location = useLocationDetection()
   const fadeAnim = useRef(new Animated.Value(0)).current
   const { toggleFavorite, isFavorite } = useFavorites()
+  const { profile } = useClientProfile()
+  const [pendingRating, setPendingRating] = useState<{ codigo: string; servicio: string } | null>(null)
+
+  const suggestions = useMemo(() => suggestServicios(query, 6), [query])
+
+  // Check for completed services waiting for rating
+  useEffect(() => {
+    if (!profile?.whatsapp) return
+    ;(async () => {
+      try {
+        const { data: completed } = await supabase
+          .from('clientes')
+          .select('codigo, servicio')
+          .eq('whatsapp', profile.whatsapp)
+          .eq('estado', 'Completado')
+          .order('created_at', { ascending: false })
+          .limit(5)
+        if (!completed || !completed.length) return
+
+        const { data: rated } = await supabase
+          .from('resenas')
+          .select('codigo_servicio')
+          .in('codigo_servicio', completed.map((c) => c.codigo))
+        const ratedCodes = new Set((rated || []).map((r: { codigo_servicio: string }) => r.codigo_servicio))
+        const next = completed.find((c) => !ratedCodes.has(c.codigo))
+        if (next) setPendingRating({ codigo: next.codigo, servicio: next.servicio })
+      } catch {}
+    })()
+  }, [profile?.whatsapp])
+
+  function handleSearchSubmit() {
+    const text = query.trim()
+    if (!text) {
+      router.push('/solicitar')
+      return
+    }
+    const detected = detectServicio(text)
+    const urgencia = detectUrgencia(text)
+    track('Smart Search Submitted', { query: text, detected, urgencia })
+    if (detected) {
+      router.push({
+        pathname: '/solicitar',
+        params: { servicio: detected, descripcion: text, urgencia },
+      })
+    } else {
+      router.push({ pathname: '/buscar', params: { servicio: text } })
+    }
+    setQuery('')
+    setShowSuggestions(false)
+    Keyboard.dismiss()
+  }
+
+  function pickSuggestion(s: string) {
+    setQuery('')
+    setShowSuggestions(false)
+    Keyboard.dismiss()
+    track('Suggestion Picked', { servicio: s })
+    router.push({ pathname: '/solicitar', params: { servicio: s } })
+  }
 
   useEffect(() => {
     location.detectLocation()
-    // Load real stats
-    Promise.all([
-      supabase.from('tecnicos').select('id', { count: 'exact', head: true }),
-      supabase.from('clientes').select('id', { count: 'exact', head: true }),
-    ]).then(([tRes, cRes]) => {
-      setStats({ techs: tRes.count || 0, servs: cRes.count || 0 })
-    }).catch(() => {})
+    supabase
+      .from('tecnicos')
+      .select('id', { count: 'exact', head: true })
+      .eq('disponible', true)
+      .then(({ count }) => {
+        setStats((prev) => ({ ...prev, techs: count || 0 }))
+      })
   }, [])
 
   async function loadTopTechs() {
@@ -101,7 +165,6 @@ export default function HomeScreen() {
       if (offline) setOffline(false)
     } catch (err) {
       logger.error('Error loading techs:', err)
-      // Solo mostrar offline después del primer intento fallido, no al cargar
       if (!loading) setOffline(true)
     } finally {
       setLoading(false)
@@ -120,6 +183,8 @@ export default function HomeScreen() {
     await loadTopTechs()
     setRefreshing(false)
   }
+
+  const greeting = profile?.nombre ? `Hola ${profile.nombre.split(' ')[0]} 👋` : null
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -148,51 +213,97 @@ export default function HomeScreen() {
               <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>S</Text>
             </View>
             <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 }}>SOLU</Text>
-            <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(234,88,12,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EA580C' }} />
-              <Text style={{ color: '#F97316', fontSize: 10, fontWeight: '700' }}>En todo el Perú</Text>
-            </View>
+            {location.distrito ? (
+              <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(234,88,12,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 }}>
+                <Ionicons name="navigate" size={10} color="#F97316" />
+                <Text style={{ color: '#F97316', fontSize: 10, fontWeight: '700' }}>{location.distrito}</Text>
+              </View>
+            ) : null}
           </View>
 
+          {greeting ? (
+            <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginBottom: 4 }}>{greeting}</Text>
+          ) : null}
           <Text style={{ fontSize: 28, fontWeight: '900', color: '#fff', marginBottom: 6, lineHeight: 34 }}>
             ¿Qué necesitas{'\n'}resolver hoy?
           </Text>
           <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 18, fontWeight: '600' }}>
-            Conecta con el técnico ideal en minutos
+            Escribe tu problema o elige un servicio
           </Text>
 
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => router.push('/buscar')}
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              padding: 14,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.15,
-              shadowRadius: 20,
-              elevation: 8,
-            }}
-          >
+          {/* Smart search input */}
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            paddingHorizontal: 14,
+            paddingVertical: 4,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            elevation: 8,
+          }}>
             <Ionicons name="search" size={20} color="#9CA3AF" />
-            <Text style={{ flex: 1, color: '#9CA3AF', fontSize: 15, fontWeight: '600' }}>
-              Buscar servicio o técnico...
-            </Text>
-            <View style={{ backgroundColor: '#2563EB', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 }}>
+            <TextInput
+              value={query}
+              onChangeText={(t) => { setQuery(t); setShowSuggestions(t.length > 0) }}
+              onFocus={() => setShowSuggestions(query.length > 0)}
+              onSubmitEditing={handleSearchSubmit}
+              returnKeyType="search"
+              placeholder="Ej: se me rompió el caño"
+              placeholderTextColor="#9CA3AF"
+              style={{ flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.dark, paddingVertical: 12 }}
+            />
+            <TouchableOpacity
+              onPress={handleSearchSubmit}
+              style={{ backgroundColor: '#EA580C', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}
+              activeOpacity={0.85}
+            >
               <Ionicons name="arrow-forward" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Autocomplete dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <View style={{
+              backgroundColor: '#fff', borderRadius: 14, marginTop: 8,
+              paddingVertical: 4, maxHeight: 260,
+              shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 10,
+            }}>
+              {suggestions.map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  onPress={() => pickSuggestion(s)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="search" size={14} color="#9CA3AF" />
+                  <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.dark }}>{s}</Text>
+                  <Ionicons name="arrow-up-outline" size={14} color="#CBD5E1" style={{ transform: [{ rotate: '-45deg' }] }} />
+                </TouchableOpacity>
+              ))}
             </View>
+          )}
+
+          {/* Emergency link (discreet) */}
+          <TouchableOpacity
+            onPress={() => router.push('/urgencias')}
+            activeOpacity={0.8}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14 }}
+          >
+            <Ionicons name="flash" size={14} color="#FCA5A5" />
+            <Text style={{ color: '#FCA5A5', fontSize: 12, fontWeight: '700' }}>¿Emergencia? SOS 24/7 →</Text>
           </TouchableOpacity>
 
-          {/* Trust stats */}
+          {/* Trust stats (dynamic) */}
           <View style={{ flexDirection: 'row', marginTop: 18, gap: 8 }}>
             {[
               { label: 'Técnicos', value: stats.techs > 0 ? `${stats.techs}+` : '—' },
-              { label: 'Servicios', value: '100+' },
-              { label: 'Distritos', value: '43+' },
+              { label: 'Servicios', value: `${stats.servs}+` },
+              { label: 'Distritos', value: `${stats.distritos}+` },
             ].map((stat) => (
               <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
                 <Text style={{ color: '#fff', fontSize: 17, fontWeight: '900' }}>{stat.value}</Text>
@@ -202,100 +313,87 @@ export default function HomeScreen() {
           </View>
         </LinearGradient>
 
-        {/* Quick actions */}
-        <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: -14 }}>
+        {/* Pending rating banner */}
+        {pendingRating ? (
           <TouchableOpacity
-            onPress={() => router.push('/solicitar')}
+            onPress={() => router.push({ pathname: '/calificar/[code]', params: { code: pendingRating.codigo } })}
             activeOpacity={0.85}
-            style={{
-              flex: 1, backgroundColor: '#EA580C', borderRadius: 18,
-              paddingVertical: 18, paddingHorizontal: 16,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              elevation: 8, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12,
-            }}
+            style={{ marginHorizontal: 16, marginTop: -14, marginBottom: 8, backgroundColor: '#FEF3C7', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#FDE68A' }}
           >
-            <Ionicons name="build" size={20} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Solicitar técnico</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/urgencias')}
-            activeOpacity={0.85}
-            style={{
-              flex: 1, backgroundColor: '#DC2626', borderRadius: 18,
-              paddingVertical: 18, paddingHorizontal: 16,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              elevation: 8, shadowColor: '#DC2626', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12,
-            }}
-          >
-            <Ionicons name="flash" size={20} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Emergencia 24/7</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Cerca de ti banner */}
-        {location.distrito ? (
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/buscar', params: { distrito: location.distrito! } })}
-            activeOpacity={0.8}
-            style={{
-              marginHorizontal: 16, marginTop: 12,
-              backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12,
-              flexDirection: 'row', alignItems: 'center', gap: 10,
-              borderWidth: 1, borderColor: '#BFDBFE',
-            }}
-          >
-            <Ionicons name="navigate" size={18} color={COLORS.blue} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark }}>
-                Técnicos cerca de {location.distrito}
-              </Text>
-              <Text style={{ fontSize: 10, color: COLORS.gray }}>Toca para ver profesionales en tu zona</Text>
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FDE68A', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="star" size={18} color="#92400E" />
             </View>
-            <Ionicons name="chevron-forward" size={14} color={COLORS.blue} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400E' }}>¿Cómo te fue con {pendingRating.servicio}?</Text>
+              <Text style={{ fontSize: 11, color: '#78350F', marginTop: 1 }}>Toca para calificar · ayuda a otros vecinos</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#92400E" />
           </TouchableOpacity>
         ) : null}
 
+        {/* Guarantee strip */}
+        <View style={{ marginHorizontal: 16, marginTop: pendingRating ? 0 : -14, marginBottom: 12, backgroundColor: '#ECFDF5', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#A7F3D0' }}>
+          <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="shield-checkmark" size={18} color="#059669" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46' }}>Garantía SOLU</Text>
+            <Text style={{ fontSize: 11, color: '#047857', marginTop: 1 }}>Si no queda bien, mandamos otro técnico sin costo en 48h</Text>
+          </View>
+        </View>
+
         {/* Categories */}
-        <View style={{ padding: 16, paddingBottom: 4 }}>
+        <View style={{ padding: 16, paddingBottom: 4, paddingTop: 4 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>
             Servicios populares
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            {CATEGORIES.map((cat) => (
-              <PressableCard
-                key={cat.name}
-                onPress={() => { track('Category Clicked', { category: cat.name }); router.push({ pathname: '/buscar', params: { servicio: cat.name } }) }}
-                style={{
-                  width: CARD_SIZE,
-                  backgroundColor: '#fff', borderRadius: 16,
-                  paddingVertical: 16, paddingHorizontal: 4,
-                  alignItems: 'center', marginBottom: 10,
-                  shadowColor: '#F26B21',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 6,
-                  elevation: 2,
-                  borderWidth: 1,
-                  borderColor: '#FFF3EC',
-                }}
-              >
-                <View
+            {CATEGORIES.map((cat) => {
+              const isLast = profile?.lastServicio === cat.name
+              return (
+                <PressableCard
+                  key={cat.name}
+                  onPress={() => {
+                    track('Category Clicked', { category: cat.name })
+                    router.push({ pathname: '/solicitar', params: { servicio: cat.name } })
+                  }}
                   style={{
-                    width: 46, height: 46, borderRadius: 15,
-                    backgroundColor: cat.bg,
-                    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+                    width: CARD_SIZE,
+                    backgroundColor: '#fff', borderRadius: 16,
+                    paddingVertical: 16, paddingHorizontal: 4,
+                    alignItems: 'center', marginBottom: 10,
+                    shadowColor: isLast ? cat.color : '#F26B21',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: isLast ? 0.18 : 0.08,
+                    shadowRadius: 6,
+                    elevation: isLast ? 4 : 2,
+                    borderWidth: isLast ? 2 : 1,
+                    borderColor: isLast ? cat.color : '#FFF3EC',
                   }}
                 >
-                  <Ionicons name={cat.icon} size={22} color={cat.color} />
-                </View>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.dark, textAlign: 'center' }} numberOfLines={1}>
-                  {cat.name}
-                </Text>
-              </PressableCard>
-            ))}
+                  {isLast ? (
+                    <View style={{ position: 'absolute', top: -6, right: -4, backgroundColor: cat.color, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
+                      <Text style={{ fontSize: 8, fontWeight: '900', color: '#fff' }}>ÚLTIMO</Text>
+                    </View>
+                  ) : null}
+                  <View
+                    style={{
+                      width: 46, height: 46, borderRadius: 15,
+                      backgroundColor: cat.bg,
+                      alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+                    }}
+                  >
+                    <Ionicons name={cat.icon} size={22} color={cat.color} />
+                  </View>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.dark, textAlign: 'center' }} numberOfLines={1}>
+                    {cat.name}
+                  </Text>
+                </PressableCard>
+              )
+            })}
           </View>
           <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7} style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver los 100+ servicios →</Text>
+            <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver todos los servicios →</Text>
           </TouchableOpacity>
         </View>
 
@@ -327,8 +425,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-
-        {/* Promo banner */}
+        {/* Promo banner for techs (solo UNO, el del fondo se removió) */}
         <PressableCard
           onPress={() => router.push('/registro')}
           style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}
@@ -382,31 +479,8 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* CTA Técnico */}
-        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-          <View style={{
-            backgroundColor: '#FFF7ED', borderRadius: 16, padding: 24, alignItems: 'center',
-            borderWidth: 1, borderColor: '#FED7AA',
-          }}>
-            <Text style={{ fontSize: 24, marginBottom: 8 }}>🔧</Text>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, textAlign: 'center' }}>¿Eres técnico?</Text>
-            <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginTop: 6, marginBottom: 14, lineHeight: 18 }}>
-              Únete a SOLU y recibe clientes todos los días.{'\n'}Prueba gratis por 90 días.
-            </Text>
-            <PressableCard
-              onPress={() => router.push('/registro')}
-              style={{
-                backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 12,
-                shadowColor: COLORS.pri, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-              }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Registrarme gratis →</Text>
-            </PressableCard>
-          </View>
-        </View>
-
         {/* Footer */}
-        <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+        <View style={{ alignItems: 'center', paddingVertical: 20, marginTop: 8 }}>
           <Text style={{ fontSize: 10, color: COLORS.gray2 }}>SOLU v1.0 · CITYLAND GROUP E.I.R.L.</Text>
           <Text style={{ fontSize: 9, color: COLORS.gray2, marginTop: 2 }}>Profesionales verificados en todo el Perú</Text>
         </View>

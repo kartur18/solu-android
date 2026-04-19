@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Linking, RefreshControl } from 'react-native'
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Linking, RefreshControl, Alert, Share } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink, SUPPORT_PHONE } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import type { Cliente, Tecnico } from '../../src/lib/types'
+import { track } from '../../src/lib/analytics'
 
 const STEPS = [
   { key: 'Nuevo', label: 'Solicitud registrada', icon: 'document-text' as const, desc: 'Tu solicitud fue recibida' },
@@ -113,6 +114,55 @@ export default function TrackingScreen() {
 
   const currentIdx = STEPS.findIndex(s => s.key === service.estado)
   const isCompleted = service.estado === 'Completado'
+  const canCancel = service.estado === 'Nuevo' || service.estado === 'Asignado'
+
+  async function handleCancel() {
+    const snapshot = service
+    if (!snapshot) return
+    Alert.alert(
+      '¿Cancelar servicio?',
+      'El técnico será notificado y tu solicitud quedará archivada. Esta acción no se puede deshacer.',
+      [
+        { text: 'No, mantener', style: 'cancel' },
+        {
+          text: 'Sí, cancelar',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase
+              .from('clientes')
+              .update({ estado: 'Cancelado' })
+              .eq('id', snapshot.id)
+            if (error) {
+              Alert.alert('Error', 'No se pudo cancelar. Intenta de nuevo.')
+              return
+            }
+            track('Service Cancelled', { codigo: snapshot.codigo, estado_previo: snapshot.estado })
+            if (tech) {
+              supabase.from('notificaciones').insert({
+                tecnico_id: tech.id,
+                tipo: 'cancelacion',
+                titulo: 'Solicitud cancelada',
+                mensaje: `El cliente canceló la solicitud ${snapshot.codigo}`,
+                leido: false,
+              }).then(() => {})
+            }
+            setService({ ...snapshot, estado: 'Cancelado' })
+          },
+        },
+      ]
+    )
+  }
+
+  async function shareReferral() {
+    const snapshot = service
+    if (!snapshot) return
+    try {
+      await Share.share({
+        message: `Acabo de usar SOLU y me resolvieron un problema de ${snapshot.servicio} rapidísimo 🔧\n\nDescarga la app y pide tu servicio: https://solu.pe`,
+      })
+      track('Referral Shared', { codigo: snapshot.codigo })
+    } catch {}
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.light }}>
@@ -218,7 +268,7 @@ export default function TrackingScreen() {
 
       {/* Rate service when completed */}
       {isCompleted && (
-        <View style={{ padding: 20 }}>
+        <View style={{ padding: 20, gap: 10 }}>
           <TouchableOpacity
             onPress={() => router.push({ pathname: '/calificar/[code]', params: { code: service.codigo } })}
             style={{
@@ -229,6 +279,44 @@ export default function TrackingScreen() {
             <Ionicons name="star" size={20} color="#fff" />
             <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Calificar servicio</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={shareReferral}
+            style={{
+              backgroundColor: '#25D366', borderRadius: 14, padding: 16,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <Ionicons name="share-social" size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Recomendar a un vecino</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Cancel button (solo si aún no comenzó) */}
+      {canCancel && (
+        <View style={{ padding: 20, paddingTop: 0 }}>
+          <TouchableOpacity
+            onPress={handleCancel}
+            style={{
+              backgroundColor: '#fff', borderRadius: 14, padding: 14,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+              borderWidth: 1, borderColor: '#FCA5A5',
+            }}
+          >
+            <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
+            <Text style={{ color: '#DC2626', fontWeight: '700', fontSize: 13 }}>Cancelar solicitud</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Cancelado state */}
+      {service.estado === 'Cancelado' && (
+        <View style={{ marginHorizontal: 20, marginTop: 10, backgroundColor: '#FEE2E2', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#FCA5A5' }}>
+          <Ionicons name="close-circle" size={22} color="#DC2626" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#991B1B' }}>Solicitud cancelada</Text>
+            <Text style={{ fontSize: 11, color: '#991B1B', marginTop: 2 }}>Puedes solicitar un nuevo servicio cuando quieras.</Text>
+          </View>
         </View>
       )}
 

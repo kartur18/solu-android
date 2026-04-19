@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { COLORS } from '../lib/constants'
 import { ENV, fetchWithTimeout } from '../lib/env'
+import { detectServicio, detectUrgencia, getPrecioSugerido, formatPrecio } from '../lib/smartIntent'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -59,21 +60,15 @@ export function ChatBot() {
 
       setMessages([...newMessages, { role: 'assistant', content: reply || 'Describe tu problema y te recomiendo el técnico ideal.' }])
     } catch {
-      // Fallback: respuesta local si la API falla
-      const lower = userMsg.toLowerCase()
-      let fallback = 'Lo siento, no pude conectarme al servidor. Mientras tanto, puedes buscar técnicos directamente desde la pestaña "Buscar".'
-      if (lower.includes('gas') || lower.includes('agua') || lower.includes('tuber') || lower.includes('fuga')) {
-        fallback = '🔧 Por lo que describes, necesitas un Gasfitero.\n\nToca "Buscar técnico" abajo o ve a la pestaña Buscar y filtra por "Gasfitería".'
-        setLastService('Gasfitería')
-      } else if (lower.includes('luz') || lower.includes('electric') || lower.includes('enchufe') || lower.includes('corto')) {
-        fallback = '⚡ Parece que necesitas un Electricista.\n\nToca "Buscar técnico" abajo para encontrar uno disponible.'
-        setLastService('Electricidad')
-      } else if (lower.includes('pintu') || lower.includes('pared')) {
-        fallback = '🎨 Necesitas un Pintor.\n\nToca "Buscar técnico" para ver pintores disponibles.'
-        setLastService('Pintura')
-      } else if (lower.includes('cerr') || lower.includes('llave') || lower.includes('puerta')) {
-        fallback = '🔑 Necesitas un Cerrajero.\n\nToca "Buscar técnico" para encontrar uno rápido.'
-        setLastService('Cerrajería')
+      // Fallback: smartIntent local si la API falla
+      const detected = detectServicio(userMsg)
+      const urgencia = detectUrgencia(userMsg)
+      let fallback = 'No pude conectarme al servidor ahora. Cuéntame más detalles del problema o toca las categorías en la pantalla principal.'
+      if (detected) {
+        setLastService(detected)
+        const precio = getPrecioSugerido(detected)
+        const urgLabel = urgencia === 'emergencia' ? '🚨 Emergencia' : urgencia === 'urgente' ? '⏱️ Urgente' : '📅 Normal'
+        fallback = `🔧 Necesitas: ${detected}\n${urgLabel}${precio ? `\n💰 Precio referencial: ${formatPrecio(precio)}` : ''}\n\nToca "Solicitar técnico" abajo y te asignamos uno en menos de 2 minutos.`
       }
       setMessages([...newMessages, { role: 'assistant', content: fallback }])
     } finally {
@@ -152,13 +147,22 @@ export function ChatBot() {
 
           {/* Quick action */}
           {lastService && (
-            <TouchableOpacity
-              onPress={() => { setOpen(false); router.push({ pathname: '/buscar', params: { servicio: lastService } }) }}
-              style={{ marginHorizontal: 12, marginBottom: 4, backgroundColor: COLORS.acc, borderRadius: 10, padding: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-            >
-              <Ionicons name="search" size={16} color={COLORS.white} />
-              <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>Buscar técnico de {lastService}</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8, marginHorizontal: 12, marginBottom: 4 }}>
+              <TouchableOpacity
+                onPress={() => { setOpen(false); router.push({ pathname: '/solicitar', params: { servicio: lastService } }) }}
+                style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 10, padding: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+              >
+                <Ionicons name="flash" size={16} color={COLORS.white} />
+                <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 12 }}>Solicitar técnico</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { setOpen(false); router.push({ pathname: '/buscar', params: { servicio: lastService } }) }}
+                style={{ backgroundColor: COLORS.light, borderRadius: 10, padding: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.border }}
+              >
+                <Ionicons name="search" size={14} color={COLORS.dark} />
+                <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 12 }}>Ver</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* Input */}

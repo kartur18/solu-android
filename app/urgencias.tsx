@@ -1,22 +1,26 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Linking, ActivityIndicator, StatusBar } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink, ESTADOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { useLocationDetection } from '../src/lib/useLocation'
+import { useClientProfile } from '../src/lib/useClientProfile'
+import { findBestTech } from '../src/lib/matching'
 
 const EMERGENCIAS = [
   { name: 'Fuga de agua', icon: 'water' as const, color: '#3B82F6', oficio: 'Gasfitero', desc: 'Tuberías, inundación' },
   { name: 'Corte de luz', icon: 'flash' as const, color: '#F59E0B', oficio: 'Electricista', desc: 'Sin energía, chispas' },
   { name: 'Cerrajería', icon: 'key' as const, color: '#EF4444', oficio: 'Cerrajero', desc: 'No puedo entrar' },
   { name: 'Fuga de gas', icon: 'flame' as const, color: '#DC2626', oficio: 'Gasfitero', desc: 'Olor a gas, peligro' },
+  { name: 'Atoro de desagüe', icon: 'warning' as const, color: '#7C3AED', oficio: 'Desatorador', desc: 'Inodoro, cocina, lavadero' },
+  { name: 'Otra emergencia', icon: 'help-circle' as const, color: '#6B7280', oficio: '', desc: 'Describe tu urgencia' },
 ]
 
 export default function UrgenciasScreen() {
   const router = useRouter()
   const location = useLocationDetection()
+  const { profile, save: saveProfile } = useClientProfile()
   const [selected, setSelected] = useState<typeof EMERGENCIAS[0] | null>(null)
   const [nombre, setNombre] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
@@ -25,18 +29,11 @@ export default function UrgenciasScreen() {
 
   useEffect(() => { location.detectLocation() }, [])
 
-  // Pre-fill from saved client session
+  // Pre-fill from saved client profile
   useEffect(() => {
-    AsyncStorage.getItem('solu_client_session').then((stored) => {
-      if (stored) {
-        try {
-          const user = JSON.parse(stored)
-          if (user.nombre && !nombre) setNombre(user.nombre)
-          if (user.whatsapp && !whatsapp) setWhatsapp(user.whatsapp)
-        } catch {}
-      }
-    })
-  }, [])
+    if (profile?.nombre && !nombre) setNombre(profile.nombre)
+    if (profile?.whatsapp && !whatsapp) setWhatsapp(profile.whatsapp)
+  }, [profile])
 
   async function handleSearch() {
     if (!selected) return Alert.alert('Aviso', 'Por favor selecciona el tipo de emergencia')
@@ -48,17 +45,12 @@ export default function UrgenciasScreen() {
     try {
       const distrito = location.distrito || 'Lima'
 
-      // Automate: Find available tech
-      const { data: techs } = await supabase
-        .from('tecnicos')
-        .select('*')
-        .eq('disponible', true)
-        .ilike('oficio', `%${selected.oficio}%`)
-        .order('calificacion', { ascending: false })
-        .limit(5)
-
-      const localTech = techs?.find(t => t.distrito?.toLowerCase() === distrito.toLowerCase())
-      const bestTech = localTech || techs?.[0] || null
+      // Smart matching: score por rating + experiencia + plan + distrito + GPS
+      const bestTech = await findBestTech({
+        servicio: selected.oficio || selected.name,
+        distrito,
+        clientCoords: location.coords,
+      })
 
       if (!bestTech) {
         Alert.alert('Lo sentimos', 'En este momento exacto no hay técnicos disponibles para esa emergencia. Intenta buscar en la pantalla principal.')
@@ -79,6 +71,9 @@ export default function UrgenciasScreen() {
         tecnico_asignado: bestTech.id,
         codigo: code,
       })
+
+      // Save client profile for next time
+      saveProfile({ nombre, whatsapp: waClean, distrito }).catch(() => {})
 
       setAssignedTech(bestTech)
     } catch (err) {

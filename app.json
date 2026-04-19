@@ -2,7 +2,7 @@
   "expo": {
     "name": "SOLU — Lo que necesites, hoy",
     "slug": "solu-app",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "pe.solu.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "config": {
         "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
       },
@@ -34,7 +34,12 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 1,
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
@@ -128,7 +133,7 @@
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtY2lzZGdodXBvdmFha3NibWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMDc4NjksImV4cCI6MjA4OTY4Mzg2OX0.rMG0nimeeT15W22l9KltaFoj41qDxZS6BmnNwQVjz7o",
       "apiBaseUrl": "https://solu.pe/api",
       "cloudinaryCloudName": "dcwwvvb1e",
-      "yapeNumber": "904518343"
+      "yapeNumber": "983835904"
     }
   }
 }

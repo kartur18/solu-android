@@ -12,35 +12,39 @@ import { notifyTech, trackEvent } from '../src/lib/integrations'
 import { compressImage } from '../src/lib/imageCompress'
 import { track } from '../src/lib/analytics'
 import { useLocationDetection } from '../src/lib/useLocation'
+import { useClientProfile } from '../src/lib/useClientProfile'
+import { getPrecioSugerido, formatPrecio } from '../src/lib/smartIntent'
+import { findBestTech } from '../src/lib/matching'
 
 const DRAFT_KEY = 'solu_solicitar_draft'
 
 export default function SolicitarScreen() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ tecnicoId?: string; tecnicoNombre?: string; tecnicoOficio?: string }>()
+  const params = useLocalSearchParams<{
+    tecnicoId?: string
+    tecnicoNombre?: string
+    tecnicoOficio?: string
+    servicio?: string
+    descripcion?: string
+    urgencia?: string
+  }>()
+  const { profile, save: saveProfile } = useClientProfile()
   const [nombre, setNombre] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [preselectedTechId] = useState(params.tecnicoId ? parseInt(params.tecnicoId) : null)
 
-  // Auto-fill from logged-in client + tech params
+  // Auto-fill from saved client profile + tech params
   useEffect(() => {
-    AsyncStorage.getItem('solu_client_session').then((stored) => {
-      if (stored) {
-        try {
-          const user = JSON.parse(stored)
-          if (user.nombre && !nombre) setNombre(user.nombre)
-          if (user.whatsapp && !whatsapp) setWhatsapp(user.whatsapp)
-          if (user.distrito && !distrito) setDistrito(user.distrito)
-        } catch {}
-      }
-    })
-    // Pre-fill service from tech profile
+    if (profile?.nombre && !nombre) setNombre(profile.nombre)
+    if (profile?.whatsapp && !whatsapp) setWhatsapp(profile.whatsapp)
+    if (profile?.distrito && !distrito) setDistrito(profile.distrito)
     if (params.tecnicoOficio && !servicio) setServicio(params.tecnicoOficio)
-  }, [])
-  const [servicio, setServicio] = useState(params.tecnicoOficio || '')
+  }, [profile])
+
+  const [servicio, setServicio] = useState(params.servicio || params.tecnicoOficio || '')
   const [distrito, setDistrito] = useState('')
-  const [urgencia, setUrgencia] = useState('normal')
-  const [descripcion, setDescripcion] = useState('')
+  const [urgencia, setUrgencia] = useState(params.urgencia || 'normal')
+  const [descripcion, setDescripcion] = useState(params.descripcion || '')
   const [fotos, setFotos] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [showServicios, setShowServicios] = useState(false)
@@ -128,9 +132,10 @@ export default function SolicitarScreen() {
   }
 
   async function submit() {
-    if (!nombre || !whatsapp || !servicio || !distrito) {
-      return Alert.alert('Error', 'Completa los campos obligatorios')
+    if (!whatsapp || !servicio || !distrito) {
+      return Alert.alert('Error', 'Faltan: WhatsApp, servicio o distrito')
     }
+    const nombreFinal = nombre.trim() || 'Cliente SOLU'
     const waClean = whatsapp.replace(/\D/g, '')
     if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
       return Alert.alert('Error', 'Ingresa un número de WhatsApp válido (9 dígitos, empieza con 9)')
@@ -168,31 +173,21 @@ export default function SolicitarScreen() {
         if (preselected) assignedTech = preselected
       }
 
-      // Otherwise find best available technician in the district
+      // Otherwise find best available technician (smart scoring)
       if (!assignedTech) {
-        const { data: techs } = await supabase
-          .from('tecnicos')
-          .select('id, nombre, whatsapp, push_token')
-          .eq('disponible', true)
-          .eq('distrito', distrito)
-          .order('plan', { ascending: false })
-          .order('calificacion', { ascending: false })
-          .limit(3)
-        assignedTech = techs?.[0] || null
-      }
-      if (!assignedTech) {
-        const { data: anyTechs } = await supabase
-          .from('tecnicos')
-          .select('id, nombre, whatsapp, push_token')
-          .eq('disponible', true)
-          .order('calificacion', { ascending: false })
-          .limit(3)
-        assignedTech = anyTechs?.[0] || null
+        const best = await findBestTech({
+          servicio,
+          distrito,
+          clientCoords: locationDetection.coords,
+        })
+        if (best) {
+          assignedTech = { id: best.id, nombre: best.nombre, whatsapp: best.whatsapp, push_token: best.push_token || undefined }
+        }
       }
 
       // Insert the solicitud
       const { error } = await supabase.from('clientes').insert({
-        nombre, whatsapp: waClean, servicio, distrito, urgencia, descripcion: descripcionFinal, codigo,
+        nombre: nombreFinal, whatsapp: waClean, servicio, distrito, urgencia, descripcion: descripcionFinal, codigo,
         estado: assignedTech ? 'Asignado' : 'Nuevo',
         tecnico_asignado: assignedTech?.id || null,
       })
@@ -210,7 +205,7 @@ export default function SolicitarScreen() {
             tecnico_id: assignedTech.id,
             tipo: 'nueva_solicitud',
             titulo: '¡Nueva solicitud!',
-            mensaje: `${nombre} necesita ${servicio} en ${distrito}. Código: ${codigo}`,
+            mensaje: `${nombreFinal} necesita ${servicio} en ${distrito}. Código: ${codigo}`,
             leido: false,
           })
         } catch {}
@@ -220,13 +215,15 @@ export default function SolicitarScreen() {
           sendPushNotification(
             assignedTech.push_token,
             '¡Nueva solicitud de servicio!',
-            `${nombre} necesita ${servicio} en ${distrito}`
+            `${nombreFinal} necesita ${servicio} en ${distrito}`
           ).catch(() => {})
         }
       }
 
       // Clear draft on successful submission
       AsyncStorage.removeItem(DRAFT_KEY).catch(() => {})
+      // Save client profile for next time
+      saveProfile({ nombre: nombreFinal, whatsapp: waClean, distrito, lastServicio: servicio }).catch(() => {})
       track('Service Request Completed', { servicio, distrito, codigo })
 
       // Show success screen
@@ -269,27 +266,16 @@ export default function SolicitarScreen() {
             <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Completa el formulario y te asignamos uno</Text>
           </View>
         </View>
-        {/* Steps indicator premium */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>1</Text>
-            </View>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Completa datos</Text>
-          </View>
-          <View style={{ flex: 1, height: 2, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 1 }} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '900' }}>2</Text>
-            </View>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.5)' }}>Te asignamos técnico</Text>
-          </View>
+        {/* Trust line (reemplaza indicador de pasos) */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(16,185,129,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, alignSelf: 'flex-start' }}>
+          <Ionicons name="flash" size={14} color="#10B981" />
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#10B981' }}>Asignación automática en menos de 2 minutos</Text>
         </View>
       </View>
 
       <View style={{ paddingHorizontal: 20 }}>
 
-        <Text style={styles.label}>Nombre *</Text>
+        <Text style={styles.label}>Nombre <Text style={{ color: COLORS.gray2, fontWeight: '600' }}>(opcional)</Text></Text>
         <TextInput placeholder="Tu nombre" value={nombre} onChangeText={setNombre} style={styles.input} placeholderTextColor={COLORS.gray2} />
 
         <Text style={styles.label}>WhatsApp *</Text>
@@ -310,6 +296,18 @@ export default function SolicitarScreen() {
             </ScrollView>
           </View>
         )}
+
+        {/* Precio sugerido (transparencia) */}
+        {servicio && getPrecioSugerido(servicio) ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12, marginTop: -8, marginBottom: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
+            <Ionicons name="pricetag" size={16} color="#2563EB" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 11, color: '#1E40AF', fontWeight: '700' }}>Precio referencial</Text>
+              <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: '800', marginTop: 1 }}>{formatPrecio(getPrecioSugerido(servicio)!)}</Text>
+            </View>
+            <Text style={{ fontSize: 10, color: '#3B82F6', fontWeight: '600' }}>El técnico{'\n'}confirma</Text>
+          </View>
+        ) : null}
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text style={styles.label}>Distrito *</Text>
@@ -419,7 +417,7 @@ export default function SolicitarScreen() {
         {/* Info */}
         <View style={{ marginTop: 16, padding: 16, backgroundColor: 'rgba(234,88,12,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(234,88,12,0.15)' }}>
           <Text style={{ fontSize: 12, color: '#9A3412', lineHeight: 18, fontWeight: '600' }}>
-            🛡️ Al enviar tu solicitud, buscaremos al mejor técnico verificado en tu zona y lo conectaremos contigo por WhatsApp. El servicio es gratuito para clientes.
+            🛡️ Buscaremos al mejor técnico verificado con DNI/RENIEC en tu zona. Como cliente, no necesitas registrar DNI — solo tu WhatsApp para coordinar. Servicio gratuito.
           </Text>
         </View>
       </View>
