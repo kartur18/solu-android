@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { COLORS, SERVICIOS, DISTRITOS, URGENCIAS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { ENV } from '../src/lib/env'
-import { notifyTech } from '../src/lib/integrations'
+import { sendPush } from '../src/lib/integrations'
 import { compressImage } from '../src/lib/imageCompress'
 import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
@@ -162,11 +162,11 @@ export default function SolicitarScreen() {
       }
 
       // If coming from tech profile, assign directly
-      let assignedTech: { id: number; nombre: string; whatsapp: string; push_token?: string } | null = null
+      let assignedTech: { id: number; nombre: string; whatsapp: string } | null = null
       if (preselectedTechId) {
         const { data: preselected } = await supabase
           .from('tecnicos')
-          .select('id, nombre, whatsapp, push_token')
+          .select('id, nombre, whatsapp')
           .eq('id', preselectedTechId)
           .single()
         if (preselected) assignedTech = preselected
@@ -180,7 +180,7 @@ export default function SolicitarScreen() {
           clientCoords: locationDetection.coords,
         })
         if (best) {
-          assignedTech = { id: best.id, nombre: best.nombre, whatsapp: best.whatsapp, push_token: best.push_token || undefined }
+          assignedTech = { id: best.id, nombre: best.nombre, whatsapp: best.whatsapp }
         }
       }
 
@@ -209,14 +209,13 @@ export default function SolicitarScreen() {
           })
         } catch {}
 
-        // Send push notification
-        if (assignedTech.push_token) {
-          sendPushNotification(
-            assignedTech.push_token,
-            '¡Nueva solicitud de servicio!',
-            `${nombreFinal} necesita ${servicio} en ${distrito}`
-          ).catch(() => {})
-        }
+        // Send push notification via backend
+        sendPush(
+          'tecnico',
+          String(assignedTech.id),
+          '¡Nueva solicitud de servicio!',
+          `${nombreFinal} necesita ${servicio} en ${distrito}`,
+        ).catch(() => {})
       }
 
       // Clear draft on successful submission
@@ -651,20 +650,6 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
       </Animated.View>
     </ScrollView>
   )
-}
-
-async function sendPushNotification(expoPushToken: string, title: string, body: string) {
-  await fetch('https://exp.host/--/api/v2/push/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: expoPushToken,
-      sound: 'default',
-      title,
-      body,
-      priority: 'high',
-    }),
-  })
 }
 
 const styles = {

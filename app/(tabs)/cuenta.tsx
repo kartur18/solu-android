@@ -9,6 +9,7 @@ import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
+import { sendPush } from '../../src/lib/integrations'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 import NotificationCenter from '../../src/components/NotificationCenter'
 
@@ -1913,10 +1914,10 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
       Alert.alert('Error', 'No se pudo actualizar el estado')
     } else {
       try {
-        const { data: cu } = await supabase.from('clientes_users').select('push_token').eq('whatsapp', lead.whatsapp).single()
-        if (cu?.push_token) {
-          const msgs: Record<string, string> = { 'En camino': 'Tu técnico está en camino', 'En proceso': 'El técnico está trabajando', Completado: '¡Servicio completado!' }
-          fetch('https://exp.host/--/api/v2/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: cu.push_token, sound: 'default', title: `Servicio ${newStatus}`, body: msgs[newStatus] || `Estado: ${newStatus}` }) }).catch(() => {})
+        const msgs: Record<string, string> = { 'En camino': 'Tu técnico está en camino', 'En proceso': 'El técnico está trabajando', Completado: '¡Servicio completado!' }
+        const waClean = (lead.whatsapp || '').replace(/\D/g, '')
+        if (waClean) {
+          sendPush('cliente', waClean, `Servicio ${newStatus}`, msgs[newStatus] || `Estado: ${newStatus}`).catch(() => {})
         }
       } catch {}
       // Live GPS streaming: on "En camino" start, on "En proceso"/"Completado" stop

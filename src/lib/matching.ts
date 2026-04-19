@@ -4,7 +4,6 @@ export interface MatchableTech {
   id: number
   nombre: string
   whatsapp: string
-  push_token?: string | null
   oficio?: string | null
   distrito?: string | null
   calificacion?: number | null
@@ -70,7 +69,7 @@ export function scoreTech(tech: MatchableTech, input: MatchInput): number {
   return score
 }
 
-const SELECT_COLS = 'id, nombre, whatsapp, push_token, oficio, distrito, calificacion, servicios_completados, plan, lat, lng'
+const SELECT_COLS = 'id, nombre, whatsapp, oficio, distrito, calificacion, servicios_completados, plan, lat, lng'
 
 export async function findBestTech(input: MatchInput): Promise<MatchableTech | null> {
   const { data } = await supabase
