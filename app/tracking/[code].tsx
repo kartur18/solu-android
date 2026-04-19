@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink, SUPPORT_PHONE } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
+import { LiveTechMap } from '../../src/components/LiveTechMap'
 import type { Cliente, Tecnico } from '../../src/lib/types'
 import { track } from '../../src/lib/analytics'
 
@@ -20,7 +21,7 @@ const STEPS = [
 export default function TrackingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
   const router = useRouter()
-  const [service, setService] = useState<Cliente | null>(null)
+  const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null }) | null>(null)
   const [tech, setTech] = useState<Pick<Tecnico, 'id' | 'nombre' | 'whatsapp' | 'oficio' | 'foto_url' | 'calificacion'> | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -189,6 +190,18 @@ export default function TrackingScreen() {
         </View>
       </View>
 
+      {/* Live GPS map (solo cuando tecnico en camino y tiene coords) */}
+      {service.estado === 'En camino' && service.tecnico_lat != null && service.tecnico_lng != null ? (
+        <View style={{ marginTop: 16 }}>
+          <LiveTechMap
+            lat={service.tecnico_lat}
+            lng={service.tecnico_lng}
+            updatedAt={service.tecnico_gps_updated_at}
+            techNombre={tech?.nombre}
+          />
+        </View>
+      ) : null}
+
       {/* Assigned technician card */}
       {tech && (
         <View style={{ margin: 16, marginBottom: 0, backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
@@ -208,19 +221,31 @@ export default function TrackingScreen() {
               )}
             </View>
           </View>
-          <TouchableOpacity
-            onPress={() => {
-              const msg = `Hola ${tech.nombre}, soy ${service.nombre}. Tengo una solicitud de ${service.servicio} en SOLU (código: ${service.codigo}).`
-              Linking.openURL(`https://wa.me/51${tech.whatsapp}?text=${encodeURIComponent(msg)}`)
-            }}
-            style={{
-              backgroundColor: '#25D366', borderRadius: 12, padding: 12, marginTop: 12,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
-          >
-            <Ionicons name="logo-whatsapp" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Contactar por WhatsApp</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/chat-pedido/[code]', params: { code: service.codigo, as: 'cliente' } })}
+              style={{
+                flex: 1, backgroundColor: COLORS.pri, borderRadius: 12, padding: 12,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <Ionicons name="chatbubbles" size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Chat interno</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                const msg = `Hola ${tech.nombre}, soy ${service.nombre}. Tengo una solicitud de ${service.servicio} en SOLU (código: ${service.codigo}).`
+                Linking.openURL(`https://wa.me/51${tech.whatsapp}?text=${encodeURIComponent(msg)}`)
+              }}
+              style={{
+                flex: 1, backgroundColor: '#25D366', borderRadius: 12, padding: 12,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>WhatsApp</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 

@@ -103,6 +103,7 @@ export default function RootLayout() {
         <Stack.Screen name="urgencias" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="soporte" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="chat/[id]" options={{ title: 'Chat' }} />
+        <Stack.Screen name="chat-pedido/[code]" options={{ title: 'Chat' }} />
         <Stack.Screen name="eliminar-cuenta" options={{ title: 'Eliminar cuenta', presentation: 'modal' }} />
         <Stack.Screen name="recuperar" options={{ title: 'Recuperar contraseña', presentation: 'modal' }} />
         <Stack.Screen name="registro-cliente" options={{ title: 'Crear cuenta', presentation: 'modal' }} />

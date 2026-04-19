@@ -1919,6 +1919,15 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
           fetch('https://exp.host/--/api/v2/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: cu.push_token, sound: 'default', title: `Servicio ${newStatus}`, body: msgs[newStatus] || `Estado: ${newStatus}` }) }).catch(() => {})
         }
       } catch {}
+      // Live GPS streaming: on "En camino" start, on "En proceso"/"Completado" stop
+      try {
+        const { startLiveTracking, stopLiveTracking } = await import('../../src/lib/liveTracking')
+        if (newStatus === 'En camino') {
+          await startLiveTracking(lead.id)
+        } else if (newStatus === 'En proceso' || newStatus === 'Completado' || newStatus === 'Cancelado') {
+          stopLiveTracking()
+        }
+      } catch {}
       Alert.alert('Actualizado', `Estado cambiado a: ${newStatus}`)
       onStatusChange?.()
     }

@@ -280,7 +280,7 @@ export default function HomeScreen() {
               onFocus={() => setShowSuggestions(query.length > 0)}
               onSubmitEditing={handleSearchSubmit}
               returnKeyType="search"
-              placeholder="Ej: se me rompió el caño"
+              placeholder="Ej: se me rompió el caño · 🎤 usa el mic del teclado"
               placeholderTextColor="#9CA3AF"
               style={{ flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.dark, paddingVertical: 12 }}
             />
