@@ -17,7 +17,7 @@ const PLAN_COLORS: Record<string, { bg: string; text: string; label: string; bor
   elite: { bg: '#FFD700', text: '#1A1A2E', label: 'ELITE', border: '#FFD700', gradient: ['#FFD700', '#FFA500'] },
   premium: { bg: COLORS.pri, text: '#FFFFFF', label: 'PRO', border: COLORS.pri, gradient: [COLORS.pri, '#E55A10'] },
   pro: { bg: COLORS.pri, text: '#FFFFFF', label: 'PRO', border: COLORS.pri, gradient: [COLORS.pri, '#E55A10'] },
-  profesional: { bg: COLORS.blue, text: '#FFFFFF', label: 'PRO', border: COLORS.blue, gradient: [COLORS.blue, '#1D4ED8'] },
+  profesional: { bg: '#64748B', text: '#FFFFFF', label: 'Starter', border: '#64748B', gradient: ['#64748B', '#475569'] },
 }
 
 const AVATAR_GRADIENTS: [string, string][] = [
@@ -220,14 +220,6 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
               <Text style={{ fontSize: 10, fontWeight: '700', color: '#059669' }}>Contratado {tech.servicios_completados}x</Text>
             </View>
           )}
-          {/* Price */}
-          {tech.precio_desde ? (
-            <View style={{ backgroundColor: COLORS.priLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: COLORS.pri }}>
-                Desde S/{tech.precio_desde}
-              </Text>
-            </View>
-          ) : null}
           {/* Experience */}
           {tech.experiencia && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FEF3C7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>

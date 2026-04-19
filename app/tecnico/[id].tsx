@@ -72,12 +72,6 @@ export default function TecnicoScreen() {
             <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark }}>{tech.servicios_completados || 0}</Text>
             <Text style={{ fontSize: 11, color: COLORS.gray2 }}>servicios</Text>
           </View>
-          {tech.precio_desde && (
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.pri }}>S/{tech.precio_desde}</Text>
-              <Text style={{ fontSize: 11, color: COLORS.gray2 }}>desde</Text>
-            </View>
-          )}
         </View>
       </View>
 

@@ -13,6 +13,15 @@
       "android": { "buildType": "apk" },
       "ios": { "simulator": false }
     },
+    "apk-prod": {
+      "autoIncrement": true,
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "env": {
