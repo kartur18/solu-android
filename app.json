@@ -26,6 +26,8 @@
         "NSCameraUsageDescription": "SOLU necesita acceso a tu cámara para tomar fotos de tu DNI y perfil.",
         "NSLocationWhenInUseUsageDescription": "SOLU necesita tu ubicación para mostrar técnicos cerca de ti.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "SOLU necesita tu ubicación para encontrar técnicos disponibles en tu zona.",
+        "NSMicrophoneUsageDescription": "SOLU usa el micrófono solo cuando usas el dictado por voz para describir tu problema o enviar un mensaje de voz. No grabamos audio en segundo plano.",
+        "NSUserTrackingUsageDescription": "Usamos análisis anónimo para mejorar la aplicación. Puedes desactivarlo en cualquier momento desde Ajustes.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
