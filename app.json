@@ -21,6 +21,9 @@
         "webcredentials:solu.pe",
         "applinks:www.solu.pe"
       ],
+      "config": {
+        "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
+      },
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "SOLU necesita acceso a tus fotos para subir tu foto de perfil y DNI.",
         "NSCameraUsageDescription": "SOLU necesita acceso a tu cámara para tomar fotos de tu DNI y perfil.",
@@ -34,11 +37,6 @@
     "android": {
       "package": "pe.solu.app",
       "versionCode": 2,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
       "intentFilters": [
         {
           "action": "VIEW",
@@ -87,6 +85,11 @@
         "monochromeImage": "./assets/android-icon-monochrome.png",
         "backgroundColor": "#F26B21"
       },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
+        }
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -110,7 +113,13 @@
           "locationWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "react-native-maps",
+        {
+          "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
+        }
+      ]
     ],
     "extra": {
       "eas": {
