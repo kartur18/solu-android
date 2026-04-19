@@ -12,7 +12,6 @@ import { TechCard } from '../../src/components/TechCard'
 import { SearchSkeleton } from '../../src/components/SkeletonLoader'
 import { TechMapView } from '../../src/components/TechMapView'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
-import { track } from '../../src/lib/analytics'
 import { useFavorites } from '../../src/lib/useFavorites'
 import { cacheSearchResults, getCachedSearchResults } from '../../src/lib/offlineCache'
 
@@ -162,7 +161,6 @@ export default function BuscarScreen() {
 
   async function loadTechs() {
     setLoading(true)
-    track('Search Performed', { query: search, distrito })
     if (search.trim()) saveToHistory(search.trim())
     try {
       let query = supabase

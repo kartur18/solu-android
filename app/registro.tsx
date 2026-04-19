@@ -7,7 +7,7 @@ import { COLORS, SERVICIOS, DISTRITOS, PLAN_FEATURES } from '../src/lib/constant
 import { supabase } from '../src/lib/supabase'
 import { logger } from '../src/lib/logger'
 import { ENV } from '../src/lib/env'
-import { verifyDNI, notifyTech, trackEvent } from '../src/lib/integrations'
+import { verifyDNI, notifyTech } from '../src/lib/integrations'
 import { compressDNIPhoto } from '../src/lib/imageCompress'
 
 const OFICIOS = [

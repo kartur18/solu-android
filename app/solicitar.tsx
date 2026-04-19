@@ -8,9 +8,8 @@ import * as ImagePicker from 'expo-image-picker'
 import { COLORS, SERVICIOS, DISTRITOS, URGENCIAS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { ENV } from '../src/lib/env'
-import { notifyTech, trackEvent } from '../src/lib/integrations'
+import { notifyTech } from '../src/lib/integrations'
 import { compressImage } from '../src/lib/imageCompress'
-import { track } from '../src/lib/analytics'
 import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { getPrecioSugerido, formatPrecio } from '../src/lib/smartIntent'
@@ -143,7 +142,6 @@ export default function SolicitarScreen() {
     }
     if (loading) return
     setLoading(true)
-    track('Service Request Started', { servicio, distrito, urgencia })
 
     try {
       const codigo = 'SOLU-' + Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -229,7 +227,6 @@ export default function SolicitarScreen() {
       registerForPushNotifications().then((token) => {
         if (token) upsertGuestClientPushToken(waClean, token, nombreFinal).catch(() => {})
       }).catch(() => {})
-      track('Service Request Completed', { servicio, distrito, codigo })
 
       // Show success screen
       setResult({

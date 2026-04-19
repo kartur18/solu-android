@@ -8,7 +8,6 @@ import { COLORS } from '../src/lib/constants'
 import { ENV } from '../src/lib/env'
 import { ErrorBoundary } from '../src/components/ErrorBoundary'
 import { useAppUpdate } from '../src/lib/useAppUpdate'
-import { initAnalytics, track } from '../src/lib/analytics'
 import { OnboardingModal } from '../src/components/OnboardingModal'
 
 // Initialize Sentry for crash reporting
@@ -36,8 +35,6 @@ export default function RootLayout() {
   const responseListener = useRef<Notifications.EventSubscription | null>(null)
 
   useEffect(() => {
-    initAnalytics().then(() => track('App Opened'))
-
     // Listen for notifications received while app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       const data = notification.request.content.data
