@@ -16,9 +16,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "pe.solu.app",
       "buildNumber": "2",
-      "config": {
-        "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
-      },
       "associatedDomains": [
         "applinks:solu.pe",
         "webcredentials:solu.pe",
@@ -39,11 +36,6 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
-        }
       },
       "intentFilters": [
         {
@@ -116,13 +108,7 @@
           "locationWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti."
         }
       ],
-      "expo-font",
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
-        }
-      ]
+      "expo-font"
     ],
     "extra": {
       "eas": {

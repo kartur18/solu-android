@@ -6,17 +6,24 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "GOOGLE_MAPS_API_KEY": ""
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "ios": { "simulator": false }
+      "ios": { "simulator": false },
+      "env": {
+        "GOOGLE_MAPS_API_KEY": ""
+      }
     },
     "apk-prod": {
       "autoIncrement": true,
       "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "GOOGLE_MAPS_API_KEY": ""
       },
       "android": {
         "buildType": "apk"
@@ -25,7 +32,8 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "GOOGLE_MAPS_API_KEY": ""
       },
       "android": {
         "buildType": "app-bundle"

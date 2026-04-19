@@ -10,6 +10,7 @@ export const ENV = {
   YAPE_NUMBER: extra.yapeNumber || '983835904',
   EXPO_PROJECT_ID: extra.eas?.projectId || 'e5c70e83-de40-40e4-8e2f-fb8d79c5d62b',
   SENTRY_DSN: extra.sentryDsn || '',
+  GOOGLE_MAPS_API_KEY: extra.googleMapsApiKey || '',
 }
 
 /** Fetch con timeout automático (default 10s) */
