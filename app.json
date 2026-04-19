@@ -16,9 +16,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "pe.solu.app",
       "buildNumber": "2",
-      "config": {
-        "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
-      },
       "associatedDomains": [
         "applinks:solu.pe",
         "webcredentials:solu.pe",
@@ -29,6 +26,8 @@
         "NSCameraUsageDescription": "SOLU necesita acceso a tu cámara para tomar fotos de tu DNI y perfil.",
         "NSLocationWhenInUseUsageDescription": "SOLU necesita tu ubicación para mostrar técnicos cerca de ti.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "SOLU necesita tu ubicación para encontrar técnicos disponibles en tu zona.",
+        "NSMicrophoneUsageDescription": "SOLU usa el micrófono solo cuando usas el dictado por voz para describir tu problema o enviar un mensaje de voz. No grabamos audio en segundo plano.",
+        "NSUserTrackingUsageDescription": "Usamos análisis anónimo para mejorar la aplicación. Puedes desactivarlo en cualquier momento desde Ajustes.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -39,11 +38,6 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
-        }
       },
       "intentFilters": [
         {
@@ -116,13 +110,7 @@
           "locationWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti."
         }
       ],
-      "expo-font",
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
-        }
-      ]
+      "expo-font"
     ],
     "extra": {
       "eas": {

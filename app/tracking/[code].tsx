@@ -7,7 +7,6 @@ import { supabase } from '../../src/lib/supabase'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
 import type { Cliente, Tecnico } from '../../src/lib/types'
-import { track } from '../../src/lib/analytics'
 
 const STEPS = [
   { key: 'Nuevo', label: 'Solicitud registrada', icon: 'document-text' as const, desc: 'Tu solicitud fue recibida' },
@@ -138,7 +137,6 @@ export default function TrackingScreen() {
               Alert.alert('Error', 'No se pudo cancelar. Intenta de nuevo.')
               return
             }
-            track('Service Cancelled', { codigo: snapshot.codigo, estado_previo: snapshot.estado })
             if (tech) {
               supabase.from('notificaciones').insert({
                 tecnico_id: tech.id,
@@ -162,7 +160,6 @@ export default function TrackingScreen() {
       await Share.share({
         message: `Acabo de usar SOLU y me resolvieron un problema de ${snapshot.servicio} rapidísimo 🔧\n\nDescarga la app y pide tu servicio: https://solu.pe`,
       })
-      track('Referral Shared', { codigo: snapshot.codigo })
     } catch {}
   }
 

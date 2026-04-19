@@ -108,26 +108,6 @@ export async function sendWhatsApp(phone: string, message: string): Promise<bool
 }
 
 /**
- * Track analytics event (Mixpanel via API)
- */
-export async function trackEvent(event: string, properties?: Record<string, any>): Promise<void> {
-  try {
-    // Mixpanel is initialized in _layout.tsx, this is for server-side tracking
-    const res = await fetchWithTimeout(`https://api.mixpanel.com/track`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event,
-        properties: {
-          token: 'f066dc22ac56e6bea53703c76239504c',
-          ...properties,
-        },
-      }),
-    })
-  } catch {}
-}
-
-/**
  * Procesar pago via Flow (para renovaciones)
  */
 export async function processPayment(data: {

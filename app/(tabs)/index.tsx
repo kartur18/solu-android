@@ -12,7 +12,6 @@ import { TechCard } from '../../src/components/TechCard'
 import { HomeTechSkeleton } from '../../src/components/SkeletonLoader'
 import { useFavorites } from '../../src/lib/useFavorites'
 import { ChatBot } from '../../src/components/ChatBot'
-import { track } from '../../src/lib/analytics'
 import { useClientProfile } from '../../src/lib/useClientProfile'
 import { suggestServicios, detectServicio, detectUrgencia } from '../../src/lib/smartIntent'
 import { ENV } from '../../src/lib/env'
@@ -120,7 +119,6 @@ export default function HomeScreen() {
     }
     const detected = detectServicio(text)
     const urgencia = detectUrgencia(text)
-    track('Smart Search Submitted', { query: text, detected, urgencia })
 
     if (detected) {
       router.push({
@@ -164,7 +162,6 @@ export default function HomeScreen() {
     setQuery('')
     setShowSuggestions(false)
     Keyboard.dismiss()
-    track('Suggestion Picked', { servicio: s })
     router.push({ pathname: '/solicitar', params: { servicio: s } })
   }
 
@@ -381,7 +378,6 @@ export default function HomeScreen() {
                 <PressableCard
                   key={cat.name}
                   onPress={() => {
-                    track('Category Clicked', { category: cat.name })
                     router.push({ pathname: '/solicitar', params: { servicio: cat.name } })
                   }}
                   style={{

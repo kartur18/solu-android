@@ -16,7 +16,7 @@ export function useNetworkStatus(checkIntervalMs = 15000): boolean {
       try {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 5000)
-        await fetch('https://solu.pe/api/admin-auth', {
+        await fetch('https://solu.pe/api/health', {
           method: 'GET',
           signal: controller.signal,
         })
