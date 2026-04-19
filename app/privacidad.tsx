@@ -18,7 +18,7 @@ export default function PrivacidadScreen() {
           RUC: 20614914239{'\n'}
           Domicilio: Lima, Perú{'\n'}
           Correo electrónico: contacto@solu.pe{'\n'}
-          WhatsApp: +51 904518343{'\n\n'}
+          WhatsApp: +51 983835904{'\n\n'}
           El banco de datos personales se encuentra inscrito ante la Autoridad Nacional de Protección de Datos Personales del Ministerio de Justicia y Derechos Humanos del Perú.
         </Text>
 
@@ -53,7 +53,7 @@ export default function PrivacidadScreen() {
           • Crear y gestionar cuentas de usuarios (clientes y técnicos){'\n'}
           • Conectar clientes con técnicos disponibles en su zona{'\n'}
           • Verificar la identidad de los técnicos mediante RENIEC{'\n'}
-          • Procesar pagos de suscripciones a través de Culqi{'\n'}
+          • Procesar pagos de suscripciones a través de Flow.cl{'\n'}
           • Enviar notificaciones sobre el estado de los servicios{'\n'}
           • Facilitar la comunicación entre cliente y técnico (chat interno y WhatsApp){'\n'}
           • Generar estadísticas anónimas para mejorar el servicio{'\n'}
@@ -82,7 +82,7 @@ export default function PrivacidadScreen() {
         <Text style={h}>6. Transferencia y compartición de datos</Text>
         <Text style={p}>
           SOLU no vende, alquila ni comercializa datos personales. Los datos pueden ser compartidos únicamente con:{'\n\n'}
-          • Culqi (procesador de pagos regulado por la SBS): para procesar transacciones{'\n'}
+          • Flow.cl (procesador de pagos regulado por la SBS): para procesar transacciones{'\n'}
           • RENIEC: para verificar la identidad de técnicos{'\n'}
           • Cloudinary: para optimización de imágenes de perfil{'\n'}
           • Mixpanel: para analíticas anónimas de uso{'\n'}
@@ -106,7 +106,7 @@ export default function PrivacidadScreen() {
           • Oposición: Oponerse al tratamiento de sus datos por motivos legítimos{'\n\n'}
           Para ejercer estos derechos, envíe su solicitud a:{'\n'}
           • Email: contacto@solu.pe{'\n'}
-          • WhatsApp: +51 904518343{'\n'}
+          • WhatsApp: +51 983835904{'\n'}
           • Función "Eliminar mi cuenta" dentro de la app{'\n\n'}
           SOLU atenderá su solicitud dentro de los 10 días hábiles siguientes. Si no recibe respuesta, puede acudir a la Autoridad Nacional de Protección de Datos Personales (ANPDP).
         </Text>

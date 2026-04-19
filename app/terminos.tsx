@@ -23,9 +23,9 @@ export default function TerminosScreen() {
         <Text style={h}>3. Planes y precios</Text>
         <Text style={p}>
           3.1 SOLU ofrece tres planes para técnicos:{'\n'}
-          • Profesional: S/49/mes - 1 oficio, 2 zonas{'\n'}
-          • Premium: S/79/mes - hasta 2 oficios, 4 zonas{'\n'}
-          • Elite: S/99/mes - oficios y zonas ilimitadas{'\n\n'}
+          • Starter: S/49/mes - 1 oficio, 2 zonas, 3 fotos{'\n'}
+          • PRO: S/79/mes - 3 oficios, 5 zonas, 8 fotos + galería{'\n'}
+          • Elite: S/99/mes - oficios, zonas y fotos ilimitadas{'\n\n'}
           3.2 Todos los planes incluyen un primer mes gratuito. Los primeros 300 técnicos registrados reciben 2 meses adicionales gratis (3 meses en total).{'\n\n'}
           3.3 Los planes se renuevan mensualmente. El técnico puede cambiar de plan únicamente al momento de renovar. Durante el periodo activo, no se permiten cambios de plan.{'\n\n'}
           3.4 El servicio para clientes (solicitar técnicos) es completamente gratuito.
@@ -33,7 +33,7 @@ export default function TerminosScreen() {
 
         <Text style={h}>4. Pagos y facturación</Text>
         <Text style={p}>
-          4.1 Los pagos se procesan a través de Culqi, procesador de pagos regulado por la SBS del Perú. Se aceptan tarjetas de crédito, débito y Yape.{'\n\n'}
+          4.1 Los pagos se procesan a través de Flow.cl, procesador de pagos certificado. Se aceptan tarjetas de crédito, débito, Yape y PagoEfectivo.{'\n\n'}
           4.2 Al realizar un pago, el plan se activa automáticamente por 30 días.{'\n\n'}
           4.3 SOLU emite comprobantes de pago electrónicos a través de NubeFact conforme a las normas de SUNAT.
         </Text>
@@ -43,7 +43,7 @@ export default function TerminosScreen() {
           5.1 El primer mes gratuito no genera cargo. Si el técnico decide no continuar, simplemente no realiza el pago y su plan se desactiva.{'\n\n'}
           5.2 Una vez realizado el pago de un plan, no se otorgan reembolsos. El técnico puede usar su plan hasta la fecha de vencimiento.{'\n\n'}
           5.3 En caso de errores de cobro duplicado o problemas técnicos con el procesador de pago, SOLU evaluará el caso y procederá con el reembolso correspondiente dentro de los 15 días hábiles siguientes a la reclamación.{'\n\n'}
-          5.4 Las reclamaciones deben realizarse a contacto@solu.pe o al WhatsApp 904518343 dentro de los 7 días posteriores al cobro.
+          5.4 Las reclamaciones deben realizarse a contacto@solu.pe o al WhatsApp 983835904 dentro de los 7 días posteriores al cobro.
         </Text>
 
         <Text style={h}>6. Responsabilidad</Text>
@@ -93,7 +93,7 @@ export default function TerminosScreen() {
           CITYLAND GROUP E.I.R.L.{'\n'}
           RUC: 20614914239{'\n'}
           Email: contacto@solu.pe{'\n'}
-          WhatsApp: 904518343{'\n'}
+          WhatsApp: 983835904{'\n'}
           Web: solu.pe
         </Text>
       </View>

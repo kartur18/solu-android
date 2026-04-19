@@ -40,13 +40,13 @@ VECINOS SOLU
 ¿ERES TÉCNICO?
 • Regístrate gratis con 30 días de prueba
 • Recibe solicitudes de clientes en tu zona
-• Elige entre planes Profesional (S/49), Premium (S/79) o Elite (S/99)
+• Elige entre planes Starter (S/49), PRO (S/79) o Elite (S/99)
 • Gestiona tu perfil, leads y reseñas desde la app
 
 Cobertura: Lima (45+ distritos), Callao, Arequipa, Trujillo, Chiclayo, Piura, Cusco, Huancayo, Iquitos, y más ciudades del Perú.
 
 Operado por CITYLAND GROUP E.I.R.L. (RUC: 20614914239)
-Contacto: contacto@solu.pe | WhatsApp: 904518343
+Contacto: contacto@solu.pe | WhatsApp: 983835904
 Web: https://solu.pe
 
 ## Category
