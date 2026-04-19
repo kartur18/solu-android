@@ -2,21 +2,39 @@ import { ENV, fetchWithTimeout } from './env'
 import { logger } from './logger'
 
 /**
- * RENIEC - Verificar DNI del técnico
- * Usa la API de la web (solu.pe/api/auto-verify)
+ * RENIEC - Verificar DNI contra api/verify-dni en la web (llama Decolecta)
+ * Retorna nombre completo si el DNI existe en RENIEC.
  */
-export async function verifyDNI(dni: string): Promise<{ valid: boolean; nombre?: string }> {
+export async function verifyDNI(dni: string, nombreRegistrado?: string): Promise<{
+  valid: boolean
+  nombre?: string
+  nombres?: string
+  apellidoPaterno?: string
+  apellidoMaterno?: string
+  nameMatches?: boolean
+  error?: string
+}> {
   try {
-    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/auto-verify`, {
+    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/verify-dni`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dni }),
+      body: JSON.stringify({ dni, nombre: nombreRegistrado }),
     })
     const data = await res.json()
-    return { valid: data.valid || false, nombre: data.nombre }
+    if (!res.ok || !data.success) {
+      return { valid: false, error: data.error }
+    }
+    return {
+      valid: true,
+      nombre: data.nombreCompleto,
+      nombres: data.nombres,
+      apellidoPaterno: data.apellidoPaterno,
+      apellidoMaterno: data.apellidoMaterno,
+      nameMatches: data.nameMatches,
+    }
   } catch (err) {
     logger.error('RENIEC verify error:', err)
-    return { valid: false }
+    return { valid: false, error: 'Error de conexión' }
   }
 }
 
@@ -110,7 +128,7 @@ export async function trackEvent(event: string, properties?: Record<string, any>
 }
 
 /**
- * Verificar pago con Culqi (para renovaciones)
+ * Procesar pago via Flow (para renovaciones)
  */
 export async function processPayment(data: {
   tecnicoId: number

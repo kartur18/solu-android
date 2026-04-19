@@ -11,8 +11,6 @@ import { supabase } from '../../src/lib/supabase'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 import NotificationCenter from '../../src/components/NotificationCenter'
-import { YapeQR } from '../../src/components/YapeQR'
-import { PlinQR } from '../../src/components/PlinQR'
 
 type Tab = 'dashboard' | 'servicios' | 'resenas' | 'cotizaciones' | 'ingresos' | 'plan' | 'perfil'
 
@@ -63,12 +61,13 @@ export default function CuentaScreen() {
   const [tech, setTech] = useState<Tecnico | null>(null)
   const [leads, setLeads] = useState<Cliente[]>([])
   const [reviews, setReviews] = useState<Resena[]>([])
+  const [openRequests, setOpenRequests] = useState<{ id: number; codigo: string; servicio: string; cliente_nombre: string; distrito: string; urgencia: string; created_at: string }[]>([])
+  const [acceptingId, setAcceptingId] = useState<number | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [tab, setTab] = useState<Tab>('dashboard')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [subscribingTo, setSubscribingTo] = useState<string | null>(null)
   const [profileViews, setProfileViews] = useState(0)
-  const [planPayMethod, setPlanPayMethod] = useState<'flow' | 'yape' | 'plin'>('flow')
   const [editOficios, setEditOficios] = useState<string[]>([])
   const [editZonas, setEditZonas] = useState<string[]>([])
   const [showOficiosPicker, setShowOficiosPicker] = useState(false)
@@ -226,6 +225,16 @@ export default function CuentaScreen() {
       ])
       setLeads(leadsRes.data || [])
       setReviews(revRes.data || [])
+      // Load open solicitudes for "Trabajos disponibles"
+      try {
+        const { data: openData } = await supabase
+          .from('solicitudes_servicio')
+          .select('id, codigo, servicio, cliente_nombre, distrito, urgencia, created_at')
+          .eq('estado', 'abierta')
+          .order('created_at', { ascending: false })
+          .limit(10)
+        setOpenRequests(openData || [])
+      } catch {}
       const notifs = notifRes.data || []
       setNotifications(notifs)
       setUnreadCount(notifs.filter((n: Notificacion) => !n.leido).length)
@@ -302,9 +311,9 @@ export default function CuentaScreen() {
   // --- Gallery functions ---
   function getMaxPhotos(): number {
     if (!tech) return 0
-    if (tech.plan === 'premium' || tech.plan === 'elite') return 10
-    if (tech.plan === 'profesional' || tech.plan === 'pro') return 5
-    return 3
+    if (tech.plan === 'elite') return 999
+    if (tech.plan === 'premium') return 8
+    return 3 // profesional/starter
   }
 
   async function pickAndUploadProfilePhoto() {
@@ -952,6 +961,73 @@ export default function CuentaScreen() {
           {/* ═══ SERVICIOS ═══ */}
           {tab === 'servicios' && (
             <View style={{ gap: 12 }}>
+
+              {/* Trabajos disponibles — solicitudes abiertas para aceptar */}
+              {openRequests.length > 0 && (
+                <View style={{ backgroundColor: '#ECFDF5', borderRadius: 16, padding: 16, borderWidth: 2, borderColor: '#10B981' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <Ionicons name="flash" size={16} color="#10B981" />
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Trabajos disponibles</Text>
+                    <View style={{ backgroundColor: '#10B981', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>{openRequests.length}</Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 11, color: '#065F46', marginBottom: 12 }}>Acepta rápido — el primero se lo queda</Text>
+                  {openRequests.map((s) => (
+                    <View key={s.id} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#D1FAE5' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#10B981' }}>{s.cliente_nombre?.charAt(0)?.toUpperCase() || '?'}</Text>
+                          </View>
+                          <View>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{s.cliente_nombre}</Text>
+                            <Text style={{ fontSize: 11, color: COLORS.gray }}>{s.servicio} · {s.distrito}</Text>
+                          </View>
+                        </View>
+                        {s.urgencia === 'emergencia' && (
+                          <Text style={{ fontSize: 9, fontWeight: '800', color: '#EF4444' }}>URGENTE</Text>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        disabled={acceptingId === s.id}
+                        onPress={async () => {
+                          setAcceptingId(s.id)
+                          try {
+                            const res = await fetch(`${ENV.API_BASE_URL}/solicitudes/${s.id}/accept`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ tecnicoId: tech?.id }),
+                            })
+                            const data = await res.json()
+                            if (res.ok) {
+                              Alert.alert('¡Trabajo aceptado!', `Contacta a ${s.cliente_nombre} por WhatsApp.`)
+                              setOpenRequests(prev => prev.filter(r => r.id !== s.id))
+                              if (tech) loadData(tech.id)
+                            } else if (data.taken) {
+                              Alert.alert('Ya tomado', 'Otro técnico fue más rápido.')
+                              setOpenRequests(prev => prev.filter(r => r.id !== s.id))
+                            } else {
+                              Alert.alert('Error', data.error || 'No se pudo aceptar')
+                            }
+                          } catch {
+                            Alert.alert('Error', 'Error de conexión')
+                          } finally {
+                            setAcceptingId(null)
+                          }
+                        }}
+                        style={{ backgroundColor: '#10B981', borderRadius: 12, padding: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, opacity: acceptingId === s.id ? 0.5 : 1 }}
+                      >
+                        <Ionicons name="checkmark-circle" size={16} color="#fff" />
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                          {acceptingId === s.id ? 'Aceptando...' : 'Aceptar trabajo'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
               {/* Active */}
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Servicios activos</Text>
@@ -1205,35 +1281,22 @@ export default function CuentaScreen() {
                             <Text style={{ fontSize: 11, color: COLORS.gray }}>{f}</Text>
                           </View>
                         ))}
-                        {/* Payment method selector */}
-                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
-                          {([['flow','💳','Tarjeta'],['yape','💜','Yape'],['plin','💚','Plin']] as const).map(([key, icon, label]) => (
-                            <TouchableOpacity key={key} onPress={() => setPlanPayMethod(key as any)} style={{ flex: 1, alignItems: 'center', padding: 8, borderRadius: 10, borderWidth: 2, borderColor: planPayMethod === key ? (key === 'yape' ? '#6C2EB9' : key === 'plin' ? '#10B981' : '#2563EB') : '#E2E8F0', backgroundColor: planPayMethod === key ? '#F8FAFC' : '#fff' }}>
-                              <Text style={{ fontSize: 16 }}>{icon}</Text>
-                              <Text style={{ fontSize: 9, fontWeight: '700', color: COLORS.dark, marginTop: 2 }}>{label}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                        {planPayMethod === 'flow' ? (
-                          <TouchableOpacity
-                            disabled={subscribingTo === planKey}
-                            onPress={() => handleSubscribe(planKey)}
-                            style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8, flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: subscribingTo === planKey ? 0.7 : 1 }}
-                          >
-                            {subscribingTo === planKey ? (
-                              <ActivityIndicator size="small" color="#fff" />
-                            ) : (
-                              <>
-                                <Ionicons name="card-outline" size={18} color="#fff" />
-                                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{isCurrent ? `Renovar S/${plan.price}` : `Pagar S/${plan.price}`}</Text>
-                              </>
-                            )}
-                          </TouchableOpacity>
-                        ) : planPayMethod === 'yape' ? (
-                          <View style={{ marginTop: 8 }}><YapeQR amount={plan.price} reference={`PLAN-${tech.id}-${planKey}-${Date.now().toString(36).toUpperCase()}`} /></View>
-                        ) : (
-                          <View style={{ marginTop: 8 }}><PlinQR amount={plan.price} reference={`PLAN-${tech.id}-${planKey}-${Date.now().toString(36).toUpperCase()}`} /></View>
-                        )}
+                        {/* Payment button — Flow handles tarjeta, Yape y PagoEfectivo */}
+                        <TouchableOpacity
+                          disabled={subscribingTo === planKey}
+                          onPress={() => handleSubscribe(planKey)}
+                          style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: subscribingTo === planKey ? 0.7 : 1 }}
+                        >
+                          {subscribingTo === planKey ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <>
+                              <Ionicons name="card-outline" size={18} color="#fff" />
+                              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{isCurrent ? `Renovar S/${plan.price}` : `Pagar S/${plan.price}/mes`}</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                        <Text style={{ fontSize: 9, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>Acepta tarjeta, Yape y PagoEfectivo</Text>
                       </View>
                     )
                   })}

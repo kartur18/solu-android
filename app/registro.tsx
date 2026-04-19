@@ -44,8 +44,8 @@ export default function RegistroScreen() {
   const [distritoSearch, setDistritoSearch] = useState('')
 
   // Plan limits
-  const maxOficios = selectedPlan === 'profesional' ? 1 : selectedPlan === 'premium' ? 2 : 999
-  const maxDistritos = selectedPlan === 'profesional' ? 2 : selectedPlan === 'premium' ? 4 : 999
+  const maxOficios = selectedPlan === 'profesional' ? 1 : selectedPlan === 'premium' ? 3 : 999
+  const maxDistritos = selectedPlan === 'profesional' ? 2 : selectedPlan === 'premium' ? 5 : 999
 
   // Step 3
   const [dniFront, setDniFront] = useState<string | null>(null)
@@ -116,6 +116,23 @@ export default function RegistroScreen() {
     setLoading(true)
 
     try {
+      // RENIEC verification: validate DNI and name match before registering
+      const reniec = await verifyDNI(dni, nombre)
+      if (!reniec.valid) {
+        setLoading(false)
+        return Alert.alert(
+          'DNI no verificado',
+          reniec.error || 'No pudimos verificar tu DNI en RENIEC. Revisa que esté bien escrito.',
+        )
+      }
+      if (reniec.nameMatches === false) {
+        setLoading(false)
+        return Alert.alert(
+          'Nombre no coincide',
+          `Según RENIEC tu nombre es "${reniec.nombre}". El nombre que ingresaste no coincide. Corrige tu nombre y vuelve a intentar.`,
+        )
+      }
+
       let dniFrenteUrl = null
       let dniPosteriorUrl = null
 

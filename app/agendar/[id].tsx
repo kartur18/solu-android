@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -6,18 +6,14 @@ import { COLORS } from '../../src/lib/constants'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { AvailabilityPicker } from '../../src/components/AvailabilityPicker'
-import { YapeQR } from '../../src/components/YapeQR'
-import { PlinQR } from '../../src/components/PlinQR'
 
 export default function AgendarScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const [selectedTime, setSelectedTime] = useState<{ fecha: string; horaInicio: string; horaFin: string } | null>(null)
-  const [selectedPay, setSelectedPay] = useState('yape')
   const [booked, setBooked] = useState(false)
   const [booking, setBooking] = useState(false)
   const [precio, setPrecio] = useState(60)
-  const referenceRef = useRef(`SOLU-${id}-${Date.now().toString(36).toUpperCase()}`)
 
   const techId = parseInt(id as string)
   useEffect(() => {
@@ -51,8 +47,6 @@ export default function AgendarScreen() {
           fecha: selectedTime.fecha,
           horaInicio: selectedTime.horaInicio,
           horaFin: selectedTime.horaFin,
-          metodo_pago: selectedPay,
-          referencia_pago: referenceRef.current,
         }),
       })
       const data = await res.json()
@@ -60,7 +54,7 @@ export default function AgendarScreen() {
         setBooked(true)
         Alert.alert(
           'Cita agendada',
-          `Tu cita fue confirmada para el ${selectedTime.fecha} de ${selectedTime.horaInicio} a ${selectedTime.horaFin}.\n\n${selectedPay === 'efectivo' ? 'Pagarás al técnico directamente.' : 'Recuerda enviar el comprobante de pago.'}`,
+          `Tu cita fue confirmada para el ${selectedTime.fecha} de ${selectedTime.horaInicio} a ${selectedTime.horaFin}.\n\nPagarás al técnico directamente cuando llegue (Yape, Plin o efectivo).`,
           [{ text: 'OK', onPress: () => router.back() }]
         )
       } else {
@@ -99,54 +93,22 @@ export default function AgendarScreen() {
               </View>
               <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark }}>Método de pago</Text>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              {[
-                { key: 'yape', icon: '💜', name: 'Yape' },
-                { key: 'plin', icon: '💚', name: 'Plin' },
-                { key: 'efectivo', icon: '💵', name: 'Efectivo' },
-              ].map((m) => (
-                <TouchableOpacity
-                  key={m.key}
-                  onPress={() => setSelectedPay(m.key)}
-                  style={{
-                    flex: 1,
-                    backgroundColor: COLORS.white,
-                    borderRadius: 12,
-                    padding: 12,
-                    alignItems: 'center',
-                    borderWidth: 2,
-                    borderColor: selectedPay === m.key ? (m.key === 'yape' ? '#6C2EB9' : m.key === 'plin' ? '#10B981' : COLORS.pri) : COLORS.border,
-                  }}
-                >
-                  <Text style={{ fontSize: 20, marginBottom: 4 }}>{m.icon}</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.dark }}>{m.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {selectedPay === 'yape' && (
-              <YapeQR amount={precio} reference={referenceRef.current} onConfirm={confirmBooking} />
-            )}
-            {selectedPay === 'plin' && (
-              <PlinQR amount={precio} reference={referenceRef.current} onConfirm={confirmBooking} />
-            )}
-            {selectedPay === 'efectivo' && (
-              <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' }}>
-                <Text style={{ fontSize: 28, marginBottom: 8 }}>💵</Text>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Pago en efectivo</Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 16 }}>
-                  Pagarás S/{precio} directamente al técnico cuando llegue.
+            <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' }}>
+              <Text style={{ fontSize: 28, marginBottom: 8 }}>💳</Text>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Pagas al técnico directo</Text>
+              <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 16 }}>
+                S/{precio} — Yape, Plin o efectivo. Coordinas con el técnico el método cuando llegue.
+              </Text>
+              <TouchableOpacity
+                onPress={confirmBooking}
+                disabled={booking}
+                style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', width: '100%' }}
+              >
+                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>
+                  {booking ? 'Agendando...' : 'Confirmar cita'}
                 </Text>
-                <TouchableOpacity
-                  onPress={confirmBooking}
-                  disabled={booking}
-                  style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', width: '100%' }}
-                >
-                  <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>
-                    {booking ? 'Agendando...' : 'Confirmar cita'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 

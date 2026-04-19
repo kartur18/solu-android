@@ -1,6 +1,8 @@
-import { useEffect } from 'react'
-import { Stack } from 'expo-router'
+import { useEffect, useRef } from 'react'
+import { Alert } from 'react-native'
+import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import * as Notifications from 'expo-notifications'
 import * as Sentry from '@sentry/react-native'
 import { COLORS } from '../src/lib/constants'
 import { ENV } from '../src/lib/env'
@@ -16,11 +18,63 @@ Sentry.init({
   enabled: !__DEV__,
 })
 
+// Configure how notifications are shown when app is in foreground (SDK 55+ fields)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+})
+
 export default function RootLayout() {
   useAppUpdate()
+  const router = useRouter()
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null)
+  const responseListener = useRef<Notifications.EventSubscription | null>(null)
 
   useEffect(() => {
     initAnalytics().then(() => track('App Opened'))
+
+    // Listen for notifications received while app is in foreground
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      const data = notification.request.content.data
+      if (data?.type === 'new_request') {
+        // Show in-app alert for new requests
+        Alert.alert(
+          notification.request.content.title || 'Nueva solicitud',
+          notification.request.content.body || '',
+          [
+            { text: 'Ver después', style: 'cancel' },
+            { text: 'Ver solicitud', onPress: () => router.push('/(tabs)/cuenta') },
+          ]
+        )
+      }
+    })
+
+    // Listen for when user taps on a notification
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data
+      if (data?.type === 'new_request') {
+        // Navigate to solicitudes tab
+        router.push('/(tabs)/cuenta')
+      } else if (data?.type === 'new_message') {
+        // Navigate to chat
+        if (data.chatId) router.push(`/chat/${data.chatId}`)
+      } else if (data?.type === 'plan_expiring' || data?.type === 'plan_expired') {
+        router.push('/(tabs)/cuenta')
+      } else {
+        // Default: go to account
+        router.push('/(tabs)/cuenta')
+      }
+    })
+
+    return () => {
+      notificationListener.current?.remove()
+      responseListener.current?.remove()
+    }
   }, [])
 
   return (
