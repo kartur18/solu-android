@@ -15,6 +15,7 @@ import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { getPrecioSugerido, formatPrecio } from '../src/lib/smartIntent'
 import { findBestTech } from '../src/lib/matching'
+import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
 
 const DRAFT_KEY = 'solu_solicitar_draft'
 
@@ -185,10 +186,10 @@ export default function SolicitarScreen() {
         }
       }
 
-      // Insert the solicitud
+      // Insert the solicitud (estado depende de si hay técnico disponible)
       const { error } = await supabase.from('clientes').insert({
         nombre: nombreFinal, whatsapp: waClean, servicio, distrito, urgencia, descripcion: descripcionFinal, codigo,
-        estado: assignedTech ? 'Asignado' : 'Nuevo',
+        estado: assignedTech ? 'Asignado' : 'En espera',
         tecnico_asignado: assignedTech?.id || null,
       })
 
@@ -224,6 +225,10 @@ export default function SolicitarScreen() {
       AsyncStorage.removeItem(DRAFT_KEY).catch(() => {})
       // Save client profile for next time
       saveProfile({ nombre: nombreFinal, whatsapp: waClean, distrito, lastServicio: servicio }).catch(() => {})
+      // Register push token so cliente receive notifications on estado changes
+      registerForPushNotifications().then((token) => {
+        if (token) upsertGuestClientPushToken(waClean, token, nombreFinal).catch(() => {})
+      }).catch(() => {})
       track('Service Request Completed', { servicio, distrito, codigo })
 
       // Show success screen

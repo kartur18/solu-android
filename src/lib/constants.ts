@@ -297,10 +297,11 @@ export const DISTRITOS = [
   'Iquitos', 'Pucallpa', 'Tingo María', 'Yurimaguas', 'Bagua',
 ]
 
-export const SUPPORT_PHONE = '904518343'
+export const SUPPORT_PHONE = '983835904'
 
 export const ESTADOS = {
   NUEVO: 'Nuevo',
+  EN_ESPERA: 'En espera',
   ASIGNADO: 'Asignado',
   EN_CAMINO: 'En camino',
   EN_PROCESO: 'En proceso',
@@ -351,13 +352,13 @@ export const ACHIEVEMENTS = [
   { id: 'pro', emoji: '🏆', name: 'Profesional', desc: 'Plan de pago activo', check: (t: any) => !!t.plan },
   { id: 'premium', emoji: '💎', name: 'Premium', desc: 'Plan Premium o Elite', check: (t: any) => t.plan === 'premium' || t.plan === 'elite' },
   { id: 'gallery', emoji: '📸', name: 'Portafolio', desc: '5+ fotos de trabajos', check: (t: any) => t.galeria?.length >= 5 },
-  { id: 'multizone', emoji: '🗺️', name: 'Multi-zona', desc: '3+ zonas de cobertura', check: (t: any) => t.zonas?.length >= 3 },
+  { id: 'multizone', emoji: '🗺️', name: 'Multi-zona', desc: '2+ zonas de cobertura', check: (t: any) => t.zonas?.length >= 2 },
 ]
 
 export const PLAN_FEATURES = {
-  profesional: { name: 'Profesional', price: 49, culqiLink: 'https://express.culqi.com/pago/665378042F', features: ['Primer mes gratis', 'Sello verificado', '1 oficio', '2 zonas de cobertura', '3 fotos de trabajos', 'Reseñas de clientes', 'Notificaciones de solicitudes', 'Perfil público en la app', 'Estadísticas básicas', 'Soporte por WhatsApp'] },
-  premium: { name: 'Premium', price: 79, culqiLink: 'https://express.culqi.com/pago/FFEC22C71A', features: ['Primer mes gratis', 'Sello PRO destacado', 'Hasta 2 oficios', '4 zonas de cobertura', '5 fotos + galería', 'Reseñas de clientes', 'Prioridad alta en búsqueda', 'Apareces en "Recomendados"', 'Cotizaciones a clientes', 'Notificaciones de solicitudes', 'Estadísticas detalladas', 'Soporte prioritario'] },
-  elite: { name: 'Elite', price: 99, culqiLink: 'https://express.culqi.com/pago/80O22AAFF4', features: ['Primer mes gratis', 'Sello ELITE exclusivo', 'Oficios ilimitados', 'Zonas ilimitadas', '10 fotos + galería completa', 'Reseñas de clientes', 'Siempre en el top 5', 'Certificado digital verificado', 'Promociones ilimitadas', 'Cotizaciones ilimitadas', 'Estadísticas avanzadas', 'Soporte directo prioritario'] },
+  profesional: { name: 'Starter', price: 49, features: ['Primer mes gratis', 'Sello verificado', '1 oficio', '2 zonas de cobertura', '3 fotos de trabajos', 'Cotizaciones', 'Reseñas de clientes', 'Notificaciones de solicitudes', 'Perfil público en la app', 'Estadísticas básicas', 'Soporte por WhatsApp'] },
+  premium: { name: 'PRO', price: 79, features: ['Primer mes gratis', 'Sello PRO destacado', '3 oficios', '5 zonas de cobertura', '8 fotos + galería', 'Cotizaciones', 'Reseñas de clientes', 'Prioridad alta en búsqueda', 'Apareces en "Destacados"', 'Notificaciones de solicitudes', 'Estadísticas detalladas', 'Soporte prioritario'] },
+  elite: { name: 'Elite', price: 99, features: ['Primer mes gratis', 'Sello ELITE exclusivo', 'Oficios ilimitados', 'Zonas ilimitadas', 'Fotos ilimitadas + galería', 'Cotizaciones ilimitadas', 'Reseñas de clientes', 'Siempre en el top 5', 'Certificado digital verificado', 'Promociones ilimitadas', 'Estadísticas avanzadas', 'Soporte VIP directo'] },
 }
 
 export function waLink(phone: string, msg: string): string {

@@ -15,6 +15,7 @@ import { ChatBot } from '../../src/components/ChatBot'
 import { track } from '../../src/lib/analytics'
 import { useClientProfile } from '../../src/lib/useClientProfile'
 import { suggestServicios, detectServicio, detectUrgencia } from '../../src/lib/smartIntent'
+import { ENV } from '../../src/lib/env'
 
 const { width } = Dimensions.get('window')
 const CARD_SIZE = (width - 60) / 4
@@ -111,7 +112,7 @@ export default function HomeScreen() {
     })()
   }, [profile?.whatsapp])
 
-  function handleSearchSubmit() {
+  async function handleSearchSubmit() {
     const text = query.trim()
     if (!text) {
       router.push('/solicitar')
@@ -120,17 +121,43 @@ export default function HomeScreen() {
     const detected = detectServicio(text)
     const urgencia = detectUrgencia(text)
     track('Smart Search Submitted', { query: text, detected, urgencia })
+
     if (detected) {
       router.push({
         pathname: '/solicitar',
         params: { servicio: detected, descripcion: text, urgencia },
       })
-    } else {
-      router.push({ pathname: '/buscar', params: { servicio: text } })
+      setQuery(''); setShowSuggestions(false); Keyboard.dismiss()
+      return
     }
-    setQuery('')
-    setShowSuggestions(false)
-    Keyboard.dismiss()
+
+    // Fallback AI para texto libre largo sin match local
+    if (text.length > 20) {
+      try {
+        const res = await fetch(`${ENV.API_BASE_URL}/ai-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'recommend', messages: [{ role: 'user', content: text }] }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const rec = data.recommendation
+          if (rec?.service) {
+            router.push({
+              pathname: '/solicitar',
+              params: { servicio: rec.service, descripcion: text, urgencia: rec.urgency || urgencia },
+            })
+            setQuery(''); setShowSuggestions(false); Keyboard.dismiss()
+            return
+          }
+        }
+      } catch {
+        // AI falló → caer a búsqueda
+      }
+    }
+
+    router.push({ pathname: '/buscar', params: { servicio: text } })
+    setQuery(''); setShowSuggestions(false); Keyboard.dismiss()
   }
 
   function pickSuggestion(s: string) {

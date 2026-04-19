@@ -10,6 +10,7 @@ import { track } from '../../src/lib/analytics'
 
 const STEPS = [
   { key: 'Nuevo', label: 'Solicitud registrada', icon: 'document-text' as const, desc: 'Tu solicitud fue recibida' },
+  { key: 'En espera', label: 'Buscando técnico', icon: 'time' as const, desc: 'No hay técnico disponible ahora. Te avisamos apenas aparezca uno.' },
   { key: 'Asignado', label: 'Técnico asignado', icon: 'person' as const, desc: 'Un técnico aceptó tu solicitud' },
   { key: 'En camino', label: 'Técnico en camino', icon: 'car' as const, desc: 'El técnico se dirige a tu ubicación' },
   { key: 'En proceso', label: 'Trabajo en proceso', icon: 'hammer' as const, desc: 'El técnico está trabajando' },

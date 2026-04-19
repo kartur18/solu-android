@@ -79,6 +79,40 @@ export async function saveClientPushToken(clienteUserId: number, token: string) 
   }
 }
 
+/**
+ * Upsert push token for a guest client identified by whatsapp.
+ * Creates a minimal clientes_users row if missing so state-change pushes work
+ * even for clients that never formally registered.
+ */
+export async function upsertGuestClientPushToken(whatsapp: string, token: string, nombre?: string) {
+  try {
+    const { data: existing } = await supabase
+      .from('clientes_users')
+      .select('id')
+      .eq('whatsapp', whatsapp)
+      .maybeSingle()
+
+    if (existing?.id) {
+      await supabase
+        .from('clientes_users')
+        .update({ push_token: token })
+        .eq('id', existing.id)
+    } else {
+      await supabase
+        .from('clientes_users')
+        .insert({
+          whatsapp,
+          nombre: nombre || 'Cliente SOLU',
+          push_token: token,
+          password_hash: '',
+          created_at: new Date().toISOString(),
+        })
+    }
+  } catch (err) {
+    logger.error('Failed to upsert guest client push token:', err)
+  }
+}
+
 /** Send a local notification immediately (no server needed) */
 export async function sendLocalNotification(title: string, body: string, data?: Record<string, string>) {
   try {

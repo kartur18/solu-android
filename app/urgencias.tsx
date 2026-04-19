@@ -7,6 +7,7 @@ import { supabase } from '../src/lib/supabase'
 import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { findBestTech } from '../src/lib/matching'
+import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
 
 const EMERGENCIAS = [
   { name: 'Fuga de agua', icon: 'water' as const, color: '#3B82F6', oficio: 'Gasfitero', desc: 'Tuberías, inundación' },
@@ -74,6 +75,10 @@ export default function UrgenciasScreen() {
 
       // Save client profile for next time
       saveProfile({ nombre, whatsapp: waClean, distrito }).catch(() => {})
+      // Register push token so cliente receives notifications on estado changes
+      registerForPushNotifications().then((token) => {
+        if (token) upsertGuestClientPushToken(waClean, token, nombre || 'Cliente').catch(() => {})
+      }).catch(() => {})
 
       setAssignedTech(bestTech)
     } catch (err) {
