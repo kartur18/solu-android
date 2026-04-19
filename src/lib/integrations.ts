@@ -71,6 +71,30 @@ export async function notifyTech(tecnicoId: number, title: string, message: stri
 }
 
 /**
+ * Enviar push notification via backend. El backend resuelve el push_token
+ * buscando en `tecnicos` o `clientes_users` según targetType. Para clientes,
+ * targetId es el whatsapp normalizado (solo dígitos).
+ */
+export async function sendPush(
+  targetType: 'tecnico' | 'cliente',
+  targetId: string,
+  title: string,
+  body: string,
+  data?: Record<string, unknown>,
+): Promise<boolean> {
+  try {
+    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/send-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetType, targetId, title, body, data }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/**
  * Generar factura/boleta via NubeFact
  */
 export async function emitBoleta(data: {
