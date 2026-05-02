@@ -134,7 +134,7 @@ export default function PagoScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.pri} />
         <Text style={{ marginTop: 12, color: '#666' }}>Cargando…</Text>
       </View>
     )
@@ -146,7 +146,7 @@ export default function PagoScreen() {
         <Text style={{ color: '#dc2626', textAlign: 'center', marginBottom: 16 }}>{error}</Text>
         <TouchableOpacity
           onPress={cargarSolicitud}
-          style={{ backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 }}
+          style={{ backgroundColor: COLORS.pri, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 }}
         >
           <Text style={{ color: '#fff', fontWeight: '600' }}>Reintentar</Text>
         </TouchableOpacity>
@@ -171,7 +171,7 @@ export default function PagoScreen() {
           onPress={() => router.back()}
           style={{ marginTop: 24, paddingVertical: 12, paddingHorizontal: 24 }}
         >
-          <Text style={{ color: COLORS.primary, fontWeight: '600' }}>← Volver</Text>
+          <Text style={{ color: COLORS.pri, fontWeight: '600' }}>← Volver</Text>
         </TouchableOpacity>
       </View>
     )
@@ -210,7 +210,7 @@ export default function PagoScreen() {
           onPress={abrirCheckout}
           disabled={opening}
           style={{
-            backgroundColor: opening ? '#9ca3af' : COLORS.primary,
+            backgroundColor: opening ? '#9ca3af' : COLORS.pri,
             paddingVertical: 16,
             borderRadius: 12,
             alignItems: 'center',
@@ -232,7 +232,7 @@ export default function PagoScreen() {
 
         {ultimoIntento > 0 && (
           <TouchableOpacity onPress={verificarEstado} style={{ alignItems: 'center', paddingVertical: 8 }}>
-            <Text style={{ color: COLORS.primary, fontSize: 14 }}>
+            <Text style={{ color: COLORS.pri, fontSize: 14 }}>
               ¿Ya pagaste? Verificar estado
             </Text>
           </TouchableOpacity>
