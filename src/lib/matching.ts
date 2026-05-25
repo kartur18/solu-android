@@ -8,7 +8,7 @@ export interface MatchableTech {
   distrito?: string | null
   calificacion?: number | null
   servicios_completados?: number | null
-  plan?: string | null
+  tier?: string | null
   lat?: number | null
   lng?: number | null
 }
@@ -19,10 +19,13 @@ export interface MatchInput {
   clientCoords?: { latitude: number; longitude: number } | null
 }
 
-const PLAN_BOOST: Record<string, number> = {
-  elite: 30,
-  premium: 20,
-  profesional: 10,
+// V3.1: el boost lo da el tier loyalty real (servicios cerrados + rating),
+// no un plan mensual pagado. Reemplaza el `PLAN_BOOST` legacy.
+const TIER_BOOST: Record<string, number> = {
+  platino: 30,
+  oro: 20,
+  plata: 10,
+  bronce: 0,
 }
 
 function haversineKm(
@@ -49,8 +52,8 @@ export function scoreTech(tech: MatchableTech, input: MatchInput): number {
   const done = tech.servicios_completados ?? 0
   score += Math.min((done / 50) * 20, 20)
 
-  // Plan boost (0-30 pts)
-  score += PLAN_BOOST[tech.plan ?? ''] ?? 0
+  // Tier boost (0-30 pts) — basado en tier loyalty real, no plan mensual
+  score += TIER_BOOST[(tech.tier ?? '').toLowerCase()] ?? 0
 
   // Same district bonus (0-25 pts)
   if (tech.distrito && input.distrito && tech.distrito.toLowerCase() === input.distrito.toLowerCase()) {
@@ -69,7 +72,7 @@ export function scoreTech(tech: MatchableTech, input: MatchInput): number {
   return score
 }
 
-const SELECT_COLS = 'id, nombre, whatsapp, oficio, distrito, calificacion, servicios_completados, plan, lat, lng'
+const SELECT_COLS = 'id, nombre, whatsapp, oficio, distrito, calificacion, servicios_completados, tier, lat, lng'
 
 export async function findBestTech(input: MatchInput): Promise<MatchableTech | null> {
   const { data } = await supabase

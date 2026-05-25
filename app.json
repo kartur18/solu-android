@@ -2,7 +2,7 @@
   "expo": {
     "name": "SOLU — Lo que necesites, hoy",
     "slug": "solu-app",
-    "version": "1.0.2",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "pe.solu.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "associatedDomains": [
         "applinks:solu.pe",
         "webcredentials:solu.pe",
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "intentFilters": [
         {
           "action": "VIEW",

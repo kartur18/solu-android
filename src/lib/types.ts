@@ -6,7 +6,12 @@ export interface Tecnico {
   dni: string
   oficio: string
   distrito: string
-  plan: 'profesional' | 'premium' | 'elite'
+  // V3.1: campo 'plan' es legacy (modelo de planes mensuales eliminado).
+  // Mantenemos opcional para compatibilidad con técnicos viejos en BD,
+  // pero el nuevo modelo usa saldo de SoluCoins prepagos (ver `coins_balance`).
+  plan?: 'profesional' | 'premium' | 'elite' | 'creditos' | null
+  coins_balance?: number
+  tier?: 'bronce' | 'plata' | 'oro' | 'platino'
   disponible: boolean
   verificado: boolean
   calificacion: number

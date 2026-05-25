@@ -316,11 +316,13 @@ export const URGENCIAS = [
   { value: 'emergencia', label: 'Emergencia', color: COLORS.red },
 ]
 
+// Tiers SOLU V3.1: Bronce / Plata / Oro / Platino (cambio 2026: Diamante → Platino
+// para alinear con la web y el sistema de tiers loyalty en producción).
 export const LEVELS = [
   { name: 'Bronce', emoji: '🥉', min: 0, color: '#CD7F32' },
   { name: 'Plata', emoji: '🥈', min: 10, color: '#C0C0C0' },
   { name: 'Oro', emoji: '🥇', min: 50, color: '#FFD700' },
-  { name: 'Diamante', emoji: '💎', min: 100, color: '#6366F1' },
+  { name: 'Platino', emoji: '💎', min: 100, color: '#6366F1' },
 ]
 
 export function getTechLevel(servicios: number) {
@@ -349,16 +351,48 @@ export const ACHIEVEMENTS = [
   { id: 'highrated', emoji: '🌟', name: 'Top valorado', desc: 'Calificación 4.5+', check: (t: any) => t.calificacion >= 4.5 },
   { id: 'popular', emoji: '💬', name: 'Popular', desc: '10+ reseñas', check: (t: any) => t.num_resenas >= 10 },
   { id: 'viral', emoji: '📣', name: 'Viral', desc: '25+ reseñas', check: (t: any) => t.num_resenas >= 25 },
-  { id: 'pro', emoji: '🏆', name: 'Profesional', desc: 'Plan de pago activo', check: (t: any) => !!t.plan },
-  { id: 'premium', emoji: '💎', name: 'Premium', desc: 'Plan Premium o Elite', check: (t: any) => t.plan === 'premium' || t.plan === 'elite' },
+  // Achievements V3.1: ya no dependen de "plan mensual" (eliminado). Reemplazados
+  // por tier loyalty real (Oro+) y por compra de paquete Coins.
+  { id: 'pro', emoji: '🏆', name: 'Top Pro', desc: '10+ servicios con calificación 4.5+', check: (t: any) => (t.servicios_completados ?? 0) >= 10 && (t.calificacion ?? 0) >= 4.5 },
+  { id: 'platino', emoji: '💎', name: 'Platino', desc: '100+ servicios completados', check: (t: any) => (t.servicios_completados ?? 0) >= 100 },
   { id: 'gallery', emoji: '📸', name: 'Portafolio', desc: '5+ fotos de trabajos', check: (t: any) => t.galeria?.length >= 5 },
   { id: 'multizone', emoji: '🗺️', name: 'Multi-zona', desc: '2+ zonas de cobertura', check: (t: any) => t.zonas?.length >= 2 },
 ]
 
-export const PLAN_FEATURES = {
-  profesional: { name: 'Starter', price: 49, features: ['Primer mes gratis', 'Sello verificado', '1 oficio', '2 zonas de cobertura', '3 fotos de trabajos', 'Cotizaciones', 'Reseñas de clientes', 'Notificaciones de solicitudes', 'Perfil público en la app', 'Estadísticas básicas', 'Soporte por WhatsApp'] },
-  premium: { name: 'PRO', price: 79, features: ['Primer mes gratis', 'Sello PRO destacado', '3 oficios', '5 zonas de cobertura', '8 fotos + galería', 'Cotizaciones', 'Reseñas de clientes', 'Prioridad alta en búsqueda', 'Apareces en "Destacados"', 'Notificaciones de solicitudes', 'Estadísticas detalladas', 'Soporte prioritario'] },
-  elite: { name: 'Elite', price: 99, features: ['Primer mes gratis', 'Sello ELITE exclusivo', 'Oficios ilimitados', 'Zonas ilimitadas', 'Fotos ilimitadas + galería', 'Cotizaciones ilimitadas', 'Reseñas de clientes', 'Siempre en el top 5', 'Certificado digital verificado', 'Promociones ilimitadas', 'Estadísticas avanzadas', 'Soporte VIP directo'] },
+// Modelo V3.1: paquetes de SoluCoins prepagos (reemplazan los planes mensuales
+// legacy profesional/premium/elite que ya no existen en producción). Espejado
+// con la tabla paquetes_creditos en Supabase. Precios en soles peruanos (PEN).
+export const COINS_PACKAGES = {
+  inicio_v31:       { name: 'Inicio',       price: 30,   coins: 6_000,   leads: '≈ 10 leads' },
+  estandar_v31:     { name: 'Estándar',     price: 75,   coins: 16_000,  leads: '≈ 26 leads' },
+  popular_v31:      { name: 'Popular',      price: 150,  coins: 36_000,  leads: '≈ 60 leads', destacado: true },
+  avanzado_v31:     { name: 'Avanzado',     price: 300,  coins: 78_000,  leads: '≈ 130 leads' },
+  profesional_v31:  { name: 'Profesional',  price: 600,  coins: 168_000, leads: '≈ 280 leads' },
+  empresarial_v31:  { name: 'Empresarial',  price: 1200, coins: 360_000, leads: '≈ 600 leads' },
+} as const
+
+/**
+ * @deprecated PLAN_FEATURES era el catálogo de planes mensuales pre-V3.1
+ * (profesional / premium / elite). Eliminado en 2026-05 cuando SOLU pasó a
+ * SoluCoins prepagos.
+ *
+ * Mantenemos stubs con name="Legacy" para no romper typecheck en pantallas
+ * que aún lo importan (`app/(tabs)/cuenta.tsx`, `app/registro.tsx`). Esas
+ * pantallas muestran "Legacy" visiblemente, lo cual fuerza el refactor a
+ * COINS_PACKAGES en la siguiente iteración (ver TODO_V3.md).
+ *
+ * NO agregar nuevos features acá. Para agregar lógica nueva, usar
+ * COINS_PACKAGES + tier loyalty.
+ */
+export interface PlanFeatureLegacy {
+  name: string
+  price: number
+  features: string[]
+}
+export const PLAN_FEATURES: Record<'profesional' | 'premium' | 'elite', PlanFeatureLegacy> = {
+  profesional: { name: 'Legacy (modelo viejo)', price: 0, features: [] },
+  premium:     { name: 'Legacy (modelo viejo)', price: 0, features: [] },
+  elite:       { name: 'Legacy (modelo viejo)', price: 0, features: [] },
 }
 
 export function waLink(phone: string, msg: string): string {

@@ -16,10 +16,10 @@ ENCUENTRA AL TÉCNICO IDEAL
 • Contacta directamente por WhatsApp
 
 SERVICIOS VERIFICADOS
-• Todos los técnicos pasan verificación de DNI
+• Todos los técnicos pasan verificación de DNI con RENIEC
 • Sistema de calificación con estrellas (1-5)
 • Reseñas de clientes reales después de cada servicio
-• Badges de nivel: Bronce, Plata, Oro y Diamante
+• Badges de nivel loyalty: Bronce, Plata, Oro y Platino — el técnico sube de tier mientras más servicios cierra y mejor lo califican
 
 AGENDA Y DA SEGUIMIENTO
 • Agenda citas en el horario que prefieras
@@ -38,10 +38,12 @@ VECINOS SOLU
 • Comparte el código con tus vecinos
 
 ¿ERES TÉCNICO?
-• Regístrate gratis con 30 días de prueba
-• Recibe solicitudes de clientes en tu zona
-• Elige entre planes Starter (S/49), PRO (S/79) o Elite (S/99)
-• Gestiona tu perfil, leads y reseñas desde la app
+• Regístrate gratis con DNI verificado por RENIEC
+• Recibe 5,000 SoluCoins de bienvenida (≈ 10 leads gratis)
+• Modelo prepago sin suscripción: compra paquetes de SoluCoins desde S/30 (Inicio) hasta S/1,200 (Empresarial) — el descuento por coin mejora a medida que el paquete es más grande
+• Cobra al cliente directo (Yape, Plin, efectivo o tarjeta) — SOLU no se queda con comisión por servicio
+• Boleta SUNAT automática por cada compra de SoluCoins
+• Gestiona tu perfil, leads, reseñas y wallet desde la app
 
 Cobertura: Lima (45+ distritos), Callao, Arequipa, Trujillo, Chiclayo, Piura, Cusco, Huancayo, Iquitos, y más ciudades del Perú.
 

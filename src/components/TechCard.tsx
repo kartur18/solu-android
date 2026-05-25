@@ -46,7 +46,8 @@ function StarRating({ rating }: { rating: number }) {
 
 export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, isFavorite }: Props) {
   const router = useRouter()
-  const planStyle = PLAN_COLORS[tech.plan] || null
+  // V3.1: tech.plan ahora es opcional. Mapeamos string vacío al fallback.
+  const planStyle = PLAN_COLORS[tech.plan ?? ''] ?? null
   const avatarGradient = AVATAR_GRADIENTS[(tech.id || 0) % AVATAR_GRADIENTS.length]
 
   // Left border color based on plan
