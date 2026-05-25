@@ -1,13 +1,25 @@
+// Registro de técnico — V3.1 (SoluCoins prepagos, sin planes mensuales).
+//
+// Wizard de 3 pasos:
+//   1. Datos personales (nombre, WhatsApp, email, DNI, password)
+//   2. Servicio (oficios + distritos + experiencia + descripción)
+//   3. Verificación DNI (frente + posterior)
+//
+// CAMBIO V3.1: eliminado el selector de plan (profesional/premium/elite).
+// Todos los técnicos arrancan con 5,000 SoluCoins de bienvenida y pueden
+// comprar paquetes después desde su perfil. Sin gates por plan en oficios
+// ni zonas (el límite real lo da el saldo de SoluCoins, no un plan mensual).
+
 import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS, SERVICIOS, DISTRITOS, PLAN_FEATURES } from '../src/lib/constants'
+import { COLORS, DISTRITOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { logger } from '../src/lib/logger'
 import { ENV } from '../src/lib/env'
-import { verifyDNI, notifyTech } from '../src/lib/integrations'
+import { verifyDNI } from '../src/lib/integrations'
 import { compressDNIPhoto } from '../src/lib/imageCompress'
 
 const OFICIOS = [
@@ -16,6 +28,12 @@ const OFICIOS = [
   'Técnico en electrodomésticos', 'Techador', 'Vidriero', 'Soldador',
   'Jardinero', 'Mudanzas', 'Técnico en seguridad', 'Técnico en redes',
 ]
+
+// V3.1: tope generoso por defecto, sin gates por plan. Los técnicos pueden
+// agregar hasta 5 oficios y 10 zonas en registro. Si necesitan más, lo
+// editan luego desde Mi cuenta.
+const MAX_OFICIOS = 5
+const MAX_ZONAS = 10
 
 export default function RegistroScreen() {
   const router = useRouter()
@@ -32,8 +50,7 @@ export default function RegistroScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Step 2
-  const [selectedPlan, setSelectedPlan] = useState<'profesional' | 'premium' | 'elite'>('profesional')
+  // Step 2 (sin plan en V3.1)
   const [oficios, setOficios] = useState<string[]>([])
   const [distritos, setDistritos] = useState<string[]>([])
   const [precio, setPrecio] = useState('')
@@ -42,10 +59,6 @@ export default function RegistroScreen() {
   const [showOficios, setShowOficios] = useState(false)
   const [showDistritos, setShowDistritos] = useState(false)
   const [distritoSearch, setDistritoSearch] = useState('')
-
-  // Plan limits
-  const maxOficios = selectedPlan === 'profesional' ? 1 : selectedPlan === 'premium' ? 3 : 999
-  const maxDistritos = selectedPlan === 'profesional' ? 2 : selectedPlan === 'premium' ? 5 : 999
 
   // Step 3
   const [dniFront, setDniFront] = useState<string | null>(null)
@@ -116,7 +129,6 @@ export default function RegistroScreen() {
     setLoading(true)
 
     try {
-      // RENIEC verification: validate DNI and name match before registering
       const reniec = await verifyDNI(dni, nombre)
       if (!reniec.valid) {
         setLoading(false)
@@ -139,7 +151,8 @@ export default function RegistroScreen() {
       if (dniFront) dniFrenteUrl = await uploadDni(dniFront, 'frente')
       if (dniBack) dniPosteriorUrl = await uploadDni(dniBack, 'posterior')
 
-      // Register via backend API (handles uniqueness checks, bcrypt hashing, free trial calc)
+      // V3.1: no enviamos `plan` al backend (eliminado). El backend acredita
+      // los 5,000 SoluCoins de bienvenida automáticamente al crear el técnico.
       const res = await fetch(`${ENV.API_BASE_URL}/register-tech`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,7 +171,6 @@ export default function RegistroScreen() {
           descripcion: descripcion || undefined,
           dni_frente_url: dniFrenteUrl,
           dni_posterior_url: dniPosteriorUrl,
-          plan: selectedPlan,
         }),
       })
       const result = await res.json()
@@ -167,9 +179,9 @@ export default function RegistroScreen() {
         Alert.alert('Error', result.error || 'No se pudo completar el registro.')
       } else {
         Alert.alert(
-          '¡Registro exitoso!',
-          `Tu cuenta ha sido creada con el plan ${PLAN_FEATURES[selectedPlan].name}. Inicia sesión desde la pestaña Mi Cuenta.`,
-          [{ text: 'OK', onPress: () => router.back() }]
+          '¡Bienvenido a SOLU! 🎉',
+          'Tu cuenta está creada. Recibes 5,000 SoluCoins gratis para tus primeros leads. Inicia sesión desde Mi cuenta.',
+          [{ text: 'Empezar', onPress: () => router.back() }]
         )
       }
     } catch {
@@ -192,7 +204,20 @@ export default function RegistroScreen() {
         {step === 1 && (
           <>
             <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Datos personales</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 1 de 3</Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 4 }}>Paso 1 de 3</Text>
+            {/* Banner bienvenida — anuncia los 5,000 SoluCoins gratis antes de empezar */}
+            <View style={{
+              backgroundColor: '#FFF7ED', borderRadius: 12, padding: 12, marginBottom: 18,
+              borderLeftWidth: 4, borderLeftColor: COLORS.pri, flexDirection: 'row', gap: 10,
+            }}>
+              <Text style={{ fontSize: 22 }}>🎁</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>5,000 SoluCoins gratis</Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 2 }}>
+                  Te llegan al crear tu cuenta. Alcanzan para tus primeros leads.
+                </Text>
+              </View>
+            </View>
 
             <Text style={styles.label}>Nombre completo *</Text>
             <TextInput placeholder="Juan Pérez López" value={nombre} onChangeText={setNombre} style={styles.input} placeholderTextColor={COLORS.gray2} />
@@ -201,7 +226,7 @@ export default function RegistroScreen() {
             <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" style={styles.input} placeholderTextColor={COLORS.gray2} />
 
             <Text style={styles.label}>Email</Text>
-            <TextInput placeholder="correo@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" style={styles.input} placeholderTextColor={COLORS.gray2} />
+            <TextInput placeholder="correo@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} placeholderTextColor={COLORS.gray2} />
 
             <Text style={styles.label}>Contraseña</Text>
             <View style={{ position: 'relative' }}>
@@ -216,6 +241,7 @@ export default function RegistroScreen() {
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={{ position: 'absolute', right: 14, top: 14 }}
+                accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
               </TouchableOpacity>
@@ -234,6 +260,7 @@ export default function RegistroScreen() {
               <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={{ position: 'absolute', right: 14, top: 14 }}
+                accessibilityLabel={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
               </TouchableOpacity>
@@ -250,43 +277,11 @@ export default function RegistroScreen() {
 
         {step === 2 && (
           <>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Tu servicio y plan</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 2 de 3</Text>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Tu servicio</Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 2 de 3 — Configurá qué ofreces y dónde</Text>
 
-            {/* Plan selection */}
-            <Text style={styles.label}>Elige tu plan *</Text>
-            <View style={{ gap: 8, marginBottom: 16 }}>
-              {(['profesional', 'premium', 'elite'] as const).map((planKey) => {
-                const plan = PLAN_FEATURES[planKey]
-                const isSelected = selectedPlan === planKey
-                return (
-                  <TouchableOpacity
-                    key={planKey}
-                    onPress={() => setSelectedPlan(planKey)}
-                    style={{
-                      backgroundColor: isSelected ? '#1E3A5F' : '#fff',
-                      borderRadius: 14, padding: 14,
-                      borderWidth: 2, borderColor: isSelected ? '#1E3A5F' : '#E2E8F0',
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <View>
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: isSelected ? '#fff' : COLORS.dark }}>{plan.name}</Text>
-                        <Text style={{ fontSize: 11, color: isSelected ? 'rgba(255,255,255,0.7)' : COLORS.gray, marginTop: 2 }}>
-                          {planKey === 'profesional' ? '1 oficio · 2 zonas' : planKey === 'premium' ? '2 oficios · 4 zonas' : 'Oficios y zonas ilimitados'}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: isSelected ? '#fff' : COLORS.pri }}>S/{plan.price}</Text>
-                        <Text style={{ fontSize: 9, color: isSelected ? 'rgba(255,255,255,0.6)' : COLORS.gray2 }}>Primer mes gratis</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                )
-              })}
-            </View>
-
-            <Text style={styles.label}>Oficios * {maxOficios < 999 ? `(máx ${maxOficios})` : '(ilimitados)'}</Text>
+            {/* Oficios — sin gate por plan, tope generoso */}
+            <Text style={styles.label}>Oficios * {oficios.length > 0 ? `(${oficios.length}/${MAX_OFICIOS})` : ''}</Text>
             {oficios.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                 {oficios.map((o, idx) => (
@@ -309,8 +304,8 @@ export default function RegistroScreen() {
                 <ScrollView nestedScrollEnabled>
                   {OFICIOS.filter(o => !oficios.includes(o)).map((o) => (
                     <TouchableOpacity key={o} onPress={() => {
-                      if (oficios.length >= maxOficios) {
-                        Alert.alert('Límite alcanzado', `Tu plan ${selectedPlan} permite máximo ${maxOficios} oficio${maxOficios > 1 ? 's' : ''}. Elige un plan superior para más oficios.`)
+                      if (oficios.length >= MAX_OFICIOS) {
+                        Alert.alert('Tope alcanzado', `Por ahora podés registrar hasta ${MAX_OFICIOS} oficios. Si tenés más experiencia podés agregar otros desde Mi cuenta.`)
                         return
                       }
                       setOficios([...oficios, o])
@@ -323,7 +318,7 @@ export default function RegistroScreen() {
               </View>
             )}
 
-            <Text style={styles.label}>Distritos * {maxDistritos < 999 ? `(máx ${maxDistritos})` : '(ilimitados)'}</Text>
+            <Text style={styles.label}>Zonas de cobertura * {distritos.length > 0 ? `(${distritos.length}/${MAX_ZONAS})` : ''}</Text>
             {distritos.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                 {distritos.map((d, idx) => (
@@ -354,8 +349,8 @@ export default function RegistroScreen() {
                 <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
                   {DISTRITOS.filter(d => !distritos.includes(d) && (!distritoSearch || d.toLowerCase().includes(distritoSearch.toLowerCase()))).map((d) => (
                     <TouchableOpacity key={d} onPress={() => {
-                      if (distritos.length >= maxDistritos) {
-                        Alert.alert('Límite alcanzado', `Tu plan ${selectedPlan} permite máximo ${maxDistritos} distrito${maxDistritos > 1 ? 's' : ''}. Elige un plan superior para más zonas.`)
+                      if (distritos.length >= MAX_ZONAS) {
+                        Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro. Podés ajustar luego desde Mi cuenta.`)
                         return
                       }
                       setDistritos([...distritos, d])
@@ -367,15 +362,15 @@ export default function RegistroScreen() {
                   ))}
                   {distritoSearch.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoSearch.toLowerCase()) && (
                     <TouchableOpacity onPress={() => {
-                      if (distritos.length >= maxDistritos) {
-                        Alert.alert('Límite alcanzado', `Tu plan ${selectedPlan} permite máximo ${maxDistritos} distrito${maxDistritos > 1 ? 's' : ''}`)
+                      if (distritos.length >= MAX_ZONAS) {
+                        Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro.`)
                         return
                       }
                       setDistritos([...distritos, distritoSearch.trim()])
                       setDistritoSearch('')
                       setShowDistritos(false)
                     }} style={{ padding: 12, backgroundColor: '#EFF6FF' }}>
-                      <Text style={{ fontSize: 13, color: '#2563EB', fontWeight: '700' }}>+ Agregar "{distritoSearch.trim()}"</Text>
+                      <Text style={{ fontSize: 13, color: '#2563EB', fontWeight: '700' }}>+ Agregar &quot;{distritoSearch.trim()}&quot;</Text>
                     </TouchableOpacity>
                   )}
                 </ScrollView>

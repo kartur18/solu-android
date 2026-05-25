@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, PLAN_FEATURES, LEVELS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS, OFICIOS_LIST } from '../../src/lib/constants'
+import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, LEVELS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS, OFICIOS_LIST } from '../../src/lib/constants'
 import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
@@ -66,8 +66,6 @@ export default function CuentaScreen() {
   const [acceptingId, setAcceptingId] = useState<number | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [tab, setTab] = useState<Tab>('dashboard')
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-  const [subscribingTo, setSubscribingTo] = useState<string | null>(null)
   const [profileViews, setProfileViews] = useState(0)
   const [editOficios, setEditOficios] = useState<string[]>([])
   const [editZonas, setEditZonas] = useState<string[]>([])
@@ -75,30 +73,9 @@ export default function CuentaScreen() {
   const [showZonasPicker, setShowZonasPicker] = useState(false)
   const [zonaSearch, setZonaSearch] = useState('')
 
-  async function handleSubscribe(planKey: string) {
-    if (!tech) return
-    setSubscribingTo(planKey)
-    try {
-      const res = await fetch(`${ENV.API_BASE_URL}/flow-subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tecnicoId: tech.id, plan: planKey })
-      })
-      if (!res.ok) throw new Error('Error al conectar con la pasarela Flow')
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      const payUrl = data.redirectUrl || data.url || data.paymentUrl
-      if (payUrl) {
-        Linking.openURL(payUrl)
-      } else {
-        throw new Error('No se recibió el enlace de pago')
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'No se pudo iniciar el pago')
-    } finally {
-      setSubscribingTo(null)
-    }
-  }
+  // V3.1: la función handleSubscribe (Flow-subscribe para planes mensuales)
+  // fue eliminada. La compra de SoluCoins se hace desde la pantalla
+  // /comprar-coins que abre webview a solu.pe/planes (Culqi).
 
   // Edit profile state
   const [editing, setEditing] = useState(false)
@@ -310,11 +287,11 @@ export default function CuentaScreen() {
   }
 
   // --- Gallery functions ---
+  // V3.1: límite generoso para todos los técnicos verificados (sin gates por
+  // plan mensual). Se mantiene un tope sano para no inflar el bucket.
   function getMaxPhotos(): number {
     if (!tech) return 0
-    if (tech.plan === 'elite') return 999
-    if (tech.plan === 'premium') return 8
-    return 3 // profesional/starter
+    return 20
   }
 
   async function pickAndUploadProfilePhoto() {
@@ -541,12 +518,12 @@ export default function CuentaScreen() {
     }
   }
 
-  const daysLeft = tech?.fecha_vencimiento
-    ? Math.max(0, Math.ceil((new Date(tech.fecha_vencimiento).getTime() - Date.now()) / 86400000))
-    : 0
-  const isExpired = tech?.fecha_vencimiento
-    ? new Date(tech.fecha_vencimiento).getTime() < Date.now()
-    : false
+  // V3.1: fecha_vencimiento era del modelo de planes mensuales (deprecado).
+  // En el modelo Coins el "vencimiento" lo reemplaza el saldo bajo de
+  // SoluCoins (ver banner de "Saldo bajo" arriba). Mantenemos las constantes
+  // como literales seguros para no romper refs en código legado.
+  const daysLeft = 0
+  const isExpired = false
 
   // Stats
   const thisMonthLeads = leads.filter(l => {
@@ -630,7 +607,9 @@ export default function CuentaScreen() {
   if (!tech) return null
 
   const level = getTechLevel(tech.servicios_completados)
-  const planInfo = PLAN_FEATURES[tech.plan as keyof typeof PLAN_FEATURES] || PLAN_FEATURES.profesional
+  // V3.1: planInfo eliminado (modelo de planes mensuales deprecado). El tier
+  // loyalty (`level` arriba) y `tech.coins_balance` son los datos que
+  // alimentan las pantallas que antes usaban planInfo.
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -690,14 +669,17 @@ export default function CuentaScreen() {
             <StatCard value={`★ ${tech.calificacion?.toFixed(1) || '0.0'}`} label="Rating" />
             <StatCard value={String(tech.num_resenas || 0)} label="Reseñas" />
             <StatCard value={String(tech.servicios_completados || 0)} label="Servicios" />
-            <StatCard value={`${daysLeft}d`} label={isExpired ? 'Vencido' : 'Restantes'} expired={isExpired} />
+            <StatCard
+              value={(tech.coins_balance ?? 0).toLocaleString('es-PE')}
+              label="SoluCoins"
+            />
           </View>
 
-          {/* Plan badge */}
+          {/* Tier loyalty badge (V3.1: reemplaza el badge de plan mensual) */}
           <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={{ backgroundColor: isExpired ? 'rgba(239,68,68,0.2)' : 'rgba(234,88,12,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: isExpired ? '#FCA5A5' : '#F97316' }}>
-                {level.emoji} {level.name} · Plan {tech.plan?.toUpperCase() || 'TRIAL'}
+            <View style={{ backgroundColor: 'rgba(234,88,12,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#F97316' }}>
+                {level.emoji} Tier {level.name}
               </Text>
             </View>
             {tech.verificado && (
@@ -708,27 +690,22 @@ export default function CuentaScreen() {
           </View>
         </View>
 
-        {/* Expired alert */}
-        {isExpired && (
-          <View style={{ margin: 16, backgroundColor: '#FEF2F2', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FECACA' }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626' }}>⚠️ Tu plan venció</Text>
-            <Text style={{ fontSize: 11, color: '#991B1B', marginTop: 4 }}>Tu perfil sigue visible pero perdiste prioridad y beneficios. Renueva para recibir más clientes.</Text>
-            <TouchableOpacity onPress={() => setTab('plan')} style={{ backgroundColor: '#DC2626', borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 }}>
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Renovar ahora</Text>
+        {/* Low balance alert — V3.1: reemplaza el "Plan vencido" del modelo viejo */}
+        {(tech.coins_balance ?? 0) < 500 && (
+          <View style={{ margin: 16, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FCD34D' }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>⚠️ Saldo bajo de SoluCoins</Text>
+            <Text style={{ fontSize: 11, color: '#78350F', marginTop: 4 }}>
+              Tu perfil sigue visible pero pronto te quedarás sin saldo para responder leads. Comprá un paquete para seguir trabajando.
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/comprar-coins')} style={{ backgroundColor: COLORS.pri, borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Comprar SoluCoins →</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Plan expiring soon warning */}
-        {!isExpired && daysLeft > 0 && daysLeft <= 7 && (
-          <View style={{ margin: 16, marginBottom: 0, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FDE68A' }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>⏰ Tu plan vence en {daysLeft} día{daysLeft > 1 ? 's' : ''}</Text>
-            <Text style={{ fontSize: 11, color: '#78350F', marginTop: 4 }}>Renueva para no perder tu posición y seguir recibiendo clientes.</Text>
-            <TouchableOpacity onPress={() => setTab('plan')} style={{ backgroundColor: '#F59E0B', borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 }}>
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Renovar ahora</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* V3.1: el banner "Tu plan vence" del modelo viejo fue reemplazado
+            por el banner "Saldo bajo de SoluCoins" más arriba, que se basa en
+            tech.coins_balance en vez de fecha_vencimiento. */}
 
         {/* Tabs */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 12, paddingHorizontal: 12 }}>
@@ -914,7 +891,7 @@ export default function CuentaScreen() {
                 </TouchableOpacity>
               </View>
               <Text style={{ fontSize: 11, color: COLORS.gray }}>
-                {tech.plan === 'premium' ? 'Plan Premium: 1 promoción activa por mes' : 'Plan Elite: Promociones ilimitadas'}
+                Crea promociones para destacar en tu zona. Más visibilidad = más clientes.
               </Text>
             </View>
           )}
@@ -1152,8 +1129,9 @@ export default function CuentaScreen() {
                 })()}
               </View>
 
-              {/* Premium/Elite: Monthly trend */}
-              {(tech.plan === 'premium' || tech.plan === 'elite') && (
+              {/* V3.1: tendencia mensual disponible para todos los técnicos
+                  verificados (sin gate por plan mensual). */}
+              {tech.verificado && (
                 <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Tendencia</Text>
                   {(() => {
@@ -1175,8 +1153,8 @@ export default function CuentaScreen() {
                 </View>
               )}
 
-              {/* Elite: Best services */}
-              {tech.plan === 'elite' && (
+              {/* V3.1: servicios más solicitados también disponible para todos. */}
+              {tech.verificado && (
                 <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Servicios más solicitados</Text>
                   {(() => {
@@ -1198,147 +1176,75 @@ export default function CuentaScreen() {
               {/* Info */}
               <View style={{ backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14 }}>
                 <Text style={{ fontSize: 11, color: '#1E40AF', lineHeight: 16 }}>
-                  {tech.plan === 'elite' ? 'Estadísticas avanzadas: tendencia, servicios top y desglose mensual.' :
-                   tech.plan === 'premium' ? 'Estadísticas detalladas: tendencia mensual y desglose. Mejora a Elite para ver servicios más solicitados.' :
-                   'Estadísticas básicas. Mejora tu plan para ver tendencias y análisis detallado.'}
+                  Estadísticas completas: tendencia mensual, servicios más solicitados y desglose por categoría. Todo incluido sin suscripción.
                 </Text>
               </View>
             </View>
           )}
 
-          {/* ═══ PLAN ═══ */}
+          {/* ═══ WALLET ═══ V3.1: reemplaza el tab "Plan" del modelo mensual.
+              Ahora muestra el saldo real de SoluCoins, el tier loyalty y el
+              acceso a la pantalla de compra de paquetes. */}
           {tab === 'plan' && (
             <View style={{ gap: 12 }}>
-              {/* Current plan status */}
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Tu plan actual</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ backgroundColor: isExpired ? '#FEE2E2' : '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
-                    <Text style={{ fontWeight: '800', color: isExpired ? '#EF4444' : '#1E3A5F' }}>{planInfo?.name || 'Profesional'}</Text>
-                  </View>
-                  {isExpired ? (
-                    <Text style={{ fontSize: 11, color: '#EF4444', fontWeight: '700' }}>Vencido</Text>
-                  ) : daysLeft > 0 ? (
-                    <Text style={{ fontSize: 11, color: daysLeft <= 7 ? '#F59E0B' : COLORS.gray2 }}>
-                      {daysLeft} día{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
-                    </Text>
-                  ) : null}
-                </View>
-                {tech.fecha_vencimiento && (
-                  <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 6 }}>
-                    Vigente hasta: {new Date(tech.fecha_vencimiento).toLocaleDateString('es-PE')}
+              {/* Hero del wallet — saldo grande, tier, CTA comprar */}
+              <View style={{
+                backgroundColor: '#1E3A5F', borderRadius: 18, padding: 22,
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Ionicons name="wallet" size={16} color="#FCD34D" />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Mi billetera
                   </Text>
-                )}
-                <View style={{ marginTop: 12 }}>
-                  {(planInfo?.features || []).map((f: string, i: number) => (
-                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <Ionicons name="checkmark-circle" size={14} color={COLORS.green} />
-                      <Text style={{ fontSize: 12, color: COLORS.dark }}>{f}</Text>
-                    </View>
-                  ))}
                 </View>
+                <Text style={{ fontSize: 36, fontWeight: '900', color: '#fff' }}>
+                  {(tech.coins_balance ?? 0).toLocaleString('es-PE')}
+                </Text>
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
+                  SoluCoins disponibles
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                  <Text style={{ fontSize: 14 }}>{level.emoji}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FCD34D' }}>
+                    Tier {level.name}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => router.push('/comprar-coins')}
+                  style={{
+                    backgroundColor: COLORS.pri,
+                    borderRadius: 12, padding: 14,
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    marginTop: 16,
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                    Comprar SoluCoins
+                  </Text>
+                </TouchableOpacity>
               </View>
 
-              {/* Expired warning */}
-              {isExpired && (
-                <View style={{ backgroundColor: '#FEF3C7', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#FDE68A' }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#92400E', marginBottom: 4 }}>Tu plan ha vencido</Text>
-                  <Text style={{ fontSize: 12, color: '#92400E', lineHeight: 18 }}>
-                    Renueva para seguir apareciendo en las búsquedas y recibir solicitudes de clientes.
-                  </Text>
-                </View>
-              )}
-
-              {/* Renew / Change plan - only shown when expired */}
-              {isExpired && (
-                <View>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>
-                    Renovar plan
-                  </Text>
-                  <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 12 }}>
-                    Tu plan anterior: {planInfo?.name}. Puedes renovarlo o elegir otro.
-                  </Text>
-
-                  {(['profesional', 'premium', 'elite'] as const).map((planKey) => {
-                    const plan = PLAN_FEATURES[planKey]
-                    const isCurrent = planKey === tech.plan
-                    return (
-                      <View key={planKey} style={{
-                        backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 8,
-                        borderWidth: isCurrent ? 2 : 1, borderColor: isCurrent ? COLORS.pri : '#E2E8F0',
-                      }}>
-                        {isCurrent && (
-                          <View style={{ backgroundColor: COLORS.pri, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 6 }}>
-                            <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>TU PLAN</Text>
-                          </View>
-                        )}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>{plan.name}</Text>
-                          <Text style={{ fontSize: 16, fontWeight: '900', color: COLORS.pri }}>S/{plan.price}/mes</Text>
-                        </View>
-                        {plan.features.filter(f => !f.includes('Primer mes')).map((f, i) => (
-                          <View key={i} style={{ flexDirection: 'row', gap: 6, marginBottom: 2 }}>
-                            <Ionicons name="checkmark" size={12} color={COLORS.green} />
-                            <Text style={{ fontSize: 11, color: COLORS.gray }}>{f}</Text>
-                          </View>
-                        ))}
-                        {/* Payment button — Flow handles tarjeta, Yape y PagoEfectivo */}
-                        <TouchableOpacity
-                          disabled={subscribingTo === planKey}
-                          onPress={() => handleSubscribe(planKey)}
-                          style={{ backgroundColor: isCurrent ? COLORS.pri : '#2563EB', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: subscribingTo === planKey ? 0.7 : 1 }}
-                        >
-                          {subscribingTo === planKey ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                          ) : (
-                            <>
-                              <Ionicons name="card-outline" size={18} color="#fff" />
-                              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{isCurrent ? `Renovar S/${plan.price}` : `Pagar S/${plan.price}/mes`}</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                        <Text style={{ fontSize: 9, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>Acepta tarjeta, Yape y PagoEfectivo</Text>
-                      </View>
-                    )
-                  })}
-                </View>
-              )}
-
-              {/* Elite: Digital Certificate */}
-              {tech.plan === 'elite' && !isExpired && (
-                <TouchableOpacity
-                  onPress={() => Linking.openURL(`https://solu.pe/api/certificado?tecnicoId=${tech.id}`)}
-                  style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 2, borderColor: '#FFD700' }}
-                >
-                  <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="ribbon" size={24} color="#F59E0B" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Certificado Digital SOLU</Text>
-                    <Text style={{ fontSize: 11, color: COLORS.gray }}>Descarga tu certificado de técnico verificado</Text>
-                  </View>
-                  <Ionicons name="download-outline" size={20} color={COLORS.pri} />
-                </TouchableOpacity>
-              )}
-
-              {/* Active plan - no changes allowed */}
-              {!isExpired && (
-                <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, padding: 14 }}>
-                  <Text style={{ fontSize: 11, color: '#065F46', lineHeight: 16 }}>
-                    Tu plan está activo. Cuando se acerque la fecha de vencimiento podrás renovar o cambiar de plan.
-                  </Text>
-                </View>
-              )}
-
-              {/* Auto-renewal info */}
-              <View style={{ backgroundColor: '#EFF6FF', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <Ionicons name="information-circle" size={18} color="#2563EB" />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E40AF' }}>Membresía Automática con Flow</Text>
-                </View>
-                <Text style={{ fontSize: 12, color: '#1E40AF', lineHeight: 18 }}>
-                  Tu plan se activará al momento o se renovará automáticamente usando el sistema seguro Flow. Podrás cancelarlo cuando quieras.
+              {/* Cómo funciona el modelo prepago */}
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 10 }}>
+                  ¿Cómo funcionan los SoluCoins?
                 </Text>
+                {[
+                  { icon: 'flash-outline' as const, text: 'Compras un paquete una vez. No hay suscripción.' },
+                  { icon: 'chatbubble-ellipses-outline' as const, text: 'Cuando un cliente te escribe y respondes, descontamos coins según el oficio y distrito.' },
+                  { icon: 'receipt-outline' as const, text: 'Recibís tu boleta SUNAT automática por cada compra.' },
+                  { icon: 'trending-up-outline' as const, text: 'Cuanto más grande el paquete, mejor el precio por lead.' },
+                ].map((item, i) => (
+                  <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: i < 3 ? 10 : 0 }}>
+                    <Ionicons name={item.icon} size={18} color={COLORS.pri} style={{ marginTop: 1 }} />
+                    <Text style={{ flex: 1, fontSize: 12, color: COLORS.gray, lineHeight: 18 }}>
+                      {item.text}
+                    </Text>
+                  </View>
+                ))}
               </View>
 
               {/* Payment history */}

@@ -1,6 +1,6 @@
 # TODO migración a V3.1 (SoluCoins)
 
-Estado al **2026-05-24** — bump a versión 2.0.0.
+Estado al **2026-05-24** — bump a versión **2.1.0**.
 
 La app móvil pasó de modelo legacy (planes mensuales
 profesional/premium/elite + escrow) al modelo V3.1 (SoluCoins prepagos +
@@ -30,50 +30,59 @@ que la app móvil esté 100% alineada con la web.
   - Sección "Eres técnico" reescrita con paquetes SoluCoins
 - Bump version **1.0.2 → 2.0.0** (build/versionCode **2 → 3**)
 
-## 🟡 Pendiente — refactor profundo de pantallas
+## ✅ Hecho en v2.1.0 (refactor profundo completado)
 
-### 1. `app/(tabs)/cuenta.tsx` (~1700 líneas)
+### 1. `app/registro.tsx` ✅ reescrito
+- Eliminado selector de plan (profesional/premium/elite)
+- Banner de bienvenida con "5,000 SoluCoins gratis"
+- Topes generosos sin gates por plan (5 oficios, 10 zonas en registro)
+- Submit ya no envía `plan` al backend
+- Mensaje final: "¡Bienvenido a SOLU! Recibes 5,000 SoluCoins gratis"
 
-Tiene lógica masiva basada en `t.plan === 'profesional'|'premium'|'elite'`:
-- Selector de plan en wizard registro (líneas ~259-280)
-- Cupos de promoción según plan (líneas 315-318)
-- Banner "Plan vence en X días" — N/A en V3.1 (Coins no vencen)
-- Tabs de "Plan vigente" — debe pasar a "Mi billetera de SoluCoins"
-- Lógica de `tech.fecha_vencimiento` — N/A en V3.1
+### 2. `app/(tabs)/cuenta.tsx` ✅ refactoreado
+- Header: badge "Plan X" → "Tier {Bronce/Plata/Oro/Platino}"
+- StatCard "días restantes" → "SoluCoins"
+- Banner "Plan vencido" → Banner "Saldo bajo de SoluCoins" (<500)
+- Tab "Plan" reescrito como tab **Wallet**:
+  * Hero con saldo grande de SoluCoins + tier badge
+  * Botón "Comprar SoluCoins" → router.push('/comprar-coins')
+  * Card "¿Cómo funcionan los SoluCoins?" (4 puntos didácticos)
+- Eliminada función `handleSubscribe` (Flow-subscribe deprecado)
+- `getMaxPhotos()` ahora devuelve 20 para todos (sin gate por plan)
+- Stats avanzadas, tendencia mensual y servicios más solicitados
+  disponibles para todos los técnicos verificados (sin gate por plan)
+- daysLeft/isExpired quedaron como literales = 0/false para no romper refs
 
-**Migración:**
-- Reemplazar `tech.plan` por `tech.tier`/`tech.coins_balance`
-- Mostrar saldo de SoluCoins en el header (igual que en `/mi-cuenta` web)
-- Pantalla "Comprar paquete" debe abrir webview a `solu.pe/planes` o
-  implementar Culqi mobile SDK (más complejo)
-- Eliminar todos los condicionales por plan
+### 3. `app/comprar-coins.tsx` ✅ nuevo
+- Catálogo de 6 paquetes (espejo de COINS_PACKAGES)
+- Badge "MÁS ELEGIDO" en el destacado
+- Botón "Comprar paquete" abre `https://solu.pe/planes?paquete=SLUG`
+  con expo-web-browser (web maneja Culqi PCI-DSS + 3DS, no reimplementamos)
+- Card educativa: "El pago se procesa de forma segura en solu.pe..."
 
-### 2. `app/registro.tsx`
+## 🟢 Pendientes menores
 
-Tiene selector de plan (líneas 36, 47-48, 259-280):
-- `selectedPlan: 'profesional' | 'premium' | 'elite'`
-- Lógica de `maxOficios` / `maxDistritos` según plan
-
-**Migración:**
-- Quitar selector de plan (en V3.1 todos los técnicos arrancan igual con 5,000 SoluCoins de bienvenida)
-- Permitir cualquier cantidad de oficios/zonas (sin gate por plan)
-- Después del registro, redirigir a pantalla de wallet (no a "elegir plan")
-
-### 3. Listings de servicios (`app/(tabs)/index.tsx` u otro)
-
+### Listings de servicios
 - Web tiene **10 categorías** principales (verificadas en smoke test mobile)
-- App listing dice "18 categorías" (legacy de cuando había más oficios)
-- Sincronizar con `src/lib/constants.ts` SERVICIOS de la web
+- App listing menciona "18 categorías" (mantenido por ahora, mencionan oficios específicos no categorías)
+- Sincronizar opcional, no bloquea release
+
+### Smoke test en dispositivo real
+- Antes de submit a stores: instalar el APK/IPA en un dispositivo físico
+  y verificar:
+  * Registro nuevo → recibe 5000 coins
+  * Login → header muestra saldo correcto
+  * Tab Wallet → cards de paquetes se ven bien
+  * "Comprar paquete" abre el browser correctamente
+  * Volver del browser → saldo se actualiza (verificar refetch)
 
 ## 🟢 Plan de release
 
-1. **v2.0.0 (hoy)**: cambios mínimos para que la app no muestre planes
-   mensuales falsos. Las pantallas core siguen funcionando aunque
-   muestran "Legacy (modelo viejo)" en lugar de Starter/PRO/Elite.
-   **NO PUBLICAR todavía en Play Store** — solo es preparación.
-2. **v2.1.0 (próxima iteración, ~2 sem)**: refactor profundo de
-   `cuenta.tsx` + `registro.tsx`. Una vez completo, build con
-   `eas build --platform all --profile production` y submit a stores.
+1. ✅ **v2.0.0** (2026-05-24): cambios mecánicos (Diamante→Platino,
+   COINS_PACKAGES, types.ts, matching.ts, pago/[solicitudId].tsx).
+2. ✅ **v2.1.0** (2026-05-24): refactor profundo de `cuenta.tsx` +
+   `registro.tsx` + nueva pantalla `/comprar-coins`. **Lista para
+   submit a stores tras smoke test en dispositivo real.**
 3. **v2.2.0 (post-launch)**: feedback de los primeros técnicos reales
    que usen la app + bugfixes.
 
