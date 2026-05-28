@@ -1,8 +1,12 @@
 node_modules/
 .expo/
+.expo-shared/
 dist/
 web-build/
 .git/
+.github/
+.vscode/
+.idea/
 *.orig.*
 *.jks
 *.p8
@@ -12,3 +16,28 @@ web-build/
 .kotlin/
 android/
 ios/
+
+# Cache / build artifacts
+coverage/
+.cache/
+.next/
+build/
+.gradle/
+.metro-cache/
+
+# OneDrive / Windows-specific lock files (causan tar exit code 2)
+**/desktop.ini
+**/.DS_Store
+**/Thumbs.db
+**/*.tmp
+**/~$*
+**/.~lock.*
+
+# Logs / debug
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Sentry sourcemaps (re-generan en build)
+sourcemaps/
