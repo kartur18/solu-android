@@ -45,21 +45,29 @@ interface Props {
 export default function NotificationCenter({ visible, onClose, techId }: Props) {
   const [notifications, setNotifications] = useState<Notificacion[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [slideAnim] = useState(new Animated.Value(SCREEN_WIDTH))
 
   const unreadCount = notifications.filter(n => !n.leido).length
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true)
+    setLoadError(false)
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('notificaciones')
         .select('*')
         .eq('tecnico_id', techId)
         .order('created_at', { ascending: false })
         .limit(20)
-      setNotifications(data || [])
-    } catch {}
+      if (error) {
+        setLoadError(true)
+      } else {
+        setNotifications(data || [])
+      }
+    } catch {
+      setLoadError(true)
+    }
     setLoading(false)
   }, [techId])
 
@@ -136,8 +144,9 @@ export default function NotificationCenter({ visible, onClose, techId }: Props) 
             </View>
             <TouchableOpacity
               onPress={handleClose}
+              accessibilityLabel="Cerrar notificaciones"
               style={{
-                width: 36, height: 36, borderRadius: 18,
+                width: 44, height: 44, borderRadius: 22,
                 backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center',
               }}
             >
@@ -151,20 +160,40 @@ export default function NotificationCenter({ visible, onClose, techId }: Props) 
               onPress={markAllAsRead}
               style={{
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                gap: 6, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
+                gap: 6, paddingVertical: 12, minHeight: 44, borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
               }}
             >
               <Ionicons name="checkmark-done" size={16} color="#2563EB" />
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>
-                Marcar todas como leidas
+                Marcar todas como leídas
               </Text>
             </TouchableOpacity>
           )}
 
           {/* Content */}
           {loading ? (
-            <View style={{ padding: 40, alignItems: 'center' }}>
+            <View style={{ padding: 40, alignItems: 'center', gap: 10 }}>
               <ActivityIndicator size="large" color={COLORS.pri} />
+              <Text style={{ fontSize: 12, color: COLORS.gray2 }}>Cargando tus notificaciones...</Text>
+            </View>
+          ) : loadError ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+              <Ionicons name="cloud-offline-outline" size={36} color={COLORS.gray2} />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.dark, marginTop: 12, marginBottom: 4 }}>
+                No pudimos cargar tus notificaciones
+              </Text>
+              <Text style={{ fontSize: 12, color: COLORS.gray2, textAlign: 'center', marginBottom: 16 }}>
+                Revisa tu conexión a internet e intenta de nuevo
+              </Text>
+              <TouchableOpacity
+                onPress={fetchNotifications}
+                style={{
+                  backgroundColor: COLORS.pri, borderRadius: 12,
+                  paddingHorizontal: 20, paddingVertical: 12, minHeight: 44, justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Reintentar</Text>
+              </TouchableOpacity>
             </View>
           ) : notifications.length === 0 ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
@@ -176,10 +205,10 @@ export default function NotificationCenter({ visible, onClose, techId }: Props) 
                 <Ionicons name="notifications-off-outline" size={36} color={COLORS.gray2} />
               </View>
               <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.dark, marginBottom: 4 }}>
-                No tienes notificaciones
+                Sin notificaciones por ahora
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray2, textAlign: 'center' }}>
-                Aqui apareceran las notificaciones de tus servicios
+              <Text style={{ fontSize: 12, color: COLORS.gray2, textAlign: 'center', lineHeight: 17 }}>
+                Aquí aparecerán los avisos de tus trabajos, pagos y reseñas
               </Text>
             </View>
           ) : (

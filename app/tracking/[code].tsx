@@ -24,13 +24,20 @@ export default function TrackingScreen() {
   const [tech, setTech] = useState<Pick<Tecnico, 'id' | 'nombre' | 'whatsapp' | 'oficio' | 'foto_url' | 'calificacion'> | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const loadData = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('clientes')
       .select('*')
       .eq('codigo', code)
       .single()
+    // PGRST116 = código no existe; cualquier otro error es de conexión
+    if (error && error.code !== 'PGRST116') {
+      setLoadError(true)
+      return
+    }
+    setLoadError(false)
     setService(data)
 
     if (data?.tecnico_asignado) {
@@ -104,12 +111,36 @@ export default function TrackingScreen() {
     }
   }, [service?.id])
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={COLORS.pri} /></View>
+  if (loading) return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.light }}>
+      <ActivityIndicator size="large" color={COLORS.pri} />
+      <Text style={{ color: COLORS.gray, marginTop: 12, fontSize: 13 }}>Cargando tu servicio...</Text>
+    </View>
+  )
+  if (loadError && !service) return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
+      <Ionicons name="cloud-offline-outline" size={48} color={COLORS.gray2} />
+      <Text style={{ color: COLORS.dark, marginTop: 12, fontSize: 16, fontWeight: '800' }}>No pudimos cargar tu servicio</Text>
+      <Text style={{ color: COLORS.gray, marginTop: 6, fontSize: 13, textAlign: 'center' }}>Revisa tu conexión a internet e intenta de nuevo.</Text>
+      <TouchableOpacity
+        onPress={() => { setLoading(true); loadData().finally(() => setLoading(false)) }}
+        style={{ marginTop: 20, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center' }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Reintentar</Text>
+      </TouchableOpacity>
+    </View>
+  )
   if (!service) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-      <Ionicons name="alert-circle-outline" size={48} color={COLORS.gray2} />
-      <Text style={{ color: COLORS.gray, marginTop: 8, fontSize: 14 }}>Servicio no encontrado</Text>
-      <Text style={{ color: COLORS.gray2, marginTop: 4, fontSize: 12 }}>Verifica que el código sea correcto</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
+      <Ionicons name="search-outline" size={48} color={COLORS.gray2} />
+      <Text style={{ color: COLORS.dark, marginTop: 12, fontSize: 16, fontWeight: '800' }}>No encontramos ese código</Text>
+      <Text style={{ color: COLORS.gray, marginTop: 6, fontSize: 13, textAlign: 'center' }}>Verifica que el código sea correcto, por ejemplo: SOLU-AB12CD</Text>
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={{ marginTop: 20, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border }}
+      >
+        <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 14 }}>Volver</Text>
+      </TouchableOpacity>
     </View>
   )
 
@@ -182,7 +213,7 @@ export default function TrackingScreen() {
           </View>
           <View>
             <Text style={{ fontSize: 11, color: COLORS.gray2 }}>Urgencia</Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: service.urgencia === 'emergencia' ? '#EF4444' : service.urgencia === 'urgente' ? '#F59E0B' : '#10B981' }}>{service.urgencia}</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: service.urgencia === 'emergencia' ? '#EF4444' : service.urgencia === 'urgente' ? '#F59E0B' : '#10B981' }}>{service.urgencia ? service.urgencia.charAt(0).toUpperCase() + service.urgencia.slice(1) : '—'}</Text>
           </View>
         </View>
       </View>
@@ -305,12 +336,13 @@ export default function TrackingScreen() {
           <TouchableOpacity
             onPress={shareReferral}
             style={{
-              backgroundColor: '#25D366', borderRadius: 14, padding: 16,
+              backgroundColor: '#fff', borderRadius: 14, padding: 16,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+              borderWidth: 1, borderColor: '#A7F3D0',
             }}
           >
-            <Ionicons name="share-social" size={20} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Recomendar a un vecino</Text>
+            <Ionicons name="share-social" size={20} color="#059669" />
+            <Text style={{ color: '#059669', fontWeight: '800', fontSize: 15 }}>Recomendar a un vecino</Text>
           </TouchableOpacity>
         </View>
       )}

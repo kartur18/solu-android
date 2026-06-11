@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Image, Animated } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Image, Animated, ActivityIndicator } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter, useLocalSearchParams } from 'expo-router'
@@ -100,7 +100,7 @@ export default function SolicitarScreen() {
 
   async function pickFoto() {
     if (fotos.length >= 3) {
-      return Alert.alert('Límite', 'Puedes agregar máximo 3 fotos')
+      return Alert.alert('Máximo 3 fotos', 'Ya agregaste 3 fotos. Elimina una si quieres cambiarla.')
     }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') {
@@ -132,13 +132,17 @@ export default function SolicitarScreen() {
   }
 
   async function submit() {
-    if (!whatsapp || !servicio || !distrito) {
-      return Alert.alert('Error', 'Faltan: WhatsApp, servicio o distrito')
+    const faltantes: string[] = []
+    if (!whatsapp.trim()) faltantes.push('tu WhatsApp')
+    if (!servicio) faltantes.push('el servicio que necesitas')
+    if (!distrito) faltantes.push('tu distrito')
+    if (faltantes.length > 0) {
+      return Alert.alert('Te falta completar', `Agrega ${faltantes.join(', ')} para poder asignarte un técnico.`)
     }
     const nombreFinal = nombre.trim() || 'Cliente SOLU'
     const waClean = whatsapp.replace(/\D/g, '')
     if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
-      return Alert.alert('Error', 'Ingresa un número de WhatsApp válido (9 dígitos, empieza con 9)')
+      return Alert.alert('Revisa tu WhatsApp', 'Debe tener 9 dígitos y empezar con 9. Por ejemplo: 999 888 777')
     }
     if (loading) return
     setLoading(true)
@@ -259,7 +263,7 @@ export default function SolicitarScreen() {
       {/* Header Premium */}
       <View style={{ backgroundColor: '#1A1A2E', padding: 24, paddingTop: 48, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, marginBottom: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="build" size={18} color="#fff" />
           </View>
           <View>
@@ -283,8 +287,13 @@ export default function SolicitarScreen() {
         <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" style={styles.input} placeholderTextColor={COLORS.gray2} />
 
         <Text style={styles.label}>Servicio *</Text>
-        <TouchableOpacity onPress={() => setShowServicios(!showServicios)} style={styles.input}>
+        <TouchableOpacity
+          onPress={() => setShowServicios(!showServicios)}
+          accessibilityLabel="Seleccionar servicio"
+          style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+        >
           <Text style={{ color: servicio ? COLORS.dark : COLORS.gray2, fontSize: 14 }}>{servicio || 'Seleccionar servicio'}</Text>
+          <Ionicons name={showServicios ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.gray2} />
         </TouchableOpacity>
         {showServicios && (
           <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 200, borderWidth: 1, borderColor: COLORS.border }}>
@@ -314,12 +323,17 @@ export default function SolicitarScreen() {
           <Text style={styles.label}>Distrito *</Text>
           {distritoAutoDetected && distrito ? (
             <View style={{ backgroundColor: '#D1FAE5', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 6 }}>
-              <Text style={{ fontSize: 10, color: '#065F46', fontWeight: '600' }}>📍 Detectado automaticamente</Text>
+              <Text style={{ fontSize: 10, color: '#065F46', fontWeight: '600' }}>📍 Detectado automáticamente</Text>
             </View>
           ) : null}
         </View>
-        <TouchableOpacity onPress={() => setShowDistritos(!showDistritos)} style={styles.input}>
+        <TouchableOpacity
+          onPress={() => setShowDistritos(!showDistritos)}
+          accessibilityLabel="Seleccionar distrito"
+          style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+        >
           <Text style={{ color: distrito ? COLORS.dark : COLORS.gray2, fontSize: 14 }}>{distrito || 'Seleccionar distrito'}</Text>
+          <Ionicons name={showDistritos ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.gray2} />
         </TouchableOpacity>
         {showDistritos && (
           <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 280, borderWidth: 1, borderColor: COLORS.border }}>
@@ -353,7 +367,7 @@ export default function SolicitarScreen() {
               key={u.value}
               onPress={() => setUrgencia(u.value)}
               style={{
-                flex: 1, padding: 10, borderRadius: 10, alignItems: 'center',
+                flex: 1, padding: 12, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
                 backgroundColor: urgencia === u.value ? u.color : COLORS.white,
                 borderWidth: 1, borderColor: urgencia === u.value ? u.color : COLORS.border,
               }}
@@ -387,6 +401,8 @@ export default function SolicitarScreen() {
                 <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 10, backgroundColor: '#F1F5F9' }} />
                 <TouchableOpacity
                   onPress={() => setFotos(fotos.filter((_, idx) => idx !== i))}
+                  accessibilityLabel={`Eliminar foto ${i + 1}`}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#EF4444', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Ionicons name="close" size={12} color="#fff" />
@@ -408,17 +424,23 @@ export default function SolicitarScreen() {
         <TouchableOpacity
           onPress={submit}
           disabled={loading}
-          style={{ backgroundColor: '#EA580C', borderRadius: 20, padding: 20, alignItems: 'center', marginTop: 12, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 }}
+          accessibilityLabel="Solicitar técnico"
+          style={{ backgroundColor: COLORS.pri, borderRadius: 20, padding: 20, alignItems: 'center', marginTop: 12, opacity: loading ? 0.7 : 1, shadowColor: COLORS.pri, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 }}
         >
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.5 }}>
-            {loading ? 'ENVIANDO...' : 'SOLICITAR TÉCNICO →'}
-          </Text>
+          {loading ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <ActivityIndicator color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17 }}>Enviando tu solicitud...</Text>
+            </View>
+          ) : (
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.5 }}>Solicitar técnico →</Text>
+          )}
         </TouchableOpacity>
 
         {/* Info */}
         <View style={{ marginTop: 16, padding: 16, backgroundColor: 'rgba(234,88,12,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(234,88,12,0.15)' }}>
           <Text style={{ fontSize: 12, color: '#9A3412', lineHeight: 18, fontWeight: '600' }}>
-            🛡️ Buscaremos al mejor técnico verificado con DNI/RENIEC en tu zona. Como cliente, no necesitas registrar DNI — solo tu WhatsApp para coordinar. Servicio gratuito.
+            🛡️ Buscaremos al mejor técnico verificado con DNI/RENIEC en tu zona. Solo necesitas tu WhatsApp para coordinar. Solicitar no te cuesta nada: el precio del trabajo lo acuerdas directo con el técnico.
           </Text>
         </View>
       </View>
@@ -527,7 +549,7 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
             ¡Solicitud enviada!
           </Text>
           <Text style={{ fontSize: 14, color: COLORS.gray, textAlign: 'center', marginTop: 6, lineHeight: 20 }}>
-            {result.techName ? 'Te asignamos un tecnico verificado' : 'Estamos buscando el mejor tecnico para ti'}
+            {result.techName ? 'Te asignamos un técnico verificado' : 'Estamos buscando el mejor técnico para ti'}
           </Text>
         </Animated.View>
       </View>
@@ -541,7 +563,7 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
           shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
         }}>
           <Text style={{ fontSize: 12, color: COLORS.gray, marginBottom: 6, fontWeight: '600' }}>
-            Tu codigo de seguimiento
+            Tu código de seguimiento
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={{ fontSize: 30, fontWeight: '900', color: COLORS.pri, letterSpacing: 2 }}>
@@ -562,7 +584,7 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
             </TouchableOpacity>
           </View>
           <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 8 }}>
-            Guarda este codigo para consultar el estado de tu servicio
+            Guarda este código para consultar el estado de tu servicio
           </Text>
         </View>
 
@@ -583,7 +605,7 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark }}>{result.techName}</Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray }}>Tecnico asignado</Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray }}>Técnico asignado</Text>
               </View>
               <View style={{ backgroundColor: '#10B98115', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
                 <Text style={{ fontSize: 11, fontWeight: '700', color: '#10B981' }}>Asignado</Text>
@@ -593,7 +615,7 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
             {/* WhatsApp direct contact */}
             <TouchableOpacity
               onPress={() => {
-                const msg = `Hola ${result.techName}, soy ${nombre}. Solicite un servicio de ${servicio} en ${distrito} por SOLU (codigo: ${result.codigo}).`
+                const msg = `Hola ${result.techName}, soy ${nombre}. Solicité un servicio de ${servicio} en ${distrito} por SOLU (código: ${result.codigo}).`
                 Linking.openURL(`https://wa.me/51${result.techWhatsapp}?text=${encodeURIComponent(msg)}`)
               }}
               style={{
@@ -640,10 +662,10 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
           <View style={{ backgroundColor: '#FEF3C7', borderRadius: 14, padding: 18, marginTop: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Ionicons name="time" size={18} color="#92400E" />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>Buscando tecnico...</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>Buscando técnico...</Text>
             </View>
             <Text style={{ fontSize: 12, color: '#92400E', lineHeight: 18 }}>
-              No encontramos un tecnico disponible en {distrito} ahora mismo. Tu solicitud quedo registrada y te contactaremos pronto por WhatsApp al {whatsapp}.
+              No encontramos un técnico disponible en {distrito} ahora mismo. Tu solicitud quedó registrada y te contactaremos pronto por WhatsApp al {whatsapp}.
             </Text>
           </View>
         )}

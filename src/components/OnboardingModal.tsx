@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { View, Text, Modal, TouchableOpacity, Dimensions, Animated } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
+import { COLORS } from '../lib/constants'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
@@ -9,17 +10,17 @@ const SLIDES = [
   {
     icon: 'construct' as const,
     title: 'Encuentra profesionales verificados',
-    subtitle: 'Todos verificados con DNI por RENIEC',
+    subtitle: 'Con DNI validado en RENIEC y reseñas reales',
   },
   {
     icon: 'logo-whatsapp' as const,
     title: 'Contacta directo por WhatsApp',
-    subtitle: 'Sin intermediarios, tu decides',
+    subtitle: 'Sin intermediarios, tú decides',
   },
   {
     icon: 'star' as const,
     title: 'Califica y comparte tu experiencia',
-    subtitle: 'Ayuda a otros a encontrar los mejores',
+    subtitle: 'Ayuda a otros a encontrar a los mejores',
   },
 ]
 
@@ -78,8 +79,9 @@ export function OnboardingModal() {
         {!isLast && (
           <TouchableOpacity
             onPress={handleClose}
-            style={{ position: 'absolute', top: 60, right: 24, zIndex: 10 }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Saltar introducción"
+            style={{ position: 'absolute', top: 52, right: 16, zIndex: 10, padding: 12, minHeight: 44, justifyContent: 'center' }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600' }}>Saltar</Text>
           </TouchableOpacity>
@@ -96,7 +98,7 @@ export function OnboardingModal() {
             justifyContent: 'center',
             marginBottom: 40,
           }}>
-            <Ionicons name={slide.icon} size={56} color="#FF8C42" />
+            <Ionicons name={slide.icon} size={56} color={COLORS.pri} accessibilityElementsHidden />
           </View>
           <Text style={{
             fontSize: 26,
@@ -136,7 +138,7 @@ export function OnboardingModal() {
                   width: i === currentSlide ? 28 : 10,
                   height: 10,
                   borderRadius: 5,
-                  backgroundColor: i === currentSlide ? '#FF8C42' : 'rgba(255,255,255,0.3)',
+                  backgroundColor: i === currentSlide ? COLORS.pri : 'rgba(255,255,255,0.3)',
                 }}
               />
             ))}
@@ -146,13 +148,16 @@ export function OnboardingModal() {
           <TouchableOpacity
             onPress={isLast ? handleClose : handleNext}
             activeOpacity={0.8}
+            accessibilityRole="button"
             style={{
-              backgroundColor: '#FF8C42',
-              borderRadius: 16,
+              backgroundColor: COLORS.pri,
+              borderRadius: 14,
               paddingVertical: 16,
               paddingHorizontal: 48,
               width: '100%',
+              minHeight: 52,
               alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '800' }}>

@@ -7,7 +7,7 @@ import { supabase } from '../src/lib/supabase'
 const REWARDS = [
   { pts: 50, label: '10% de descuento', desc: 'En tu próximo servicio', emoji: '🎟️', code: 'SOLU10' },
   { pts: 100, label: '20% de descuento', desc: 'En cualquier servicio', emoji: '🎫', code: 'SOLU20' },
-  { pts: 200, label: 'Servicio gratis', desc: 'Un servicio básico gratis', emoji: '🎁', code: 'SOLUGRATIS' },
+  { pts: 200, label: '30% de descuento', desc: 'En tu próximo servicio', emoji: '🎁', code: 'SOLU30' },
   { pts: 500, label: 'Cliente VIP', desc: 'Prioridad + descuentos permanentes', emoji: '👑', code: 'SOLUVIP' },
 ]
 
@@ -28,20 +28,19 @@ export default function FidelidadScreen() {
 
   async function loadPoints() {
     const waClean = wa.replace(/\D/g, '')
-    if (!waClean || waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) return Alert.alert('Error', 'Ingresa un WhatsApp válido (9 dígitos, empieza con 9)')
+    if (!waClean || waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) return Alert.alert('Número incompleto', 'Ingresa tu WhatsApp de 9 dígitos (empieza con 9)')
     setLoading(true)
     try {
-      // Count completed services as client
+      // Consultar con el número sin espacios (el input sugiere "999 888 777")
       const { data: services } = await supabase
         .from('clientes')
         .select('id, created_at, servicio, estado')
-        .eq('whatsapp', wa)
+        .eq('whatsapp', waClean)
 
-      // Count reviews
       const { data: reviews } = await supabase
         .from('resenas')
         .select('id, created_at')
-        .eq('whatsapp_cliente', wa)
+        .eq('whatsapp_cliente', waClean)
 
       const solicitudes = services?.length || 0
       const completados = services?.filter(s => s.estado === ESTADOS.COMPLETADO || s.estado === ESTADOS.CALIFICADO).length || 0
@@ -71,7 +70,7 @@ export default function FidelidadScreen() {
       hist.sort((a, b) => b.date.localeCompare(a.date))
       setHistory(hist)
     } catch {
-      Alert.alert('Error', 'No se pudieron cargar los puntos')
+      Alert.alert('No pudimos cargar tus puntos', 'Revisa tu internet e intenta de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -114,7 +113,7 @@ export default function FidelidadScreen() {
         {points === null ? (
           <>
             {/* How it works */}
-            <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
               <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>¿Cómo funciona?</Text>
               {HOW_TO_EARN.map((item, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: i < HOW_TO_EARN.length - 1 ? 1 : 0, borderBottomColor: '#F1F5F9' }}>
@@ -130,7 +129,7 @@ export default function FidelidadScreen() {
             </View>
 
             {/* Check points */}
-            <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16 }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
               <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Consulta tus puntos</Text>
               <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 14 }}>Ingresa el WhatsApp con el que solicitas servicios</Text>
               <TextInput
@@ -144,7 +143,7 @@ export default function FidelidadScreen() {
               <TouchableOpacity
                 onPress={loadPoints}
                 disabled={loading}
-                style={{ backgroundColor: '#1E3A5F', borderRadius: 12, padding: 14, alignItems: 'center' }}
+                style={{ backgroundColor: '#1E3A5F', borderRadius: 12, padding: 14, minHeight: 48, alignItems: 'center', justifyContent: 'center', opacity: loading ? 0.7 : 1 }}
               >
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{loading ? 'Consultando...' : 'Ver mis puntos →'}</Text>
               </TouchableOpacity>
@@ -155,7 +154,7 @@ export default function FidelidadScreen() {
               <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 10 }}>Recompensas disponibles</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {REWARDS.map((r) => (
-                  <View key={r.pts} style={{ width: 140, backgroundColor: '#fff', borderRadius: 14, padding: 14, marginRight: 8 }}>
+                  <View key={r.pts} style={{ width: 140, backgroundColor: '#fff', borderRadius: 14, padding: 14, marginRight: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
                     <Text style={{ fontSize: 28, marginBottom: 6 }}>{r.emoji}</Text>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark }}>{r.label}</Text>
                     <Text style={{ fontSize: 10, color: COLORS.gray, marginTop: 2 }}>{r.desc}</Text>
@@ -170,7 +169,7 @@ export default function FidelidadScreen() {
         ) : (
           <>
             {/* Points display */}
-            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
               <Text style={{ fontSize: 52, fontWeight: '900', color: '#1E3A5F' }}>{points}</Text>
               <Text style={{ fontSize: 14, color: COLORS.gray, fontWeight: '600' }}>puntos acumulados</Text>
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
@@ -224,7 +223,7 @@ export default function FidelidadScreen() {
               <View style={{ marginTop: 8 }}>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 10 }}>Historial de puntos</Text>
                 {history.slice(0, 15).map((h, i) => (
-                  <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 12, marginBottom: 6 }}>
+                  <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.dark }}>{h.type}</Text>
                       <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{h.date}</Text>
@@ -236,7 +235,7 @@ export default function FidelidadScreen() {
             )}
 
             {history.length === 0 && (
-              <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 24, alignItems: 'center', marginTop: 8 }}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 24, alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
                 <Ionicons name="time-outline" size={32} color={COLORS.gray2} />
                 <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.dark, marginTop: 8 }}>Aún no tienes actividad</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>
@@ -248,7 +247,7 @@ export default function FidelidadScreen() {
             {/* Reset */}
             <TouchableOpacity
               onPress={() => { setPoints(null); setHistory([]); setWa('') }}
-              style={{ alignItems: 'center', marginTop: 16 }}
+              style={{ alignItems: 'center', justifyContent: 'center', marginTop: 12, minHeight: 44 }}
             >
               <Text style={{ color: COLORS.gray2, fontSize: 12 }}>Consultar con otro número</Text>
             </TouchableOpacity>

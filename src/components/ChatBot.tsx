@@ -11,6 +11,7 @@ export function ChatBot() {
   return (
     <TouchableOpacity
       onPress={() => router.push('/asistente')}
+      accessibilityLabel="Abrir asistente de SOLU"
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       style={{
         position: 'absolute', bottom: 90, right: 16, width: 56, height: 56,

@@ -204,7 +204,7 @@ export default function RegistroScreen() {
         {step === 1 && (
           <>
             <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Datos personales</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 4 }}>Paso 1 de 3</Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 4 }}>Paso 1 de 3 · Los campos con * son obligatorios</Text>
             {/* Banner bienvenida — anuncia los 5,000 SoluCoins gratis antes de empezar */}
             <View style={{
               backgroundColor: '#FFF7ED', borderRadius: 12, padding: 12, marginBottom: 18,
@@ -225,10 +225,10 @@ export default function RegistroScreen() {
             <Text style={styles.label}>WhatsApp *</Text>
             <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" style={styles.input} placeholderTextColor={COLORS.gray2} />
 
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Email (opcional)</Text>
             <TextInput placeholder="correo@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} placeholderTextColor={COLORS.gray2} />
 
-            <Text style={styles.label}>Contraseña</Text>
+            <Text style={styles.label}>Contraseña (opcional)</Text>
             <View style={{ position: 'relative' }}>
               <TextInput
                 placeholder="Mínimo 6 caracteres"
@@ -241,6 +241,7 @@ export default function RegistroScreen() {
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={{ position: 'absolute', right: 14, top: 14 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
@@ -260,6 +261,7 @@ export default function RegistroScreen() {
               <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={{ position: 'absolute', right: 14, top: 14 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 accessibilityLabel={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
@@ -350,7 +352,7 @@ export default function RegistroScreen() {
                   {DISTRITOS.filter(d => !distritos.includes(d) && (!distritoSearch || d.toLowerCase().includes(distritoSearch.toLowerCase()))).map((d) => (
                     <TouchableOpacity key={d} onPress={() => {
                       if (distritos.length >= MAX_ZONAS) {
-                        Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro. Podés ajustar luego desde Mi cuenta.`)
+                        Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro. Puedes ajustarlos luego desde Mi cuenta.`)
                         return
                       }
                       setDistritos([...distritos, d])
@@ -377,13 +379,13 @@ export default function RegistroScreen() {
               </View>
             )}
 
-            <Text style={styles.label}>Precio desde (S/)</Text>
+            <Text style={styles.label}>Precio desde (S/) — opcional</Text>
             <TextInput placeholder="Ej: 50" value={precio} onChangeText={setPrecio} keyboardType="number-pad" style={styles.input} placeholderTextColor={COLORS.gray2} />
 
-            <Text style={styles.label}>Experiencia</Text>
+            <Text style={styles.label}>Experiencia (opcional)</Text>
             <TextInput placeholder="Ej: 5 años" value={experiencia} onChangeText={setExperiencia} style={styles.input} placeholderTextColor={COLORS.gray2} />
 
-            <Text style={styles.label}>Descripción</Text>
+            <Text style={styles.label}>Descripción (opcional)</Text>
             <TextInput placeholder="Describe tus servicios..." value={descripcion} onChangeText={setDescripcion} multiline numberOfLines={3} style={[styles.input, { height: 80, textAlignVertical: 'top' }]} placeholderTextColor={COLORS.gray2} />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -404,9 +406,17 @@ export default function RegistroScreen() {
         {step === 3 && (
           <>
             <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Verificación</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 3 de 3 — Sube fotos de tu DNI</Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 16 }}>Paso 3 de 3 — Sube fotos de tu DNI</Text>
 
-            <TouchableOpacity onPress={() => pickImage(setDniFront)} style={styles.photoBox}>
+            {/* Nota de confianza: por qué pedimos el DNI */}
+            <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, padding: 12, marginBottom: 16, flexDirection: 'row', gap: 10 }}>
+              <Ionicons name="lock-closed" size={18} color="#10B981" style={{ marginTop: 1 }} />
+              <Text style={{ flex: 1, fontSize: 12, color: '#065F46', lineHeight: 17 }}>
+                Tus fotos solo se usan para verificar tu identidad y darte el badge ✅ Verificado. Los clientes nunca las ven.
+              </Text>
+            </View>
+
+            <TouchableOpacity onPress={() => pickImage(setDniFront)} style={styles.photoBox} accessibilityLabel={dniFront ? 'Foto del DNI frente subida. Toca para cambiarla' : 'Subir foto del frente de tu DNI'}>
               {dniFront ? (
                 <View style={{ alignItems: 'center' }}>
                   <Ionicons name="checkmark-circle" size={32} color={COLORS.acc} />
@@ -420,7 +430,7 @@ export default function RegistroScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => pickImage(setDniBack)} style={styles.photoBox}>
+            <TouchableOpacity onPress={() => pickImage(setDniBack)} style={styles.photoBox} accessibilityLabel={dniBack ? 'Foto del DNI posterior subida. Toca para cambiarla' : 'Subir foto de la parte posterior de tu DNI'}>
               {dniBack ? (
                 <View style={{ alignItems: 'center' }}>
                   <Ionicons name="checkmark-circle" size={32} color={COLORS.acc} />
@@ -438,8 +448,8 @@ export default function RegistroScreen() {
               <TouchableOpacity onPress={() => setStep(2)} style={{ flex: 1, backgroundColor: COLORS.white, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
                 <Text style={{ color: COLORS.gray, fontWeight: '700', fontSize: 14 }}>← Atrás</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={submit} disabled={loading} style={{ flex: 1, backgroundColor: COLORS.acc, borderRadius: 14, padding: 16, alignItems: 'center' }}>
-                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 14 }}>{loading ? 'Registrando...' : 'Registrarme ✓'}</Text>
+              <TouchableOpacity onPress={submit} disabled={loading} style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', opacity: loading ? 0.7 : 1 }}>
+                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 14 }}>{loading ? 'Creando tu cuenta...' : 'Crear mi cuenta ✓'}</Text>
               </TouchableOpacity>
             </View>
           </>

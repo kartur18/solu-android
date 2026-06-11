@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Linking } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -75,7 +75,7 @@ function TecnicoMiniCard({ tech }: { tech: TecnicoSugerido }) {
       style={{
         backgroundColor: COLORS.white, borderRadius: 14, padding: 12, marginBottom: 10,
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        borderWidth: 1, borderColor: '#F1F5F9',
+        borderWidth: 1, borderColor: '#E2E8F0',
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
       }}
     >
@@ -130,10 +130,22 @@ export default function CotizarFotoScreen() {
     })
   }, [loaded])
 
+  // Permiso denegado: ofrecer ir a Configuración (el sistema ya no vuelve a preguntar)
+  function alertaPermiso(recurso: 'cámara' | 'galería') {
+    Alert.alert(
+      `Activa tu ${recurso}`,
+      `Para cotizar con una foto necesitamos acceso a tu ${recurso}. Actívalo en la configuración de tu teléfono y vuelve a intentar.`,
+      [
+        { text: 'Ahora no', style: 'cancel' },
+        { text: 'Abrir Configuración', onPress: () => Linking.openSettings() },
+      ],
+    )
+  }
+
   async function tomarFoto() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync()
     if (status !== 'granted') {
-      return Alert.alert('Permiso requerido', 'Necesitamos acceso a tu cámara para tomarle una foto al problema')
+      return alertaPermiso('cámara')
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
@@ -146,7 +158,7 @@ export default function CotizarFotoScreen() {
   async function elegirDeGaleria() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') {
-      return Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para elegir la foto')
+      return alertaPermiso('galería')
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -265,7 +277,7 @@ export default function CotizarFotoScreen() {
         {analisis && sev ? (
           <>
             {/* Problema detectado */}
-            <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9' }}>
+            <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="search" size={17} color={COLORS.pri} />
@@ -282,7 +294,7 @@ export default function CotizarFotoScreen() {
 
             {/* Precio estimado */}
             {data.precio ? (
-              <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9' }}>
+              <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name="cash-outline" size={17} color="#059669" />
@@ -331,7 +343,7 @@ export default function CotizarFotoScreen() {
           </>
         ) : (
           // La IA no identificó el problema en la foto
-          <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 20, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: '#F1F5F9' }}>
+          <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 20, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
             <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
               <Ionicons name="help-circle-outline" size={28} color="#92400E" />
             </View>
@@ -340,7 +352,7 @@ export default function CotizarFotoScreen() {
             <TouchableOpacity
               onPress={() => router.push('/solicitar')}
               activeOpacity={0.85}
-              style={{ marginTop: 14, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 }}
+              style={{ marginTop: 14, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 20, minHeight: 48, justifyContent: 'center' }}
             >
               <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 13 }}>Describir mi problema en palabras</Text>
             </TouchableOpacity>
@@ -375,7 +387,7 @@ export default function CotizarFotoScreen() {
       </View>
 
       {/* Pasos */}
-      <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#F1F5F9' }}>
+      <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
         {[
           { icon: 'camera-outline' as const, text: 'Toma una foto del problema' },
           { icon: 'sparkles-outline' as const, text: 'La IA lo analiza en segundos' },

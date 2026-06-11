@@ -20,7 +20,7 @@ export default function CoordinarPagoScreen() {
   const router = useRouter()
   const { solicitudId } = useLocalSearchParams<{ solicitudId: string }>()
 
-  const abrirWhatsApp = () => {
+  const abrirTracking = () => {
     // El cliente coordina con el técnico por WhatsApp (canal donde ya
     // están hablando). El número del técnico lo tiene en /tracking.
     Linking.openURL('https://solu.pe/tracking/' + (solicitudId ?? ''))
@@ -37,7 +37,7 @@ export default function CoordinarPagoScreen() {
         }}>
           <Ionicons name="cash-outline" size={44} color={COLORS.pri} />
         </View>
-        <Text style={{ fontSize: 22, fontWeight: '700', color: COLORS.dark, textAlign: 'center' }}>
+        <Text style={{ fontSize: 22, fontWeight: '800', color: COLORS.dark, textAlign: 'center' }}>
           Coordina el pago con tu técnico
         </Text>
       </View>
@@ -75,33 +75,33 @@ export default function CoordinarPagoScreen() {
       }}>
         <Ionicons name="shield-checkmark-outline" size={20} color="#D97706" style={{ marginTop: 1 }} />
         <Text style={{ flex: 1, fontSize: 13, color: '#92400E', lineHeight: 18 }}>
-          Si algo no sale bien, SOLU media gratis entre tú y el técnico.
-          Garantía 30 días.
+          Si algo no sale bien, SOLU media gratis entre tú y el técnico para ayudarte a resolverlo.
         </Text>
       </View>
 
       <TouchableOpacity
-        onPress={abrirWhatsApp}
+        onPress={abrirTracking}
+        accessibilityLabel="Seguir mi servicio y contactar al técnico"
         style={{
           backgroundColor: COLORS.pri,
-          paddingVertical: 16, borderRadius: 14,
+          paddingVertical: 16, borderRadius: 14, minHeight: 52,
           alignItems: 'center', flexDirection: 'row',
           justifyContent: 'center', gap: 8,
           marginBottom: 12,
         }}
         activeOpacity={0.85}
       >
-        <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
+        <Ionicons name="navigate" size={20} color="#FFFFFF" />
         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
-          Ver detalles y contactar
+          Seguir mi servicio y contactar
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         onPress={() => router.back()}
         style={{
-          paddingVertical: 14, borderRadius: 14,
-          alignItems: 'center',
+          paddingVertical: 14, borderRadius: 14, minHeight: 48,
+          alignItems: 'center', justifyContent: 'center',
           borderWidth: 1, borderColor: '#CBD5E1',
         }}
         activeOpacity={0.85}

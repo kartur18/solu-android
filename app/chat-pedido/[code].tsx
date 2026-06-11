@@ -26,8 +26,12 @@ export default function ChatPedidoScreen() {
 
   if (!code) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ color: COLORS.gray }}>Código inválido</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: COLORS.light }}>
+        <Text style={{ fontSize: 40 }}>🔍</Text>
+        <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginTop: 12 }}>No encontramos este chat</Text>
+        <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>
+          Vuelve a abrirlo desde el seguimiento de tu pedido
+        </Text>
       </View>
     )
   }

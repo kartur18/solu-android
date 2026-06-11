@@ -7,6 +7,8 @@ import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import type { Cliente } from '../../src/lib/types'
 
+const RATING_LABELS = ['', 'Muy malo', 'Malo', 'Regular', 'Bueno', '¡Excelente!']
+
 export default function CalificarScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
   const router = useRouter()
@@ -19,7 +21,7 @@ export default function CalificarScreen() {
   const [fotos, setFotos] = useState<string[]>([])
 
   async function pickFoto() {
-    if (fotos.length >= 2) return Alert.alert('Límite', 'Máximo 2 fotos por reseña')
+    if (fotos.length >= 2) return Alert.alert('Máximo 2 fotos', 'Ya agregaste 2 fotos. Elimina una si quieres cambiarla.')
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.7,
@@ -44,7 +46,7 @@ export default function CalificarScreen() {
       const { data } = supabase.storage.from('fotos').getPublicUrl(fileName)
       return data.publicUrl
     } catch (err) {
-      console.error('Error uploading foto:', err)
+      if (__DEV__) console.error('Error uploading foto:', err)
       return null
     }
   }
@@ -60,7 +62,7 @@ export default function CalificarScreen() {
   }, [code])
 
   async function submit() {
-    if (rating === 0) return Alert.alert('Error', 'Selecciona una calificación')
+    if (rating === 0) return Alert.alert('Falta tu calificación', 'Toca las estrellas para contarnos cómo fue el servicio.')
     if (submitting || !service) return
     setSubmitting(true)
 
@@ -95,24 +97,40 @@ export default function CalificarScreen() {
       }
 
       setDone(true)
-      Alert.alert('¡Gracias!', 'Tu calificación fue enviada exitosamente')
     } else {
-      Alert.alert('Error', 'No se pudo enviar la calificación')
+      Alert.alert('No se pudo enviar', 'Revisa tu conexión e intenta de nuevo. Tu calificación no se perdió.')
     }
     setSubmitting(false)
   }
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={COLORS.pri} /></View>
-  if (!service) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: COLORS.gray }}>Servicio no encontrado</Text></View>
+  if (loading) return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.light }}>
+      <ActivityIndicator size="large" color={COLORS.pri} />
+      <Text style={{ color: COLORS.gray, marginTop: 12, fontSize: 13 }}>Cargando tu servicio...</Text>
+    </View>
+  )
+  if (!service) return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
+      <Ionicons name="search-outline" size={48} color={COLORS.gray2} />
+      <Text style={{ color: COLORS.dark, marginTop: 12, fontSize: 16, fontWeight: '800' }}>No encontramos ese servicio</Text>
+      <Text style={{ color: COLORS.gray, marginTop: 6, fontSize: 13, textAlign: 'center' }}>Verifica que el código sea correcto e intenta de nuevo.</Text>
+      <TouchableOpacity
+        onPress={() => router.replace('/')}
+        style={{ marginTop: 20, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center' }}
+      >
+        <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>Volver al inicio</Text>
+      </TouchableOpacity>
+    </View>
+  )
 
   if (done) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
         <Ionicons name="checkmark-circle" size={64} color={COLORS.acc} />
-        <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginTop: 16 }}>¡Gracias!</Text>
-        <Text style={{ fontSize: 14, color: COLORS.gray, textAlign: 'center', marginTop: 8 }}>Tu calificación ayuda a mejorar la comunidad SOLU</Text>
-        <TouchableOpacity onPress={() => router.replace('/')} style={{ marginTop: 24, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}>
-          <Text style={{ color: COLORS.white, fontWeight: '700' }}>Volver al inicio</Text>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginTop: 16 }}>¡Gracias por calificar!</Text>
+        <Text style={{ fontSize: 14, color: COLORS.gray, textAlign: 'center', marginTop: 8 }}>Tu calificación ayuda a otros vecinos a elegir mejor</Text>
+        <TouchableOpacity onPress={() => router.replace('/')} style={{ marginTop: 24, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center' }}>
+          <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>Volver al inicio</Text>
         </TouchableOpacity>
       </View>
     )
@@ -131,13 +149,20 @@ export default function CalificarScreen() {
         </Text>
 
         {/* Stars */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
           {[1, 2, 3, 4, 5].map((s) => (
-            <TouchableOpacity key={s} onPress={() => setRating(s)}>
+            <TouchableOpacity
+              key={s}
+              onPress={() => setRating(s)}
+              accessibilityLabel={`Calificar con ${s} ${s === 1 ? 'estrella' : 'estrellas'}`}
+            >
               <Ionicons name="star" size={44} color={s <= rating ? COLORS.yellow : COLORS.border} />
             </TouchableOpacity>
           ))}
         </View>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: rating > 0 ? COLORS.yellow : COLORS.gray2, textAlign: 'center', marginBottom: 24, minHeight: 18 }}>
+          {rating > 0 ? RATING_LABELS[rating] : 'Toca una estrella para calificar'}
+        </Text>
 
         <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Comentario (opcional)</Text>
         <TextInput
@@ -168,6 +193,8 @@ export default function CalificarScreen() {
               <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
               <TouchableOpacity
                 onPress={() => setFotos(prev => prev.filter((_, i) => i !== idx))}
+                accessibilityLabel={`Eliminar foto ${idx + 1}`}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 style={{
                   position: 'absolute',
                   top: -6,
@@ -207,11 +234,17 @@ export default function CalificarScreen() {
         <TouchableOpacity
           onPress={submit}
           disabled={submitting}
-          style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center' }}
+          accessibilityLabel="Enviar calificación"
+          style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, minHeight: 52, alignItems: 'center', justifyContent: 'center', opacity: submitting ? 0.7 : 1 }}
         >
-          <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>
-            {submitting ? 'Enviando...' : 'Enviar calificación'}
-          </Text>
+          {submitting ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <ActivityIndicator color={COLORS.white} />
+              <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Enviando...</Text>
+            </View>
+          ) : (
+            <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Enviar calificación</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>

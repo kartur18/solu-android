@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { View, Text, FlatList, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { COLORS } from '../lib/constants'
@@ -27,6 +27,8 @@ interface Message {
   tipo?: 'text' | 'audio' | 'image' | 'cotizacion'
   attachment_url?: string | null
   attachment_meta?: AttachmentMeta | null
+  // Solo local: marca el mensaje optimista mientras sube el audio
+  uploading?: boolean
 }
 
 const MIN_AUDIO_MS = 1000
@@ -107,7 +109,9 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
         .single()
       if (data) setMessages((prev) => prev.map((m) => m.id === tempId ? (data as Message) : m))
     } catch {
+      // Restaurar el texto para que el usuario no lo pierda
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
+      setInput(text)
     } finally {
       setSending(false)
     }
@@ -178,6 +182,7 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
       mensaje: '', leido: false, created_at: new Date().toISOString(),
       tipo: 'audio', attachment_url: uri,
       attachment_meta: { mime: 'audio/mp4', duration_ms: durationMs },
+      uploading: true,
     }
     setMessages((prev) => [...prev, optimistic])
     try {
@@ -206,6 +211,7 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       style={{ flex: 1, backgroundColor: COLORS.light }}
     >
       <FlatList
@@ -227,7 +233,12 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
                 borderWidth: mine ? 0 : 1,
                 borderColor: COLORS.border,
               }}>
-                {isAudio ? (
+                {isAudio && item.uploading ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 170, paddingVertical: 6 }}>
+                    <ActivityIndicator size="small" color={mine ? '#fff' : COLORS.pri} />
+                    <Text style={{ color: mine ? 'rgba(255,255,255,0.9)' : COLORS.gray, fontSize: 12 }}>Enviando nota de voz…</Text>
+                  </View>
+                ) : isAudio ? (
                   <AudioMessageBubble
                     url={item.attachment_url as string}
                     durationMs={item.attachment_meta?.duration_ms}
@@ -240,7 +251,7 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
                   <Text style={{ color: mine ? '#fff' : COLORS.dark, fontSize: 12, lineHeight: 16, marginTop: 4 }}>{item.mensaje}</Text>
                 )}
               </View>
-              <Text style={{ fontSize: 9, color: COLORS.gray2, textAlign: mine ? 'right' : 'left', marginTop: 2 }}>
+              <Text style={{ fontSize: 10, color: COLORS.gray2, textAlign: mine ? 'right' : 'left', marginTop: 2 }}>
                 {new Date(item.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </View>

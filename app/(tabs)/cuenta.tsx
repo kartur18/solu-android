@@ -21,7 +21,7 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'resenas', icon: 'star', label: 'Reseñas' },
   { key: 'cotizaciones', icon: 'document-text', label: 'Cotizaciones' },
   { key: 'ingresos', icon: 'cash', label: 'Ingresos' },
-  { key: 'plan', icon: 'diamond', label: 'Plan' },
+  { key: 'plan', icon: 'wallet', label: 'Billetera' },
   { key: 'perfil', icon: 'person', label: 'Perfil' },
 ]
 
@@ -72,6 +72,8 @@ export default function CuentaScreen() {
   const [showOficiosPicker, setShowOficiosPicker] = useState(false)
   const [showZonasPicker, setShowZonasPicker] = useState(false)
   const [zonaSearch, setZonaSearch] = useState('')
+  // true mientras se restaura la sesión guardada (evita el flash del login)
+  const [restoring, setRestoring] = useState(true)
 
   // V3.1: la función handleSubscribe (Flow-subscribe para planes mensuales)
   // fue eliminada. La compra de SoluCoins se hace desde la pantalla
@@ -136,6 +138,8 @@ export default function CuentaScreen() {
         }
       } catch {
         setLoading(false)
+      } finally {
+        setRestoring(false)
       }
     })()
   }, [])
@@ -328,7 +332,7 @@ export default function CuentaScreen() {
     if (!tech) return
     const maxPhotos = getMaxPhotos()
     if (galleryImages.length >= maxPhotos) {
-      return Alert.alert('Límite alcanzado', `Tu plan permite máximo ${maxPhotos} fotos. Elimina alguna o mejora tu plan.`)
+      return Alert.alert('Límite alcanzado', `Puedes tener hasta ${maxPhotos} fotos en tu galería. Elimina alguna para subir una nueva.`)
     }
 
     const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -535,6 +539,16 @@ export default function CuentaScreen() {
   const completedLeads = leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').length
   const activeLeads = leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').length
 
+  // Splash mientras se restaura la sesión guardada (evita pantalla en blanco / flash del login)
+  if (!loggedIn && restoring) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#1A1A2E', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+        <ActivityIndicator size="large" color="#EA580C" />
+        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' }}>Cargando tu cuenta...</Text>
+      </View>
+    )
+  }
+
   // LOGIN SCREEN
   if (!loggedIn) {
     return (
@@ -573,6 +587,8 @@ export default function CuentaScreen() {
             <TouchableOpacity
               onPress={() => setShowLoginPassword(!showLoginPassword)}
               style={{ position: 'absolute', right: 16, top: 18 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel={showLoginPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             >
               <Ionicons name={showLoginPassword ? 'eye-off' : 'eye'} size={22} color="rgba(255,255,255,0.4)" />
             </TouchableOpacity>
@@ -588,8 +604,9 @@ export default function CuentaScreen() {
           <TouchableOpacity
             onPress={doLogin}
             disabled={loading}
-            style={{ backgroundColor: '#EA580C', borderRadius: 18, padding: 18, alignItems: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 }}
+            style={{ backgroundColor: '#EA580C', borderRadius: 18, padding: 18, alignItems: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8, opacity: loading ? 0.7 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
           >
+            {loading && <ActivityIndicator size="small" color="#fff" />}
             <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 }}>{loading ? 'Verificando...' : 'INGRESAR'}</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16, gap: 4 }}>
@@ -622,7 +639,7 @@ export default function CuentaScreen() {
         <View style={{ backgroundColor: '#1A1A2E', padding: 24, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <TouchableOpacity onPress={pickAndUploadProfilePhoto} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
+              <TouchableOpacity onPress={pickAndUploadProfilePhoto} accessibilityLabel="Cambiar foto de perfil" style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
                 {tech.foto_url ? (
                   <Image source={{ uri: tech.foto_url }} style={{ width: 48, height: 48 }} />
                 ) : (
@@ -637,13 +654,15 @@ export default function CuentaScreen() {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
                 onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}`, title: `${tech.nombre} - SOLU` })}
-                style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+                accessibilityLabel="Compartir mi perfil"
+                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
                 <Ionicons name="share-social-outline" size={20} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowNotifications(true)}
-                style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+                accessibilityLabel={unreadCount > 0 ? `Ver notificaciones, ${unreadCount} sin leer` : 'Ver notificaciones'}
+                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
                 <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.7)" />
                 {unreadCount > 0 && (
@@ -657,7 +676,8 @@ export default function CuentaScreen() {
                   { text: 'Cancelar', style: 'cancel' },
                   { text: 'Salir', style: 'destructive', onPress: () => { AsyncStorage.removeItem('solu_tech_session'); setLoggedIn(false); setTech(null); setTab('dashboard') } },
                 ])}
-                style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+                accessibilityLabel="Cerrar sesión"
+                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
                 <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
@@ -672,6 +692,8 @@ export default function CuentaScreen() {
             <StatCard
               value={(tech.coins_balance ?? 0).toLocaleString('es-PE')}
               label="SoluCoins"
+              highlight
+              onPress={() => setTab('plan')}
             />
           </View>
 
@@ -694,10 +716,10 @@ export default function CuentaScreen() {
         {(tech.coins_balance ?? 0) < 500 && (
           <View style={{ margin: 16, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FCD34D' }}>
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>⚠️ Saldo bajo de SoluCoins</Text>
-            <Text style={{ fontSize: 11, color: '#78350F', marginTop: 4 }}>
-              Tu perfil sigue visible pero pronto te quedarás sin saldo para responder leads. Comprá un paquete para seguir trabajando.
+            <Text style={{ fontSize: 12, color: '#78350F', marginTop: 4, lineHeight: 17 }}>
+              Tu perfil sigue visible pero pronto te quedarás sin saldo para responder leads. Compra un paquete para seguir trabajando.
             </Text>
-            <TouchableOpacity onPress={() => router.push('/comprar-coins')} style={{ backgroundColor: COLORS.pri, borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 }}>
+            <TouchableOpacity onPress={() => router.push('/comprar-coins')} style={{ backgroundColor: COLORS.pri, borderRadius: 10, padding: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: 10 }}>
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Comprar SoluCoins →</Text>
             </TouchableOpacity>
           </View>
@@ -795,7 +817,7 @@ export default function CuentaScreen() {
                     return (
                       <View key={a.id} style={{ width: '22%', alignItems: 'center', opacity: unlocked ? 1 : 0.3, padding: 4 }}>
                         <Text style={{ fontSize: 22 }}>{unlocked ? a.emoji : '🔒'}</Text>
-                        <Text style={{ fontSize: 8, fontWeight: '700', color: COLORS.dark, textAlign: 'center', marginTop: 2 }}>{a.name}</Text>
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: COLORS.dark, textAlign: 'center', marginTop: 2 }}>{a.name}</Text>
                       </View>
                     )
                   })}
@@ -807,7 +829,7 @@ export default function CuentaScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <Ionicons name="calendar" size={18} color="#2563EB" />
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Agenda de hoy</Text>
-                  <TouchableOpacity onPress={() => Linking.openURL(`https://solu.pe/api/calendar-sync?tecnicoId=${tech.id}`)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <TouchableOpacity onPress={() => Linking.openURL(`https://solu.pe/api/calendar-sync?tecnicoId=${tech.id}`)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Ionicons name="calendar-outline" size={14} color="#2563EB" />
                     <Text style={{ fontSize: 10, fontWeight: '700', color: '#2563EB' }}>Sincronizar</Text>
                   </TouchableOpacity>
@@ -846,7 +868,7 @@ export default function CuentaScreen() {
                 <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Últimas solicitudes</Text>
-                    <TouchableOpacity onPress={() => setTab('servicios')}>
+                    <TouchableOpacity onPress={() => setTab('servicios')} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
                       <Text style={{ fontSize: 11, fontWeight: '600', color: '#2563EB' }}>Ver todas →</Text>
                     </TouchableOpacity>
                   </View>
@@ -953,18 +975,22 @@ export default function CuentaScreen() {
                   <Text style={{ fontSize: 11, color: '#065F46', marginBottom: 12 }}>Acepta rápido — el primero se lo queda</Text>
                   {openRequests.map((s) => (
                     <View key={s.id} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: '#D1FAE5' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#10B981' }}>{s.cliente_nombre?.charAt(0)?.toUpperCase() || '?'}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                          <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#10B981' }}>{s.cliente_nombre?.charAt(0)?.toUpperCase() || '?'}</Text>
                           </View>
-                          <View>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{s.cliente_nombre}</Text>
-                            <Text style={{ fontSize: 11, color: COLORS.gray }}>{s.servicio} · {s.distrito}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }} numberOfLines={1}>{s.servicio}</Text>
+                            <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 1 }} numberOfLines={1}>
+                              📍 {s.distrito} · {s.cliente_nombre} · {timeAgo(s.created_at) === 'ahora' ? 'recién' : `hace ${timeAgo(s.created_at)}`}
+                            </Text>
                           </View>
                         </View>
                         {s.urgencia === 'emergencia' && (
-                          <Text style={{ fontSize: 9, fontWeight: '800', color: '#EF4444' }}>URGENTE</Text>
+                          <View style={{ backgroundColor: '#FEE2E2', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: '#DC2626' }}>URGENTE</Text>
+                          </View>
                         )}
                       </View>
                       <TouchableOpacity
@@ -1006,12 +1032,34 @@ export default function CuentaScreen() {
                 </View>
               )}
 
+              {/* Empty state: sin trabajos disponibles */}
+              {openRequests.length === 0 && (
+                <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                  <Text style={{ fontSize: 32 }}>🔎</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>Aún no hay trabajos disponibles</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginTop: 4, lineHeight: 17 }}>
+                    Te avisaremos apenas llegue una solicitud en tu zona. Mientras tanto, comparte tu perfil para conseguir clientes.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}` })}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EFF6FF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, marginTop: 12 }}
+                  >
+                    <Ionicons name="share-social-outline" size={16} color="#2563EB" />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#2563EB' }}>Compartir mi perfil</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {/* Active */}
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Servicios activos</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 10 }}>Solicitudes pendientes y en proceso</Text>
                 {leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').length === 0 ? (
-                  <Text style={{ textAlign: 'center', color: COLORS.gray2, padding: 16, fontSize: 12 }}>No tienes servicios activos</Text>
+                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                    <Ionicons name="briefcase-outline" size={32} color={COLORS.gray2} />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>No tienes servicios activos</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center' }}>Cuando aceptes un trabajo aparecerá aquí</Text>
+                  </View>
                 ) : (
                   leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').map((l) => (
                     <LeadRow key={l.id} lead={l} onStatusChange={() => tech && loadData(tech.id)} tech={tech} router={router} />
@@ -1024,7 +1072,11 @@ export default function CuentaScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Historial</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 10 }}>Servicios completados</Text>
                 {leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').length === 0 ? (
-                  <Text style={{ textAlign: 'center', color: COLORS.gray2, padding: 16, fontSize: 12 }}>Sin historial aún</Text>
+                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                    <Ionicons name="time-outline" size={32} color={COLORS.gray2} />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>Sin historial aún</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center' }}>Tus trabajos completados aparecerán aquí</Text>
+                  </View>
                 ) : (
                   leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').map((l) => (
                     <LeadRow key={l.id} lead={l} tech={tech} router={router} />
@@ -1040,7 +1092,13 @@ export default function CuentaScreen() {
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Mis reseñas</Text>
               <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 12 }}>Lo que dicen tus clientes</Text>
               {reviews.length === 0 ? (
-                <Text style={{ textAlign: 'center', color: COLORS.gray2, padding: 20, fontSize: 12 }}>Aún no tienes reseñas</Text>
+                <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                  <Ionicons name="star-outline" size={32} color="#F59E0B" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>Aún no tienes reseñas</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center', lineHeight: 17 }}>
+                    Completa tus primeros trabajos y pide a tus clientes que te califiquen. Las reseñas te traen más clientes.
+                  </Text>
+                </View>
               ) : (
                 reviews.map((r) => (
                   <View key={r.id} style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: 14, marginBottom: 8 }}>
@@ -1235,7 +1293,7 @@ export default function CuentaScreen() {
                 {[
                   { icon: 'flash-outline' as const, text: 'Compras un paquete una vez. No hay suscripción.' },
                   { icon: 'chatbubble-ellipses-outline' as const, text: 'Cuando un cliente te escribe y respondes, descontamos coins según el oficio y distrito.' },
-                  { icon: 'receipt-outline' as const, text: 'Recibís tu boleta SUNAT automática por cada compra.' },
+                  { icon: 'receipt-outline' as const, text: 'Recibes tu boleta SUNAT automática por cada compra.' },
                   { icon: 'trending-up-outline' as const, text: 'Cuanto más grande el paquete, mejor el precio por lead.' },
                 ].map((item, i) => (
                   <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: i < 3 ? 10 : 0 }}>
@@ -1256,7 +1314,8 @@ export default function CuentaScreen() {
                 {pagos.length === 0 ? (
                   <View style={{ alignItems: 'center', padding: 20 }}>
                     <Ionicons name="wallet-outline" size={32} color={COLORS.gray2} />
-                    <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 8 }}>Sin pagos registrados</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>Sin pagos registrados</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center' }}>Cuando compres SoluCoins verás tus compras aquí</Text>
                   </View>
                 ) : (
                   pagos.map((pago: any) => {
@@ -1269,7 +1328,7 @@ export default function CuentaScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>
-                            Plan {pago.plan ? pago.plan.charAt(0).toUpperCase() + pago.plan.slice(1) : 'N/A'}
+                            {pago.plan ? `Paquete ${pago.plan.charAt(0).toUpperCase() + pago.plan.slice(1)}` : 'Compra de SoluCoins'}
                           </Text>
                           <Text style={{ fontSize: 10, color: COLORS.gray }}>
                             {new Date(pago.created_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })} · {pago.metodo || 'N/A'}
@@ -1303,7 +1362,20 @@ export default function CuentaScreen() {
                 </View>
 
                 {cotizaciones.length === 0 ? (
-                  <Text style={{ textAlign: 'center', color: COLORS.gray2, padding: 20, fontSize: 12 }}>No tienes cotizaciones aún</Text>
+                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                    <Ionicons name="document-text-outline" size={32} color={COLORS.gray2} />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>No tienes cotizaciones aún</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center', lineHeight: 17 }}>
+                      Envía un presupuesto claro y cierra el trabajo más rápido.
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setShowNewCotizacion(true)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EFF6FF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, marginTop: 12 }}
+                    >
+                      <Ionicons name="add" size={16} color="#2563EB" />
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#2563EB' }}>Crear mi primera cotización</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   cotizaciones.map((cot) => {
                     const statusColors: Record<string, string> = { pendiente: '#F59E0B', aceptada: '#10B981', rechazada: '#EF4444' }
@@ -1334,12 +1406,21 @@ export default function CuentaScreen() {
                   <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                       <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark }}>Nueva cotización</Text>
-                      <TouchableOpacity onPress={() => setShowNewCotizacion(false)}>
+                      <TouchableOpacity
+                        onPress={() => setShowNewCotizacion(false)}
+                        accessibilityLabel="Cerrar"
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
                         <Ionicons name="close" size={24} color={COLORS.gray} />
                       </TouchableOpacity>
                     </View>
 
                     <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Seleccionar cliente</Text>
+                    {leads.length === 0 && (
+                      <Text style={{ fontSize: 12, color: COLORS.gray2, marginBottom: 12 }}>
+                        Primero acepta un trabajo para poder cotizarle a un cliente.
+                      </Text>
+                    )}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12, maxHeight: 44 }}>
                       {leads.map((l) => (
                         <TouchableOpacity
@@ -1390,10 +1471,11 @@ export default function CuentaScreen() {
                     <TouchableOpacity
                       onPress={createCotizacion}
                       disabled={savingCotizacion}
-                      style={{ backgroundColor: '#1E3A5F', borderRadius: 14, padding: 16, alignItems: 'center' }}
+                      style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: savingCotizacion ? 0.7 : 1 }}
                     >
-                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
-                        {savingCotizacion ? 'Creando...' : 'Crear cotización'}
+                      {savingCotizacion && <ActivityIndicator size="small" color="#fff" />}
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>
+                        {savingCotizacion ? 'Enviando...' : 'Enviar cotización'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1636,6 +1718,8 @@ export default function CuentaScreen() {
                                 />
                                 <TouchableOpacity
                                   onPress={() => deleteGalleryImage(url)}
+                                  accessibilityLabel="Eliminar esta foto"
+                                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                   style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#EF4444', borderRadius: 10, width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}
                                 >
                                   <Ionicons name="close" size={12} color="#fff" />
@@ -1777,12 +1861,22 @@ export default function CuentaScreen() {
   )
 }
 
-function StatCard({ value, label, expired }: { value: string; label: string; expired?: boolean }) {
+function StatCard({ value, label, highlight, onPress }: { value: string; label: string; highlight?: boolean; onPress?: () => void }) {
   return (
-    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
-      <Text style={{ fontSize: 18, fontWeight: '900', color: expired ? '#FCA5A5' : '#fff' }}>{value}</Text>
-      <Text style={{ fontSize: 10, color: expired ? '#FCA5A5' : 'rgba(255,255,255,0.4)', fontWeight: '700', marginTop: 3 }}>{label}</Text>
-    </View>
+    <TouchableOpacity
+      disabled={!onPress}
+      onPress={onPress}
+      accessibilityLabel={onPress ? `${label}: ${value}. Toca para ver tu billetera` : undefined}
+      activeOpacity={0.8}
+      style={{
+        flex: 1, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1,
+        backgroundColor: highlight ? 'rgba(234,88,12,0.18)' : 'rgba(255,255,255,0.06)',
+        borderColor: highlight ? 'rgba(249,115,22,0.45)' : 'rgba(255,255,255,0.06)',
+      }}
+    >
+      <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff' }}>{value}</Text>
+      <Text style={{ fontSize: 10, color: highlight ? '#FDBA74' : 'rgba(255,255,255,0.4)', fontWeight: '700', marginTop: 3 }}>{label}</Text>
+    </TouchableOpacity>
   )
 }
 

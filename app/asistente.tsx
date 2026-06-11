@@ -357,10 +357,10 @@ export default function AsistenteScreen() {
   const urgenciaLabel = (u: Urgencia) => (u === 'emergencia' ? '🚨 Emergencia' : u === 'urgente' ? '⏱️ Urgente' : '📅 Normal')
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: COLORS.light }} behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: COLORS.light }} behavior="padding">
       {/* Header */}
       <View style={{ backgroundColor: COLORS.dark, padding: 16, paddingTop: (StatusBar.currentHeight || 40) + 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityLabel="Volver" hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color={COLORS.white} />
         </TouchableOpacity>
         <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(242,107,33,0.2)', alignItems: 'center', justifyContent: 'center' }}>
@@ -497,7 +497,7 @@ export default function AsistenteScreen() {
                 key={chip}
                 onPress={() => handleSend(chip)}
                 activeOpacity={0.8}
-                style={{ backgroundColor: COLORS.white, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, paddingVertical: 10 }}
+                style={{ backgroundColor: COLORS.white, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' }}
               >
                 <Text style={{ fontSize: 12, color: COLORS.dark, fontWeight: '600' }}>{chip}</Text>
               </TouchableOpacity>
@@ -523,6 +523,7 @@ export default function AsistenteScreen() {
         <TouchableOpacity
           onPress={() => handleSend()}
           disabled={loading || !input.trim()}
+          accessibilityLabel="Enviar mensaje"
           style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center', opacity: loading || !input.trim() ? 0.5 : 1 }}
         >
           <Ionicons name="send" size={18} color={COLORS.white} />

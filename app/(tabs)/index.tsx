@@ -189,7 +189,7 @@ export default function HomeScreen() {
       if (offline) setOffline(false)
     } catch (err) {
       logger.error('Error loading techs:', err)
-      if (!loading) setOffline(true)
+      setOffline(true)
     } finally {
       setLoading(false)
       Animated.timing(fadeAnim, {
@@ -215,10 +215,11 @@ export default function HomeScreen() {
       {offline && (
         <TouchableOpacity
           onPress={onRefresh}
-          style={{ backgroundColor: '#FEF3C7', padding: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+          accessibilityRole="button"
+          style={{ backgroundColor: '#FEF3C7', paddingVertical: 12, paddingHorizontal: 16, minHeight: 44, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
         >
           <Ionicons name="wifi-outline" size={14} color="#92400E" />
-          <Text style={{ color: '#92400E', fontSize: 11, fontWeight: '600' }}>Verificando conexión - toca para reintentar</Text>
+          <Text style={{ color: '#92400E', fontSize: 12, fontWeight: '600' }}>Sin conexión · toca para reintentar</Text>
         </TouchableOpacity>
       )}
       <ScrollView
@@ -233,7 +234,7 @@ export default function HomeScreen() {
           style={{ padding: 24, paddingTop: 48, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-            <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
+            <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.pri, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
               <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>S</Text>
             </View>
             <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 }}>SOLU</Text>
@@ -277,16 +278,17 @@ export default function HomeScreen() {
               onFocus={() => setShowSuggestions(query.length > 0)}
               onSubmitEditing={handleSearchSubmit}
               returnKeyType="search"
-              placeholder="Ej: se me rompió el caño · 🎤 usa el mic del teclado"
+              placeholder="Ej: se me rompió el caño"
               placeholderTextColor="#9CA3AF"
               style={{ flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.dark, paddingVertical: 12 }}
             />
             <TouchableOpacity
               onPress={handleSearchSubmit}
-              style={{ backgroundColor: '#EA580C', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}
+              accessibilityLabel="Buscar técnico"
+              style={{ backgroundColor: COLORS.pri, borderRadius: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
               activeOpacity={0.85}
             >
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
 
@@ -312,26 +314,25 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* CTA Cotizar por foto (IA Vision) */}
+          {/* Banner cotizar por foto — secundario al buscador, estilo glass sobre el hero */}
           <TouchableOpacity
             onPress={() => router.push('/cotizar-foto')}
             activeOpacity={0.85}
-            style={{ marginTop: 12 }}
+            style={{
+              marginTop: 12, borderRadius: 14, padding: 12,
+              flexDirection: 'row', alignItems: 'center', gap: 10,
+              backgroundColor: 'rgba(255,255,255,0.08)',
+              borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+            }}
           >
-            <LinearGradient
-              colors={['#F26B21', '#E55A10']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-              style={{ borderRadius: 14, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10 }}
-            >
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="camera" size={19} color="#fff" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>📸 Cotiza con una foto</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 1 }}>Precio estimado en 5 segundos con IA</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.8)" />
-            </LinearGradient>
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(242,107,33,0.22)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="camera" size={19} color="#F97316" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>Cotiza con una foto</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 1 }}>Precio estimado en segundos con IA</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.5)" />
           </TouchableOpacity>
 
           {/* Emergency link (discreet) */}
@@ -353,7 +354,7 @@ export default function HomeScreen() {
             ].map((stat) => (
               <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
                 <Text style={{ color: '#fff', fontSize: 17, fontWeight: '900' }}>{stat.value}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '700', marginTop: 2 }}>{stat.label}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '700', marginTop: 2 }}>{stat.label}</Text>
               </View>
             ))}
           </View>
@@ -384,13 +385,13 @@ export default function HomeScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46' }}>Garantía SOLU</Text>
-            <Text style={{ fontSize: 11, color: '#047857', marginTop: 1 }}>Si no queda bien, mandamos otro técnico sin costo en 48h</Text>
+            <Text style={{ fontSize: 11, color: '#047857', marginTop: 1 }}>Técnicos verificados con DNI · Si algo sale mal, mediamos gratis</Text>
           </View>
         </View>
 
         {/* Categories */}
         <View style={{ padding: 16, paddingBottom: 4, paddingTop: 4 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>
             Servicios populares
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
@@ -418,7 +419,7 @@ export default function HomeScreen() {
                 >
                   {isLast ? (
                     <View style={{ position: 'absolute', top: -6, right: -4, backgroundColor: cat.color, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 8, fontWeight: '900', color: '#fff' }}>ÚLTIMO</Text>
+                      <Text style={{ fontSize: 9, fontWeight: '900', color: '#fff' }}>ÚLTIMO</Text>
                     </View>
                   ) : null}
                   <View
@@ -437,8 +438,8 @@ export default function HomeScreen() {
               )
             })}
           </View>
-          <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7} style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver todos los servicios →</Text>
+          <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7} style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12, minHeight: 44 }}>
+            <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 12 }}>Ver todos los servicios →</Text>
           </TouchableOpacity>
         </View>
 
@@ -449,9 +450,9 @@ export default function HomeScreen() {
             shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
           }}>
             {[
-              { icon: 'shield-checkmark' as const, color: COLORS.pri, title: 'Profesionales verificados', desc: 'DNI verificado con RENIEC · garantía total' },
-              { icon: 'time' as const, color: '#1E3A5F', title: 'Respuesta inmediata', desc: 'Un técnico en tu puerta en minutos' },
-              { icon: 'star' as const, color: COLORS.pri, title: 'Pagás al técnico directo', desc: 'Yape, Plin, efectivo · sin cobros extra' },
+              { icon: 'shield-checkmark' as const, color: COLORS.pri, title: 'Profesionales verificados', desc: 'Identidad validada con DNI en RENIEC' },
+              { icon: 'time' as const, color: '#1E3A5F', title: 'Respuesta rápida', desc: 'Un técnico en tu puerta en minutos' },
+              { icon: 'star' as const, color: COLORS.pri, title: 'Pagas al técnico directo', desc: 'Yape, Plin o efectivo · sin cobros extra' },
             ].map((item, i) => (
               <View key={i} style={{
                 flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -484,8 +485,8 @@ export default function HomeScreen() {
               <Ionicons name="gift" size={24} color="#FFD700" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>¿Eres técnico? Primer mes GRATIS</Text>
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>Regístrate y empieza a recibir clientes hoy</Text>
+              <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>¿Eres técnico? 5,000 SoluCoins GRATIS</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>Regístrate con tu DNI y empieza a recibir clientes hoy</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" />
           </LinearGradient>
@@ -494,9 +495,9 @@ export default function HomeScreen() {
         {/* Top techs */}
         <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Profesionales destacados</Text>
-            <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7}>
-              <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 11 }}>Ver todos →</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark }}>Profesionales destacados</Text>
+            <TouchableOpacity onPress={() => router.push('/buscar')} activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={{ paddingVertical: 6 }}>
+              <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 12 }}>Ver todos →</Text>
             </TouchableOpacity>
           </View>
           {loading ? (
@@ -511,14 +512,14 @@ export default function HomeScreen() {
               shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
             }}>
               <Ionicons name="people" size={36} color={COLORS.gray2} />
-              <Text style={{ color: COLORS.dark, marginTop: 8, fontSize: 13, fontWeight: '700' }}>Registra técnicos para verlos aquí</Text>
-              <Text style={{ color: COLORS.gray2, marginTop: 4, fontSize: 11, textAlign: 'center' }}>Los técnicos con mejor calificación{`\n`}aparecerán en esta sección</Text>
+              <Text style={{ color: COLORS.dark, marginTop: 8, fontSize: 14, fontWeight: '700' }}>Aún no hay técnicos destacados</Text>
+              <Text style={{ color: COLORS.gray, marginTop: 4, fontSize: 12, textAlign: 'center' }}>Muy pronto verás aquí a los profesionales{`\n`}mejor calificados de tu zona</Text>
               <TouchableOpacity
                 onPress={() => router.push('/buscar')}
                 activeOpacity={0.8}
-                style={{ marginTop: 12, backgroundColor: COLORS.pri, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
+                style={{ marginTop: 14, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 13, minHeight: 44, justifyContent: 'center' }}
               >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Buscar técnicos →</Text>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Buscar técnicos</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -526,7 +527,7 @@ export default function HomeScreen() {
 
         {/* Footer */}
         <View style={{ alignItems: 'center', paddingVertical: 20, marginTop: 8 }}>
-          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>SOLU v1.0 · CITYLAND GROUP E.I.R.L.</Text>
+          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>SOLU v2.2 · CITYLAND GROUP E.I.R.L.</Text>
           <Text style={{ fontSize: 9, color: COLORS.gray2, marginTop: 2 }}>Profesionales verificados en todo el Perú</Text>
         </View>
       </ScrollView>

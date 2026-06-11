@@ -39,6 +39,12 @@ export default function ComprarCoinsScreen() {
         <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 4 }}>
           Elige tu paquete. Mientras más grande, mejor el precio por lead.
         </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+          <Ionicons name="lock-closed" size={13} color={COLORS.gray} />
+          <Text style={{ fontSize: 12, color: COLORS.gray }}>
+            El pago seguro se abre en tu navegador
+          </Text>
+        </View>
       </View>
 
       {/* Cards de paquetes */}
@@ -48,13 +54,20 @@ export default function ComprarCoinsScreen() {
           <View
             key={p.slug}
             style={{
-              backgroundColor: COLORS.white,
+              backgroundColor: destacado ? '#FFF8F3' : COLORS.white,
               borderRadius: 16,
               padding: 18,
               marginBottom: 12,
               borderWidth: destacado ? 2 : 1,
               borderColor: destacado ? COLORS.pri : COLORS.border,
               position: 'relative',
+              ...(destacado ? {
+                shadowColor: COLORS.pri,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 10,
+                elevation: 4,
+              } : {}),
             }}
           >
             {destacado && (
@@ -91,9 +104,10 @@ export default function ComprarCoinsScreen() {
             <TouchableOpacity
               onPress={() => abrirCheckout(p.slug)}
               activeOpacity={0.85}
+              accessibilityLabel={`Comprar paquete ${p.name} de ${p.coins.toLocaleString('es-PE')} SoluCoins por ${p.price} soles. Se abre el pago seguro en tu navegador`}
               style={{
                 backgroundColor: destacado ? COLORS.pri : COLORS.dark,
-                paddingVertical: 12, borderRadius: 10,
+                paddingVertical: 14, minHeight: 48, borderRadius: 12,
                 alignItems: 'center', marginTop: 8,
                 flexDirection: 'row', justifyContent: 'center', gap: 6,
               }}
@@ -117,8 +131,8 @@ export default function ComprarCoinsScreen() {
         <Ionicons name="shield-checkmark" size={20} color="#2563EB" style={{ marginTop: 2 }} />
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 12, color: '#1E40AF', lineHeight: 18 }}>
-            El pago se procesa de forma segura en solu.pe con Culqi (PCI-DSS, 3DS).
-            Al terminar el pago, los SoluCoins se acreditan automáticamente a tu cuenta y recibís tu boleta SUNAT por email.
+            Al tocar "Comprar paquete" se abre el pago seguro en tu navegador (solu.pe con Culqi).
+            Al terminar, los SoluCoins se acreditan solos a tu cuenta y recibes tu boleta SUNAT por email.
           </Text>
         </View>
       </View>
@@ -126,7 +140,7 @@ export default function ComprarCoinsScreen() {
       <TouchableOpacity
         onPress={() => router.back()}
         style={{
-          paddingVertical: 14, borderRadius: 14, alignItems: 'center',
+          paddingVertical: 14, minHeight: 48, justifyContent: 'center', borderRadius: 14, alignItems: 'center',
           marginTop: 16, marginBottom: 24,
           borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white,
         }}

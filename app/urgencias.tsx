@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Linking, ActivityIndicator, StatusBar } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Linking, ActivityIndicator, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS, waLink, ESTADOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
-import { findBestTech } from '../src/lib/matching'
+import { findBestTech, type MatchableTech } from '../src/lib/matching'
 import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
 
 const EMERGENCIAS = [
@@ -26,7 +26,8 @@ export default function UrgenciasScreen() {
   const [nombre, setNombre] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [loading, setLoading] = useState(false)
-  const [assignedTech, setAssignedTech] = useState<any>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [assignedTech, setAssignedTech] = useState<MatchableTech | null>(null)
 
   useEffect(() => { location.detectLocation() }, [])
 
@@ -37,10 +38,11 @@ export default function UrgenciasScreen() {
   }, [profile])
 
   async function handleSearch() {
-    if (!selected) return Alert.alert('Aviso', 'Por favor selecciona el tipo de emergencia')
-    if (!nombre.trim() || !whatsapp.trim()) return Alert.alert('Aviso', 'Necesitamos tu Nombre y WhatsApp para que el técnico te responda.')
+    setErrorMsg(null)
+    if (!selected) return setErrorMsg('Selecciona el tipo de emergencia para continuar.')
+    if (!nombre.trim() || !whatsapp.trim()) return setErrorMsg('Necesitamos tu nombre y WhatsApp para que el técnico te responda.')
     const waClean = whatsapp.replace(/\D/g, '')
-    if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) return Alert.alert('Aviso', 'Ingresa un WhatsApp válido de 9 dígitos.')
+    if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) return setErrorMsg('Ingresa un WhatsApp válido de 9 dígitos (empieza con 9).')
 
     setLoading(true)
     try {
@@ -54,7 +56,7 @@ export default function UrgenciasScreen() {
       })
 
       if (!bestTech) {
-        Alert.alert('Lo sentimos', 'En este momento exacto no hay técnicos disponibles para esa emergencia. Intenta buscar en la pantalla principal.')
+        setErrorMsg('Por ahora no hay técnicos libres para esta emergencia. Intenta de nuevo en unos minutos o busca desde el inicio.')
         setLoading(false)
         return
       }
@@ -82,7 +84,7 @@ export default function UrgenciasScreen() {
 
       setAssignedTech(bestTech)
     } catch (err) {
-      Alert.alert('Error', 'Hubo un problema. Intenta de nuevo.')
+      setErrorMsg('Hubo un problema de conexión. Revisa tu internet e intenta de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -96,8 +98,8 @@ export default function UrgenciasScreen() {
           <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
             <Ionicons name="checkmark-circle" size={40} color="#10B981" />
           </View>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark, textAlign: 'center', marginBottom: 6 }}>¡Técnico Encontrado!</Text>
-          <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 24 }}>Se ha asignado automáticamente un especialista para resolver tu problema ahora mismo.</Text>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark, textAlign: 'center', marginBottom: 6 }}>¡Técnico encontrado!</Text>
+          <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 24 }}>Te asignamos al especialista disponible más cercano. Contáctalo ahora mismo.</Text>
 
           <View style={{ width: '100%', backgroundColor: '#F0FDF4', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#BBF7D0', marginBottom: 20 }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46', marginBottom: 4 }}>{assignedTech.nombre}</Text>
@@ -110,7 +112,7 @@ export default function UrgenciasScreen() {
             style={{ width: '100%', backgroundColor: '#1E3A5F', borderRadius: 16, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 12 }}
           >
             <Ionicons name="call" size={22} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Llamar al Técnico Ahora</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Llamar al técnico ahora</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -118,11 +120,11 @@ export default function UrgenciasScreen() {
             style={{ width: '100%', backgroundColor: '#25D366', borderRadius: 16, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}
           >
             <Ionicons name="logo-whatsapp" size={24} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Escribirle al WhatsApp</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Escribir por WhatsApp</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={() => router.replace('/')} style={{ marginTop: 24, alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.replace('/')} style={{ marginTop: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, minHeight: 44 }}>
           <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.pri }}>← Volver al inicio</Text>
         </TouchableOpacity>
       </View>
@@ -131,10 +133,10 @@ export default function UrgenciasScreen() {
 
   // --- SEARCH SCREEN ---
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
       <View style={{ backgroundColor: '#7F1D1D', padding: 24, paddingTop: (StatusBar.currentHeight || 40) + 16, paddingBottom: 40, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, elevation: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ width: 40, height: 40, justifyContent: 'center' }}>
+          <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Volver" style={{ width: 44, height: 44, justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center' }}>
@@ -153,7 +155,7 @@ export default function UrgenciasScreen() {
           {EMERGENCIAS.map((e) => (
             <TouchableOpacity
               key={e.name}
-              onPress={() => setSelected(e)}
+              onPress={() => { setSelected(e); setErrorMsg(null) }}
               style={{
                 width: '48%', backgroundColor: selected?.name === e.name ? e.color + '15' : '#fff',
                 borderRadius: 16, padding: 16, borderWidth: 2,
@@ -170,27 +172,39 @@ export default function UrgenciasScreen() {
 
         <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>2. Datos rápidos de contacto</Text>
         <TextInput
-          value={nombre} onChangeText={setNombre}
-          placeholder="Tu Nombre"
-          style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}
+          value={nombre} onChangeText={(t) => { setNombre(t); setErrorMsg(null) }}
+          placeholder="Tu nombre"
+          placeholderTextColor="#9CA3AF"
+          style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0', color: COLORS.dark }}
         />
         <TextInput
-          value={whatsapp} onChangeText={setWhatsapp}
+          value={whatsapp} onChangeText={(t) => { setWhatsapp(t); setErrorMsg(null) }}
           placeholder="Tu celular (WhatsApp)" keyboardType="phone-pad"
-          style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 24, borderWidth: 1, borderColor: '#E2E8F0' }}
+          placeholderTextColor="#9CA3AF"
+          style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 24, borderWidth: 1, borderColor: '#E2E8F0', color: COLORS.dark }}
         />
+
+        {errorMsg ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#FECACA', marginBottom: 12 }}>
+            <Ionicons name="alert-circle" size={18} color="#DC2626" />
+            <Text style={{ flex: 1, fontSize: 13, color: '#991B1B', fontWeight: '600' }}>{errorMsg}</Text>
+          </View>
+        ) : null}
 
         <TouchableOpacity
           onPress={handleSearch}
           disabled={loading}
-          style={{ backgroundColor: '#DC2626', borderRadius: 16, padding: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, elevation: 8 }}
+          style={{ backgroundColor: '#DC2626', borderRadius: 14, padding: 18, minHeight: 56, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, elevation: 8, opacity: loading ? 0.7 : 1 }}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <>
+              <ActivityIndicator color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Buscando técnico...</Text>
+            </>
           ) : (
             <>
               <Ionicons name="search" size={22} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.5 }}>ASIGNAR TÉCNICO AHORA</Text>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 }}>Buscar técnico ahora</Text>
             </>
           )}
         </TouchableOpacity>

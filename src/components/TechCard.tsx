@@ -13,11 +13,12 @@ type Props = {
   isFavorite?: boolean
 }
 
+// Los nombres de planes legacy (modelo viejo) no se muestran al usuario:
+// se mapean a badges neutrales de calidad (TOP / DESTACADO).
 const PLAN_COLORS: Record<string, { bg: string; text: string; label: string; border: string; gradient: [string, string] }> = {
-  elite: { bg: '#FFD700', text: '#1A1A2E', label: 'ELITE', border: '#FFD700', gradient: ['#FFD700', '#FFA500'] },
-  premium: { bg: COLORS.pri, text: '#FFFFFF', label: 'PRO', border: COLORS.pri, gradient: [COLORS.pri, '#E55A10'] },
-  pro: { bg: COLORS.pri, text: '#FFFFFF', label: 'PRO', border: COLORS.pri, gradient: [COLORS.pri, '#E55A10'] },
-  profesional: { bg: '#64748B', text: '#FFFFFF', label: 'Starter', border: '#64748B', gradient: ['#64748B', '#475569'] },
+  elite: { bg: '#FFD700', text: '#1A1A2E', label: 'TOP', border: '#FFD700', gradient: ['#FFD700', '#FFA500'] },
+  premium: { bg: COLORS.pri, text: '#FFFFFF', label: 'DESTACADO', border: COLORS.pri, gradient: [COLORS.pri, '#E55A10'] },
+  pro: { bg: COLORS.pri, text: '#FFFFFF', label: 'DESTACADO', border: COLORS.pri, gradient: [COLORS.pri, '#E55A10'] },
 }
 
 const AVATAR_GRADIENTS: [string, string][] = [
@@ -26,6 +27,10 @@ const AVATAR_GRADIENTS: [string, string][] = [
   ['#8B5CF6', '#6366F1'],
   ['#10B981', '#059669'],
 ]
+
+function capitalizar(nombre: string): string {
+  return nombre.split(' ').map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(' ')
+}
 
 function StarRating({ rating }: { rating: number }) {
   const stars = []
@@ -71,11 +76,11 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
     >
       <View style={{
         backgroundColor: COLORS.white,
-        borderRadius: 20,
+        borderRadius: 16,
         padding: 0,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: '#E2E8F0',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.05,
@@ -84,13 +89,14 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
         overflow: 'hidden',
       }}>
       {/* Colored left border */}
-      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: leftBorderColor, borderTopLeftRadius: 18, borderBottomLeftRadius: 18 }} />
+      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: leftBorderColor, borderTopLeftRadius: 15, borderBottomLeftRadius: 15 }} />
 
       <View style={{ padding: 16, paddingLeft: 20 }}>
         {/* Favorite heart button */}
         {onToggleFavorite && (
           <TouchableOpacity
             onPress={(e) => { e.stopPropagation(); onToggleFavorite(tech.id) }}
+            accessibilityLabel={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{
               position: 'absolute',
@@ -116,6 +122,7 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
         {/* Share button */}
         <TouchableOpacity
           onPress={(e) => { e.stopPropagation(); handleShare() }}
+          accessibilityLabel="Compartir técnico"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={{
             position: 'absolute',
@@ -169,11 +176,11 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
           {/* Info */}
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark }}>{tech.nombre}</Text>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark }}>{capitalizar(tech.nombre)}</Text>
               {tech.verificado && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#E8FFF3', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
                   <Ionicons name="checkmark-circle" size={12} color={COLORS.acc} />
-                  <Text style={{ fontSize: 9, fontWeight: '700', color: COLORS.acc }}>Verificado</Text>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: COLORS.acc }}>Verificado</Text>
                 </View>
               )}
               {planStyle && (
@@ -182,7 +189,7 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                   style={{ borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}
                 >
-                  <Text style={{ color: planStyle.text, fontSize: 9, fontWeight: '800' }}>{planStyle.label}</Text>
+                  <Text style={{ color: planStyle.text, fontSize: 10, fontWeight: '800' }}>{planStyle.label}</Text>
                 </LinearGradient>
               )}
             </View>
@@ -195,13 +202,22 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
 
           {/* Stats */}
           <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <View style={{ backgroundColor: '#FFF8E1', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center' }}>
-              <StarRating rating={tech.calificacion || 0} />
-              <Text style={{ fontSize: 14, fontWeight: '900', color: COLORS.dark, marginTop: 2 }}>
-                {tech.calificacion?.toFixed(1) || '0.0'}
-              </Text>
-            </View>
-            <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{tech.num_resenas || 0} reseñas</Text>
+            {(tech.num_resenas || 0) > 0 ? (
+              <>
+                <View style={{ backgroundColor: '#FFF8E1', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center' }}>
+                  <StarRating rating={tech.calificacion || 0} />
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: COLORS.dark, marginTop: 2 }}>
+                    {tech.calificacion?.toFixed(1) || '0.0'}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{tech.num_resenas} reseñas</Text>
+              </>
+            ) : (
+              <View style={{ backgroundColor: '#FFF7ED', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center', flexDirection: 'row', gap: 4 }}>
+                <Ionicons name='sparkles' size={12} color={COLORS.pri} />
+                <Text style={{ fontSize: 11, fontWeight: '800', color: COLORS.pri }}>Nuevo</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -239,7 +255,8 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
               flex: 1,
               backgroundColor: '#25D366',
               borderRadius: 12,
-              paddingVertical: 11,
+              paddingVertical: 12,
+              minHeight: 44,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
@@ -261,7 +278,8 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
               flex: 1,
               backgroundColor: '#1E3A5F',
               borderRadius: 12,
-              paddingVertical: 11,
+              paddingVertical: 12,
+              minHeight: 44,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, Alert, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../src/lib/constants'
@@ -25,8 +25,16 @@ export default function AgendarScreen() {
 
   if (!id || isNaN(techId)) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-        <Text style={{ fontSize: 16, color: COLORS.gray }}>Técnico no encontrado</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
+        <Ionicons name="search-outline" size={48} color={COLORS.gray2} />
+        <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginTop: 12 }}>No encontramos a este técnico</Text>
+        <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, textAlign: 'center' }}>Vuelve atrás y elige otro técnico disponible.</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ marginTop: 20, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center' }}
+        >
+          <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>Volver</Text>
+        </TouchableOpacity>
       </View>
     )
   }
@@ -52,16 +60,11 @@ export default function AgendarScreen() {
       const data = await res.json()
       if (data.success) {
         setBooked(true)
-        Alert.alert(
-          'Cita agendada',
-          `Tu cita fue confirmada para el ${selectedTime.fecha} de ${selectedTime.horaInicio} a ${selectedTime.horaFin}.\n\nPagarás al técnico directamente cuando llegue (Yape, Plin o efectivo).`,
-          [{ text: 'OK', onPress: () => router.back() }]
-        )
       } else {
-        Alert.alert('Error', data.error || 'No se pudo agendar')
+        Alert.alert('No se pudo agendar', data.error || 'Ese horario ya no está disponible. Elige otro e intenta de nuevo.')
       }
     } catch {
-      Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
+      Alert.alert('Sin conexión', 'Revisa tu internet e intenta de nuevo. Tu selección no se perdió.')
     } finally {
       setBooking(false)
     }
@@ -97,16 +100,22 @@ export default function AgendarScreen() {
               <Text style={{ fontSize: 28, marginBottom: 8 }}>💳</Text>
               <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Pagas al técnico directo</Text>
               <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 16 }}>
-                S/{precio} — Yape, Plin o efectivo. Coordinas con el técnico el método cuando llegue.
+                Desde S/{precio} — le pagas con Yape, Plin, efectivo o tarjeta cuando llegue. SOLU no cobra comisión al cliente.
               </Text>
               <TouchableOpacity
                 onPress={confirmBooking}
                 disabled={booking}
-                style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', width: '100%' }}
+                accessibilityLabel="Confirmar cita"
+                style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, minHeight: 52, alignItems: 'center', justifyContent: 'center', width: '100%', opacity: booking ? 0.7 : 1 }}
               >
-                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>
-                  {booking ? 'Agendando...' : 'Confirmar cita'}
-                </Text>
+                {booking ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <ActivityIndicator color={COLORS.white} />
+                    <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>Agendando...</Text>
+                  </View>
+                ) : (
+                  <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>Confirmar cita</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -116,10 +125,19 @@ export default function AgendarScreen() {
         {booked && (
           <View style={{ backgroundColor: '#F0FDF4', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#BBF7D0', alignItems: 'center' }}>
             <Ionicons name="checkmark-circle" size={48} color="#10B981" />
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>Cita confirmada</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>¡Cita confirmada!</Text>
             <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>
               {selectedTime?.fecha} de {selectedTime?.horaInicio} a {selectedTime?.horaFin}
             </Text>
+            <Text style={{ fontSize: 12, color: '#047857', textAlign: 'center', marginTop: 10, lineHeight: 18 }}>
+              Pagarás directo al técnico cuando llegue: Yape, Plin, efectivo o tarjeta.
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ marginTop: 16, backgroundColor: COLORS.white, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center', borderWidth: 1, borderColor: '#BBF7D0' }}
+            >
+              <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 14 }}>Volver</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>

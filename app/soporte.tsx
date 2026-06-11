@@ -13,7 +13,7 @@ interface Message {
 
 const INITIAL_MSG: Message = {
   role: 'assistant',
-  content: '¡Hola! Soy el asistente de soporte de SOLU. Puedo ayudarte con:\n\n• Problemas con tu cuenta\n• Dudas sobre planes y pagos\n• Cómo solicitar un técnico\n• Problemas con un servicio\n• Cualquier otra consulta\n\n¿En qué puedo ayudarte?',
+  content: '¡Hola! Soy el asistente de soporte de SOLU. Puedo ayudarte con:\n\n• Problemas con tu cuenta\n• Dudas sobre pagos y Coins\n• Cómo solicitar un técnico\n• Problemas con un servicio\n• Cualquier otra consulta\n\n¿En qué puedo ayudarte?',
 }
 
 export default function SoporteScreen() {
@@ -23,9 +23,11 @@ export default function SoporteScreen() {
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
 
+  // Scroll diferido para que la burbuja nueva ya esté renderizada
   useEffect(() => {
-    scrollRef.current?.scrollToEnd({ animated: true })
-  }, [messages])
+    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80)
+    return () => clearTimeout(t)
+  }, [messages, loading])
 
   async function handleSend() {
     if (!input.trim() || loading) return
@@ -58,7 +60,7 @@ export default function SoporteScreen() {
         })
       } catch {}
     } catch {
-      setMessages([...newMessages, { role: 'assistant', content: 'Error de conexión. Verifica tu internet e intenta de nuevo.' }])
+      setMessages([...newMessages, { role: 'assistant', content: 'No pude conectarme 😕. Revisa tu internet e intenta de nuevo.' }])
     } finally {
       setLoading(false)
     }
@@ -71,7 +73,7 @@ export default function SoporteScreen() {
     >
       {/* Header */}
       <View style={{ backgroundColor: '#1E3A5F', padding: 16, paddingTop: (StatusBar.currentHeight || 40) + 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => router.dismiss()}>
+        <TouchableOpacity accessibilityLabel="Volver" hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => router.dismiss()}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
@@ -129,10 +131,12 @@ export default function SoporteScreen() {
           onSubmitEditing={handleSend}
           editable={!loading}
           returnKeyType="send"
+          maxLength={1000}
         />
         <TouchableOpacity
           onPress={handleSend}
           disabled={loading || !input.trim()}
+          accessibilityLabel="Enviar mensaje"
           style={{
             width: 46, height: 46, borderRadius: 14, backgroundColor: '#1E3A5F',
             alignItems: 'center', justifyContent: 'center',

@@ -31,7 +31,7 @@ export function ChatInputBar({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#FEF2F2', borderTopWidth: 1, borderTopColor: COLORS.border }}>
           <Ionicons name="mic-off-outline" size={16} color={COLORS.red} />
           <Text style={{ flex: 1, fontSize: 11, color: COLORS.red, lineHeight: 15 }}>{micError}</Text>
-          <TouchableOpacity onPress={onDismissMicError} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity accessibilityLabel="Cerrar aviso" onPress={onDismissMicError} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="close" size={16} color={COLORS.red} />
           </TouchableOpacity>
         </View>
@@ -40,6 +40,7 @@ export function ChatInputBar({
         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 10, gap: 10, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white }}>
           <TouchableOpacity
             onPress={onCancelRecording}
+            accessibilityLabel="Descartar grabación"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
           >
@@ -53,6 +54,7 @@ export function ChatInputBar({
           </View>
           <TouchableOpacity
             onPress={onSendRecording}
+            accessibilityLabel="Enviar nota de voz"
             style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}
           >
             <Ionicons name="send" size={18} color="#fff" />
@@ -75,9 +77,10 @@ export function ChatInputBar({
             <TouchableOpacity
               onPress={onStartRecording}
               disabled={sendingAudio}
+              accessibilityLabel="Grabar nota de voz"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={{
-                width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.pri,
+                width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.pri,
                 alignItems: 'center', justifyContent: 'center',
                 opacity: sendingAudio ? 0.5 : 1,
               }}
@@ -92,9 +95,10 @@ export function ChatInputBar({
             <TouchableOpacity
               onPress={onSend}
               disabled={!input.trim() || sending}
+              accessibilityLabel="Enviar mensaje"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={{
-                width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.pri,
+                width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.pri,
                 alignItems: 'center', justifyContent: 'center',
                 opacity: !input.trim() || sending ? 0.5 : 1,
               }}

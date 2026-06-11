@@ -91,6 +91,7 @@ export function AudioMessageBubble({ url, durationMs, mine }: Props) {
       <TouchableOpacity
         onPress={togglePlay}
         disabled={loading}
+        accessibilityLabel={playing ? 'Pausar nota de voz' : 'Reproducir nota de voz'}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         style={{
           width: 32, height: 32, borderRadius: 16,
