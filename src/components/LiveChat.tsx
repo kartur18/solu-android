@@ -1,9 +1,21 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { View, Text, FlatList, KeyboardAvoidingView, Platform } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { COLORS } from '../lib/constants'
 import { logger } from '../lib/logger'
+import { AudioMessageBubble } from './AudioMessageBubble'
+import { ChatInputBar } from './ChatInputBar'
+import {
+  isAudioChatAvailable, startRecording, stopRecording, uploadChatAudio,
+  type ExpoRecording,
+} from '../lib/audioChat'
+
+interface AttachmentMeta {
+  mime?: string
+  size_bytes?: number
+  duration_ms?: number
+}
 
 interface Message {
   id: number
@@ -12,7 +24,12 @@ interface Message {
   mensaje: string
   leido: boolean
   created_at: string
+  tipo?: 'text' | 'audio' | 'image' | 'cotizacion'
+  attachment_url?: string | null
+  attachment_meta?: AttachmentMeta | null
 }
+
+const MIN_AUDIO_MS = 1000
 
 interface Props {
   codigo: string
@@ -28,7 +45,15 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [recordingMs, setRecordingMs] = useState(0)
+  const [sendingAudio, setSendingAudio] = useState(false)
+  const [micError, setMicError] = useState<string | null>(null)
   const listRef = useRef<FlatList<Message>>(null)
+  const recordingRef = useRef<ExpoRecording | null>(null)
+  const recordStartRef = useRef(0)
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const audioAvailable = useMemo(() => isAudioChatAvailable(), [])
 
   const loadMessages = useCallback(async () => {
     try {
@@ -88,6 +113,96 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
     }
   }
 
+  const clearRecordTimer = useCallback(() => {
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current)
+      recordTimerRef.current = null
+    }
+  }, [])
+
+  // Descartar grabación en curso si el chat se desmonta
+  useEffect(() => {
+    return () => {
+      clearRecordTimer()
+      if (recordingRef.current) stopRecording(recordingRef.current).catch(() => {})
+    }
+  }, [clearRecordTimer])
+
+  async function startRec() {
+    if (recording || sendingAudio) return
+    setMicError(null)
+    try {
+      const rec = await startRecording()
+      if (!rec) return
+      recordingRef.current = rec
+      recordStartRef.current = Date.now()
+      setRecordingMs(0)
+      setRecording(true)
+      recordTimerRef.current = setInterval(() => {
+        setRecordingMs(Date.now() - recordStartRef.current)
+      }, 250)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'mic-denied') {
+        setMicError('Necesitamos acceso a tu micrófono para enviar notas de voz. Actívalo en Ajustes.')
+      } else {
+        logger.error('Record start error:', err)
+        setMicError('No pudimos iniciar la grabación. Intenta de nuevo.')
+      }
+    }
+  }
+
+  async function cancelRec() {
+    clearRecordTimer()
+    setRecording(false)
+    const rec = recordingRef.current
+    recordingRef.current = null
+    if (rec) await stopRecording(rec).catch(() => {})
+  }
+
+  async function stopAndSendRec() {
+    clearRecordTimer()
+    setRecording(false)
+    const rec = recordingRef.current
+    recordingRef.current = null
+    if (!rec) return
+    const durationMs = Date.now() - recordStartRef.current
+    const uri = await stopRecording(rec).catch(() => null)
+    if (!uri || durationMs < MIN_AUDIO_MS) {
+      setMicError('El audio fue muy corto. Mantén la grabación al menos 1 segundo.')
+      return
+    }
+    setSendingAudio(true)
+    const tempId = -Date.now()
+    const optimistic: Message = {
+      id: tempId, codigo_solicitud: codigo, remitente: as,
+      mensaje: '', leido: false, created_at: new Date().toISOString(),
+      tipo: 'audio', attachment_url: uri,
+      attachment_meta: { mime: 'audio/mp4', duration_ms: durationMs },
+    }
+    setMessages((prev) => [...prev, optimistic])
+    try {
+      const upload = await uploadChatAudio(codigo, as, uri)
+      if (!upload) throw new Error('audio-upload-failed')
+      const { data, error } = await supabase
+        .from('chat_mensajes')
+        .insert({
+          codigo_solicitud: codigo, remitente: as, mensaje: '', leido: false,
+          tipo: 'audio', attachment_url: upload.url,
+          attachment_meta: { mime: upload.mime, size_bytes: upload.sizeBytes, duration_ms: durationMs },
+        })
+        .select()
+        .single()
+      if (error) throw error
+      if (data) setMessages((prev) => prev.map((m) => m.id === tempId ? (data as Message) : m))
+    } catch (err) {
+      logger.error('Audio send error:', err)
+      setMessages((prev) => prev.filter((m) => m.id !== tempId))
+      setMicError('No pudimos enviar tu nota de voz. Revisa tu conexión e intenta de nuevo.')
+    } finally {
+      setSendingAudio(false)
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -100,8 +215,9 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
         contentContainerStyle={{ padding: 12, paddingBottom: 20, gap: 6 }}
         renderItem={({ item }) => {
           const mine = item.remitente === as
+          const isAudio = item.tipo === 'audio' && !!item.attachment_url
           return (
-            <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+            <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', minWidth: isAudio ? 200 : undefined }}>
               <View style={{
                 backgroundColor: mine ? COLORS.pri : COLORS.white,
                 borderRadius: 14,
@@ -111,7 +227,18 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
                 borderWidth: mine ? 0 : 1,
                 borderColor: COLORS.border,
               }}>
-                <Text style={{ color: mine ? '#fff' : COLORS.dark, fontSize: 13, lineHeight: 18 }}>{item.mensaje}</Text>
+                {isAudio ? (
+                  <AudioMessageBubble
+                    url={item.attachment_url as string}
+                    durationMs={item.attachment_meta?.duration_ms}
+                    mine={mine}
+                  />
+                ) : (
+                  <Text style={{ color: mine ? '#fff' : COLORS.dark, fontSize: 13, lineHeight: 18 }}>{item.mensaje}</Text>
+                )}
+                {isAudio && !!item.mensaje && (
+                  <Text style={{ color: mine ? '#fff' : COLORS.dark, fontSize: 12, lineHeight: 16, marginTop: 4 }}>{item.mensaje}</Text>
+                )}
               </View>
               <Text style={{ fontSize: 9, color: COLORS.gray2, textAlign: mine ? 'right' : 'left', marginTop: 2 }}>
                 {new Date(item.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
@@ -128,29 +255,21 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
           </View>
         }
       />
-      <View style={{ flexDirection: 'row', padding: 10, gap: 8, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white }}>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder="Escribe un mensaje..."
-          placeholderTextColor={COLORS.gray2}
-          style={{ flex: 1, backgroundColor: COLORS.light, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, fontSize: 13, color: COLORS.dark, borderWidth: 1, borderColor: COLORS.border }}
-          multiline
-          maxLength={500}
-          onSubmitEditing={send}
-        />
-        <TouchableOpacity
-          onPress={send}
-          disabled={!input.trim() || sending}
-          style={{
-            width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.pri,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: !input.trim() || sending ? 0.5 : 1,
-          }}
-        >
-          <Ionicons name="send" size={16} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <ChatInputBar
+        input={input}
+        onChangeInput={setInput}
+        onSend={send}
+        sending={sending}
+        audioAvailable={audioAvailable}
+        recording={recording}
+        recordingMs={recordingMs}
+        sendingAudio={sendingAudio}
+        micError={micError}
+        onDismissMicError={() => setMicError(null)}
+        onStartRecording={startRec}
+        onCancelRecording={cancelRec}
+        onSendRecording={stopAndSendRec}
+      />
     </KeyboardAvoidingView>
   )
 }

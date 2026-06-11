@@ -1,6 +1,6 @@
 {
   "name": "solu-app",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -14,6 +14,7 @@
     "@sentry/react-native": "~7.11.0",
     "@supabase/supabase-js": "^2.100.0",
     "expo": "~55.0.26",
+    "expo-av": "^16.0.8",
     "expo-clipboard": "~55.0.13",
     "expo-constants": "~55.0.16",
     "expo-device": "~55.0.17",

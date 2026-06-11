@@ -312,6 +312,28 @@ export default function HomeScreen() {
             </View>
           )}
 
+          {/* CTA Cotizar por foto (IA Vision) */}
+          <TouchableOpacity
+            onPress={() => router.push('/cotizar-foto')}
+            activeOpacity={0.85}
+            style={{ marginTop: 12 }}
+          >
+            <LinearGradient
+              colors={['#F26B21', '#E55A10']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={{ borderRadius: 14, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+            >
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="camera" size={19} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>📸 Cotiza con una foto</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 1 }}>Precio estimado en 5 segundos con IA</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.8)" />
+            </LinearGradient>
+          </TouchableOpacity>
+
           {/* Emergency link (discreet) */}
           <TouchableOpacity
             onPress={() => router.push('/urgencias')}

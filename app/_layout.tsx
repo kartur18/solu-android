@@ -92,6 +92,7 @@ export default function RootLayout() {
         <Stack.Screen name="tracking/[code]" options={{ title: 'Seguimiento' }} />
         <Stack.Screen name="calificar/[code]" options={{ title: 'Calificar servicio' }} />
         <Stack.Screen name="solicitar" options={{ title: 'Solicitar técnico', presentation: 'modal' }} />
+        <Stack.Screen name="cotizar-foto" options={{ title: 'Cotiza con una foto', presentation: 'modal' }} />
         <Stack.Screen name="registro" options={{ title: 'Registro de técnico', presentation: 'modal' }} />
         <Stack.Screen name="agendar/[id]" options={{ title: 'Agendar servicio', presentation: 'modal' }} />
         <Stack.Screen name="privacidad" options={{ title: 'Política de Privacidad', presentation: 'modal' }} />
@@ -99,6 +100,7 @@ export default function RootLayout() {
         <Stack.Screen name="fidelidad" options={{ title: 'Mi Fidelidad', presentation: 'modal' }} />
         <Stack.Screen name="urgencias" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="soporte" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="asistente" options={{ headerShown: false }} />
         <Stack.Screen name="chat/[id]" options={{ title: 'Chat' }} />
         <Stack.Screen name="chat-pedido/[code]" options={{ title: 'Chat' }} />
         <Stack.Screen name="eliminar-cuenta" options={{ title: 'Eliminar cuenta', presentation: 'modal' }} />
