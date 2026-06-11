@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "pe.solu.app",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "associatedDomains": [
         "applinks:solu.pe",
         "webcredentials:solu.pe",
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "intentFilters": [
         {
           "action": "VIEW",
