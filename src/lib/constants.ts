@@ -281,23 +281,42 @@ export const DISTRITOS = [
   // Provincias de Lima
   'Huaral', 'Cañete', 'Huarochirí', 'Barranca', 'Canta',
   'Cajatambo', 'Oyón', 'Yauyos',
+  // Arequipa metropolitana — sincronizado con la web (Sprint 1.2, 2026-05).
+  // 'Miraflores - Arequipa' lleva sufijo para no chocar con Miraflores de Lima.
+  'Arequipa Cercado', 'Cayma', 'Yanahuara', 'Cerro Colorado',
+  'José Luis Bustamante y Rivero', 'Sachaca', 'Selva Alegre',
+  'Alto Selva Alegre', 'Mariano Melgar', 'Miraflores - Arequipa',
+  'Paucarpata', 'Hunter', 'Socabaya', 'Tiabaya', 'Characato',
+  'Sabandía', 'Yura', 'Mollendo', 'Camaná',
+  // Trujillo metropolitana
+  'Trujillo Centro', 'Víctor Larco Herrera', 'La Esperanza',
+  'El Porvenir', 'Huanchaco', 'Moche',
+  // Chiclayo
+  'Chiclayo', 'José Leonardo Ortiz', 'La Victoria - Chiclayo',
+  'Pimentel', 'Lambayeque', 'Ferreñafe',
+  // Piura
+  'Piura', 'Castilla', 'Sullana', 'Talara', 'Paita',
+  // Cusco
+  'Cusco', 'Wanchaq', 'San Sebastián', 'San Jerónimo', 'Santiago',
+  // Huancayo
+  'Huancayo', 'El Tambo', 'Chilca', 'Tarma', 'La Oroya',
+  // Iquitos
+  'Iquitos', 'San Juan Bautista', 'Punchana',
   // Norte del Perú
-  'Tumbes', 'Piura', 'Sullana', 'Talara', 'Paita',
-  'Chiclayo', 'Lambayeque', 'Ferreñafe',
-  'Trujillo', 'Chimbote', 'Huaraz',
+  'Tumbes', 'Chimbote', 'Huaraz',
   'Cajamarca', 'Jaén', 'Chachapoyas', 'Moyobamba', 'Tarapoto',
   // Centro del Perú
-  'Huancayo', 'Huánuco', 'Cerro de Pasco', 'Tarma', 'La Oroya',
+  'Huánuco', 'Cerro de Pasco',
   'Huancavelica', 'Ayacucho',
   'Ica', 'Chincha', 'Pisco', 'Nazca',
   // Sur del Perú
-  'Arequipa', 'Mollendo', 'Camaná', 'Tacna', 'Moquegua', 'Ilo',
-  'Cusco', 'Juliaca', 'Puno', 'Abancay', 'Puerto Maldonado',
+  'Tacna', 'Moquegua', 'Ilo',
+  'Juliaca', 'Puno', 'Abancay', 'Puerto Maldonado',
   // Selva del Perú
-  'Iquitos', 'Pucallpa', 'Tingo María', 'Yurimaguas', 'Bagua',
+  'Pucallpa', 'Tingo María', 'Yurimaguas', 'Bagua',
 ]
 
-export const SUPPORT_PHONE = '983835904'
+export const SUPPORT_PHONE = '904518343'
 
 export const ESTADOS = {
   NUEVO: 'Nuevo',

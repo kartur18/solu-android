@@ -37,7 +37,7 @@ export default function ComprarCoinsScreen() {
           Comprar SoluCoins
         </Text>
         <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 4 }}>
-          Elegí tu paquete. Mientras más grande, mejor el precio por lead.
+          Elige tu paquete. Mientras más grande, mejor el precio por lead.
         </Text>
       </View>
 

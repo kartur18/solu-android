@@ -75,7 +75,7 @@ export default function CoordinarPagoScreen() {
       }}>
         <Ionicons name="shield-checkmark-outline" size={20} color="#D97706" style={{ marginTop: 1 }} />
         <Text style={{ flex: 1, fontSize: 13, color: '#92400E', lineHeight: 18 }}>
-          Si algo no sale bien, SOLU media gratis entre vos y el técnico.
+          Si algo no sale bien, SOLU media gratis entre tú y el técnico.
           Garantía 30 días.
         </Text>
       </View>

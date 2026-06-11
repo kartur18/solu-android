@@ -20,30 +20,28 @@ export default function TerminosScreen() {
           2.3 Cada cuenta está vinculada a un DNI y WhatsApp único. Crear múltiples cuentas para obtener beneficios está prohibido y resultará en la suspensión permanente.
         </Text>
 
-        <Text style={h}>3. Planes y precios</Text>
+        <Text style={h}>3. SoluCoins y precios</Text>
         <Text style={p}>
-          3.1 SOLU ofrece tres planes para técnicos:{'\n'}
-          • Starter: S/49/mes - 1 oficio, 2 zonas, 3 fotos{'\n'}
-          • PRO: S/79/mes - 3 oficios, 5 zonas, 8 fotos + galería{'\n'}
-          • Elite: S/99/mes - oficios, zonas y fotos ilimitadas{'\n\n'}
-          3.2 Todos los planes incluyen un primer mes gratuito. Los primeros 300 técnicos registrados reciben 2 meses adicionales gratis (3 meses en total).{'\n\n'}
-          3.3 Los planes se renuevan mensualmente. El técnico puede cambiar de plan únicamente al momento de renovar. Durante el periodo activo, no se permiten cambios de plan.{'\n\n'}
-          3.4 El servicio para clientes (solicitar técnicos) es completamente gratuito.
+          3.1 SOLU funciona con SoluCoins, créditos prepagos que el técnico usa para responder solicitudes de clientes (leads). No hay suscripciones ni pagos mensuales obligatorios.{'\n\n'}
+          3.2 Al registrarse y verificar su DNI con RENIEC, el técnico recibe 5,000 SoluCoins de bienvenida sin costo.{'\n\n'}
+          3.3 SOLU ofrece paquetes de SoluCoins desde S/30 hasta S/1,200. Cuanto más grande el paquete, más SoluCoins por sol. Los SoluCoins comprados no tienen fecha de vencimiento.{'\n\n'}
+          3.4 El costo en SoluCoins de cada lead varía según el distrito y la urgencia del servicio, y se muestra antes de aceptar.{'\n\n'}
+          3.5 El servicio para clientes (buscar y solicitar técnicos) es completamente gratuito.
         </Text>
 
         <Text style={h}>4. Pagos y facturación</Text>
         <Text style={p}>
-          4.1 Los pagos se procesan a través de Flow.cl, procesador de pagos certificado. Se aceptan tarjetas de crédito, débito, Yape y PagoEfectivo.{'\n\n'}
-          4.2 Al realizar un pago, el plan se activa automáticamente por 30 días.{'\n\n'}
-          4.3 SOLU emite comprobantes de pago electrónicos a través de NubeFact conforme a las normas de SUNAT.
+          4.1 La compra de paquetes de SoluCoins se procesa a través de Culqi (Niubiz Group), pasarela de pagos peruana certificada PCI-DSS. Se aceptan tarjetas de crédito y débito.{'\n\n'}
+          4.2 Los SoluCoins se acreditan automáticamente a la cuenta del técnico al confirmarse el pago.{'\n\n'}
+          4.3 SOLU emite boletas electrónicas a través de Nubefact conforme a las normas de SUNAT.{'\n\n'}
+          4.4 El pago del servicio entre cliente y técnico se realiza directamente entre ambos (Yape, Plin, efectivo o tarjeta). SOLU no procesa ni retiene ese pago.
         </Text>
 
         <Text style={h}>5. Política de reembolsos</Text>
         <Text style={p}>
-          5.1 El primer mes gratuito no genera cargo. Si el técnico decide no continuar, simplemente no realiza el pago y su plan se desactiva.{'\n\n'}
-          5.2 Una vez realizado el pago de un plan, no se otorgan reembolsos. El técnico puede usar su plan hasta la fecha de vencimiento.{'\n\n'}
-          5.3 En caso de errores de cobro duplicado o problemas técnicos con el procesador de pago, SOLU evaluará el caso y procederá con el reembolso correspondiente dentro de los 15 días hábiles siguientes a la reclamación.{'\n\n'}
-          5.4 Las reclamaciones deben realizarse a contacto@solu.pe o al WhatsApp 983835904 dentro de los 7 días posteriores al cobro.
+          5.1 El técnico tiene 7 días calendario desde la compra de un paquete para solicitar el reembolso completo (Código de Protección y Defensa del Consumidor - INDECOPI), siempre que no haya consumido los SoluCoins del paquete.{'\n\n'}
+          5.2 En caso de errores de cobro duplicado o problemas técnicos con el procesador de pago, SOLU evaluará el caso y procederá con el reembolso correspondiente dentro de los 15 días hábiles siguientes a la reclamación.{'\n\n'}
+          5.3 Las solicitudes de reembolso deben realizarse a contacto@solu.pe o al WhatsApp +51 904 518 343.
         </Text>
 
         <Text style={h}>6. Responsabilidad</Text>
@@ -93,7 +91,7 @@ export default function TerminosScreen() {
           CITYLAND GROUP E.I.R.L.{'\n'}
           RUC: 20614914239{'\n'}
           Email: contacto@solu.pe{'\n'}
-          WhatsApp: 983835904{'\n'}
+          WhatsApp: 904518343{'\n'}
           Web: solu.pe
         </Text>
       </View>

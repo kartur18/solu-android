@@ -278,7 +278,7 @@ export default function RegistroScreen() {
         {step === 2 && (
           <>
             <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Tu servicio</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 2 de 3 — Configurá qué ofreces y dónde</Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 2 de 3 — Configura qué ofreces y dónde</Text>
 
             {/* Oficios — sin gate por plan, tope generoso */}
             <Text style={styles.label}>Oficios * {oficios.length > 0 ? `(${oficios.length}/${MAX_OFICIOS})` : ''}</Text>
@@ -305,7 +305,7 @@ export default function RegistroScreen() {
                   {OFICIOS.filter(o => !oficios.includes(o)).map((o) => (
                     <TouchableOpacity key={o} onPress={() => {
                       if (oficios.length >= MAX_OFICIOS) {
-                        Alert.alert('Tope alcanzado', `Por ahora podés registrar hasta ${MAX_OFICIOS} oficios. Si tenés más experiencia podés agregar otros desde Mi cuenta.`)
+                        Alert.alert('Tope alcanzado', `Por ahora puedes registrar hasta ${MAX_OFICIOS} oficios. Si tienes más experiencia puedes agregar otros desde Mi cuenta.`)
                         return
                       }
                       setOficios([...oficios, o])
