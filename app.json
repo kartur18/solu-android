@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 5,
+      "versionCode": 21,
       "intentFilters": [
         {
           "action": "VIEW",
