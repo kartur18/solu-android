@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TextInput, Linking, ActivityIndicator, StatusBar } from 'react-native'
+import { View, Text, ScrollView, TextInput, Linking, ActivityIndicator, StatusBar, Dimensions } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { waLink, ESTADOS } from '../src/lib/constants'
@@ -20,6 +20,12 @@ const EMERGENCIAS = [
   { name: 'Atoro de desagüe', icon: 'warning' as const, color: '#7C3AED', oficio: 'Desatorador', desc: 'Inodoro, cocina, lavadero' },
   { name: 'Otra emergencia', icon: 'help-circle' as const, color: '#6B7280', oficio: '', desc: 'Describe tu urgencia' },
 ]
+
+// Ancho FIJO en píxeles para las cards de emergencia (2 por fila). Evita el
+// width:'47%' que, según cómo se resuelva el padre, podía colapsar y partir
+// el texto letra por letra ("Ce/rra/jerí/a"). Contenedor: padding xl (20) a
+// cada lado + gap md (12) entre las 2 cards.
+const CARD_W = (Dimensions.get('window').width - THEME.space.xl * 2 - THEME.space.md) / 2
 
 export default function UrgenciasScreen() {
   const router = useRouter()
@@ -184,7 +190,7 @@ export default function UrgenciasScreen() {
                   onPress={() => { setSelected(e); setErrorMsg(null) }}
                   accessibilityLabel={e.name}
                   style={{
-                    width: '47%', backgroundColor: active ? e.color + '14' : THEME.color.surface,
+                    width: CARD_W, backgroundColor: active ? e.color + '14' : THEME.color.surface,
                     borderRadius: THEME.radius.lg, padding: THEME.space.lg,
                     borderWidth: active ? 2 : 0,
                     borderColor: active ? e.color : 'transparent',
