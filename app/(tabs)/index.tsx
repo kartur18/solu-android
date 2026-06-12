@@ -378,14 +378,15 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ) : null}
 
-        {/* Guarantee strip */}
+        {/* Trust strip — solo afirmaciones reales (verificación RENIEC). Sin
+            promesas de garantía/mediación que SOLU no presta. */}
         <View style={{ marginHorizontal: 16, marginTop: pendingRating ? 0 : -14, marginBottom: 12, backgroundColor: '#ECFDF5', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#A7F3D0' }}>
           <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="shield-checkmark" size={18} color="#059669" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46' }}>Garantía SOLU</Text>
-            <Text style={{ fontSize: 11, color: '#047857', marginTop: 1 }}>Técnicos verificados con DNI · Si algo sale mal, mediamos gratis</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46' }}>Identidad verificada</Text>
+            <Text style={{ fontSize: 11, color: '#047857', marginTop: 1 }}>Cada técnico valida su DNI con RENIEC antes de aparecer</Text>
           </View>
         </View>
 
