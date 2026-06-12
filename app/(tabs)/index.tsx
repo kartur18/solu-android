@@ -8,6 +8,7 @@ import { logger } from '../../src/lib/logger'
 import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
+import { fetchClienteServicios } from '../../src/lib/servicios'
 import { TechCard } from '../../src/components/TechCard'
 import { HomeTechSkeleton } from '../../src/components/SkeletonLoader'
 import { useFavorites } from '../../src/lib/useFavorites'
@@ -58,16 +59,19 @@ export default function HomeScreen() {
   // Check for completed services waiting for rating
   useEffect(() => {
     if (!profile?.whatsapp) return
+    const whatsapp = profile.whatsapp
     ;(async () => {
       try {
-        const { data: completed } = await supabase
-          .from('clientes')
-          .select('codigo, servicio')
-          .eq('whatsapp', profile.whatsapp)
-          .eq('estado', 'Completado')
-          .order('created_at', { ascending: false })
-          .limit(5)
-        if (!completed || !completed.length) return
+        // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
+        // El helper trae todas las filas del whatsapp; replicamos en memoria el
+        // filtro estado='Completado', orden created_at desc y limit 5 originales.
+        const all = await fetchClienteServicios(whatsapp)
+        const completed = all
+          .filter((c) => c.estado === 'Completado')
+          .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+          .slice(0, 5)
+          .map((c) => ({ codigo: c.codigo, servicio: c.servicio }))
+        if (!completed.length) return
 
         const { data: rated } = await supabase
           .from('resenas')

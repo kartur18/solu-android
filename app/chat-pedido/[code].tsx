@@ -3,7 +3,7 @@ import { View, Text } from 'react-native'
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LiveChat } from '../../src/components/LiveChat'
-import { supabase } from '../../src/lib/supabase'
+import { fetchServicioByCodigo } from '../../src/lib/servicios'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 
@@ -15,16 +15,12 @@ export default function ChatPedidoScreen() {
 
   useEffect(() => {
     if (!code) return
-    supabase
-      .from('clientes')
-      .select('tecnico_asignado, tecnicos(nombre)')
-      .eq('codigo', code)
-      .single()
-      .then(({ data }) => {
-        const tecnicos = data?.tecnicos as { nombre?: string }[] | { nombre?: string } | null | undefined
-        const nombre = Array.isArray(tecnicos) ? tecnicos[0]?.nombre : tecnicos?.nombre
-        if (nombre) setTechNombre(nombre)
-      })
+    // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
+    fetchServicioByCodigo(code).then((data) => {
+      const tecnicos = data?.tecnicos as { nombre?: string }[] | { nombre?: string } | null | undefined
+      const nombre = Array.isArray(tecnicos) ? tecnicos[0]?.nombre : tecnicos?.nombre
+      if (nombre) setTechNombre(nombre)
+    })
   }, [code])
 
   if (!code) {

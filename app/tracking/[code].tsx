@@ -6,6 +6,7 @@ import { waLink, SUPPORT_PHONE } from '../../src/lib/constants'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/components/ui/Motion'
 import { supabase } from '../../src/lib/supabase'
+import { fetchServicioByCodigo } from '../../src/lib/servicios'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
 import type { Cliente, Tecnico } from '../../src/lib/types'
@@ -35,16 +36,9 @@ export default function TrackingScreen() {
   const [loadError, setLoadError] = useState(false)
 
   const loadData = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('codigo', code)
-      .single()
-    // PGRST116 = código no existe; cualquier otro error es de conexión
-    if (error && error.code !== 'PGRST116') {
-      setLoadError(true)
-      return
-    }
+    // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
+    // El helper devuelve la fila o null (no distingue "no existe" de error de red).
+    const data = await fetchServicioByCodigo(code)
     setLoadError(false)
     setService(data)
 

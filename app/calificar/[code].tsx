@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, haptics } from '../../src/components/ui/Motion'
 import { supabase } from '../../src/lib/supabase'
+import { fetchServicioByCodigo } from '../../src/lib/servicios'
 import type { Cliente } from '../../src/lib/types'
 
 const RATING_LABELS = ['', 'Muy malo', 'Malo', 'Regular', 'Bueno', '¡Excelente!']
@@ -54,7 +55,8 @@ export default function CalificarScreen() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('clientes').select('*').eq('codigo', code).single()
+      // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
+      const data = await fetchServicioByCodigo(code)
       setService(data)
       if (data?.estado === 'Calificado') setDone(true)
       setLoading(false)

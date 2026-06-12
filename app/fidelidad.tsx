@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TextInput, Alert, Linking, StatusBar } from 're
 import { Ionicons } from '@expo/vector-icons'
 import { waLink, SUPPORT_PHONE, ESTADOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
+import { fetchClienteServicios } from '../src/lib/servicios'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
@@ -53,10 +54,8 @@ export default function FidelidadScreen() {
     setLoading(true)
     try {
       // Consultar con el número sin espacios (el input sugiere "999 888 777")
-      const { data: services } = await supabase
-        .from('clientes')
-        .select('id, created_at, servicio, estado')
-        .eq('whatsapp', waClean)
+      // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
+      const services = await fetchClienteServicios(waClean)
 
       const { data: reviews } = await supabase
         .from('resenas')

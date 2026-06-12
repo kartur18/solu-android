@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { SUPPORT_PHONE, waLink } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
+import { fetchClienteServicios } from '../../src/lib/servicios'
 import { ENV } from '../../src/lib/env'
 import { registerForPushNotifications, sendLocalNotification, getStatusNotification } from '../../src/lib/notifications'
 import { THEME } from '../../src/lib/theme'
@@ -79,13 +80,13 @@ export default function MisServiciosScreen() {
   async function loadServicios(wa: string) {
     setLoading(true)
     try {
-      const { data } = await supabase
-        .from('clientes')
-        .select('*')
-        .eq('whatsapp', wa)
-        .order('created_at', { ascending: false })
-        .limit(30)
-      setServicios(data || [])
+      // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
+      // Replicamos en memoria el orden created_at desc y el limit 30 originales.
+      const data = await fetchClienteServicios(wa)
+      const ordered = [...data]
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+        .slice(0, 30)
+      setServicios(ordered)
     } catch {} finally {
       setLoading(false)
     }
