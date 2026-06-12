@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Linking, RefreshControl, Alert, Share } from 'react-native'
+import { View, Text, ScrollView, Linking, RefreshControl, Alert, Share } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { waLink, SUPPORT_PHONE } from '../../src/lib/constants'

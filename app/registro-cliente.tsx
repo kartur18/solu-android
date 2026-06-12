@@ -15,6 +15,7 @@ export default function RegistroClienteScreen() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showDistritos, setShowDistritos] = useState(false)
   const [distritoFilter, setDistritoFilter] = useState('')
   const [loading, setLoading] = useState(false)
@@ -203,12 +204,19 @@ export default function RegistroClienteScreen() {
                 placeholder="Repite tu contraseña"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                secureTextEntry={!showPassword}
+                secureTextEntry={!showConfirmPassword}
                 onFocus={() => setFocused('confirm')}
                 onBlur={() => setFocused(null)}
                 style={styles.inputField}
                 placeholderTextColor={THEME.color.inkMuted}
               />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
+              </TouchableOpacity>
             </View>
 
             <PressableScale
@@ -244,7 +252,7 @@ const styles = {
     borderWidth: 2,
     borderColor: active ? THEME.color.brand : THEME.color.line,
     paddingHorizontal: THEME.space.lg,
-    minHeight: 54,
+    minHeight: 56,
     marginBottom: THEME.space.lg,
   }),
   inputField: {

@@ -353,7 +353,7 @@ export default function ChatScreen() {
         {/* Quick replies */}
         {senderType === 'tecnico' && !text.trim() && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: THEME.color.surface, paddingVertical: THEME.space.sm, paddingHorizontal: THEME.space.md, ...THEME.shadow.sm }} contentContainerStyle={{ gap: THEME.space.sm }}>
-            {['Estoy en camino 🚗', 'Llego en 15 min', 'Ya llegué ✅', `Mi precio es S/${''} aprox`, 'Necesito ver el problema primero', 'Trabajo garantizado', '¿A qué hora le conviene?', 'Gracias por su confianza 🙏'].map(msg => (
+            {['Estoy en camino 🚗', 'Llego en 15 min', 'Ya llegué ✅', 'Te paso mi cotización', 'Necesito ver el problema primero', 'Cuéntame más del trabajo', '¿A qué hora te conviene?', 'Gracias por tu confianza 🙏'].map(msg => (
               <PressableScale key={msg} onPress={() => { setText(msg); }} style={{ backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, minHeight: 36, justifyContent: 'center' }}>
                 <Text style={{ ...THEME.font.label, color: THEME.color.brandDark }}>{msg}</Text>
               </PressableScale>

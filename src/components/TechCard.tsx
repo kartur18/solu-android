@@ -18,7 +18,7 @@ type Props = {
 // Los nombres de planes legacy (modelo viejo) no se muestran al usuario:
 // se mapean a badges neutrales de calidad (TOP / DESTACADO).
 const PLAN_COLORS: Record<string, { label: string; gradient: [string, string] }> = {
-  elite: { label: 'TOP', gradient: ['#F59E0B', '#F26B21'] },
+  elite: { label: 'TOP', gradient: [THEME.color.oro, THEME.color.brand] },
   premium: { label: 'DESTACADO', gradient: [THEME.color.brand, THEME.color.brandDark] },
   pro: { label: 'DESTACADO', gradient: [THEME.color.brand, THEME.color.brandDark] },
 }
@@ -32,9 +32,9 @@ const TIER_LABEL: Record<string, string> = {
 }
 
 const AVATAR_GRADIENTS: [string, string][] = [
-  [THEME.color.navy, '#2563EB'],
-  [THEME.color.brand, '#F59E0B'],
-  ['#8B5CF6', '#6366F1'],
+  [THEME.color.navy, THEME.color.info],
+  [THEME.color.brand, THEME.color.oro],
+  ['#8B5CF6', THEME.color.platino],
   ['#10B981', '#059669'],
 ]
 

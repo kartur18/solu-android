@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Tabs, useRouter } from 'expo-router'
-import { View, Text, Platform } from 'react-native'
+import { View, Text } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
+import { THEME } from '../../src/lib/theme'
 
-const ACTIVE_COLOR = '#F26B21'
-const INACTIVE_COLOR = '#9CA3AF'
+const ACTIVE_COLOR = THEME.color.brand
+const INACTIVE_COLOR = THEME.color.inkMuted
 
 type IconName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -61,21 +61,21 @@ export default function TabLayout() {
         tabBarActiveTintColor: ACTIVE_COLOR,
         tabBarInactiveTintColor: INACTIVE_COLOR,
         tabBarStyle: {
-          backgroundColor: COLORS.white,
+          backgroundColor: THEME.color.surface,
           borderTopWidth: 1,
-          borderTopColor: '#F1F5F9',
+          borderTopColor: THEME.color.lineSoft,
           height: 64 + bottomPad,
           paddingBottom: bottomPad,
           paddingTop: 8,
-          shadowColor: '#000',
+          shadowColor: THEME.color.ink,
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.06,
           shadowRadius: 8,
           elevation: 12,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginTop: 2 },
-        headerStyle: { backgroundColor: COLORS.white, shadowColor: 'transparent', elevation: 0 },
-        headerTitleStyle: { fontWeight: '800', fontSize: 18, color: COLORS.dark },
+        headerStyle: { backgroundColor: THEME.color.surface, shadowColor: 'transparent', elevation: 0 },
+        headerTitleStyle: { fontWeight: '800', fontSize: 18, color: THEME.color.ink },
         headerShadowVisible: false,
       }}
     >
@@ -125,7 +125,7 @@ export default function TabLayout() {
                   position: 'absolute',
                   top: -4,
                   right: -10,
-                  backgroundColor: '#EF4444',
+                  backgroundColor: THEME.color.danger,
                   borderRadius: 8,
                   minWidth: 16,
                   height: 16,
@@ -133,7 +133,7 @@ export default function TabLayout() {
                   justifyContent: 'center',
                   paddingHorizontal: 3,
                   borderWidth: 1.5,
-                  borderColor: COLORS.white,
+                  borderColor: THEME.color.surface,
                 }}>
                   <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
                     {unreadCount > 99 ? '99+' : unreadCount}

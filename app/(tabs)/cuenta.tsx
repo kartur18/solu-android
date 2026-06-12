@@ -28,20 +28,6 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'perfil', icon: 'person', label: 'Perfil' },
 ]
 
-const NOTIF_ICONS: Record<string, string> = {
-  nueva_solicitud: 'notifications',
-  pago_recibido: 'cash',
-  plan_vencimiento: 'warning',
-  nueva_resena: 'star',
-}
-
-const NOTIF_COLORS: Record<string, string> = {
-  nueva_solicitud: '#2563EB',
-  pago_recibido: '#10B981',
-  plan_vencimiento: '#F59E0B',
-  nueva_resena: '#F59E0B',
-}
-
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
@@ -780,7 +766,7 @@ export default function CuentaScreen() {
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <QuickStat icon="trending-up" color="#2563EB" value={String(thisMonthLeads)} label="Solicitudes" />
                   <QuickStat icon="checkmark-circle" color={COLORS.green} value={String(completedLeads)} label="Completados" />
-                  <QuickStat icon="time" color={COLORS.pri} value={String(activeLeads)} label="Activos" />
+                  <QuickStat icon="time" color={THEME.color.brand} value={String(activeLeads)} label="Activos" />
                 </View>
               </View>
               </FadeInUp>
@@ -876,7 +862,7 @@ export default function CuentaScreen() {
                     )
                   }
                   return todayLeads.map(l => (
-                    <View key={l.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: l.estado === 'En proceso' ? '#F97316' : l.estado === 'En camino' ? '#8B5CF6' : '#2563EB' }}>
+                    <View key={l.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: l.estado === 'En proceso' ? THEME.color.brand : l.estado === 'En camino' ? THEME.color.platino : THEME.color.info }}>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{l.nombre}</Text>
                         <Text style={{ fontSize: 11, color: COLORS.gray }}>{l.servicio} · {l.distrito}</Text>
@@ -935,7 +921,7 @@ export default function CuentaScreen() {
                       }},
                     ])
                   }}
-                  style={{ backgroundColor: COLORS.pri, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                  style={{ backgroundColor: THEME.color.brand, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}
                 >
                   <Ionicons name="add" size={14} color="#fff" />
                   <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>Nueva</Text>
@@ -949,17 +935,17 @@ export default function CuentaScreen() {
 
           {/* ═══ TARJETA DIGITAL ═══ */}
           {tab === 'dashboard' && (
-            <View style={{ backgroundColor: '#1A1A2E', borderRadius: 20, padding: 20, overflow: 'hidden' }}>
-              <View style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(234,88,12,0.15)' }} />
+            <View style={{ backgroundColor: THEME.color.navy, borderRadius: THEME.radius.xl, padding: THEME.space.xl, overflow: 'hidden', ...THEME.shadow.md }}>
+              <View style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(242,107,33,0.15)' }} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {tech.foto_url ? <Image source={{ uri: tech.foto_url }} style={{ width: 50, height: 50 }} /> : <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff' }}>{tech.nombre?.[0]}</Text>}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff' }}>{tech.nombre}</Text>
                   <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{tech.oficio} · {tech.distrito}</Text>
                 </View>
-                {tech.verificado && <Ionicons name="checkmark-circle" size={20} color="#10B981" />}
+                {tech.verificado && <Ionicons name="checkmark-circle" size={20} color={THEME.color.success} />}
               </View>
               <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
                 <View style={{ flex: 1 }}>
@@ -968,22 +954,23 @@ export default function CuentaScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Precio desde</Text>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#EA580C' }}>S/{tech.precio_desde || '—'}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: THEME.color.brand }}>S/{tech.precio_desde || '—'}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Rating</Text>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#F59E0B' }}>★ {tech.calificacion?.toFixed(1) || '0.0'}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: THEME.color.warning }}>★ {tech.calificacion?.toFixed(1) || '0.0'}</Text>
                 </View>
               </View>
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => Share.share({
                   message: `🔧 ${tech.nombre}\n${tech.oficio} verificado en SOLU\n\n📍 ${tech.distrito}\n💰 Desde S/${tech.precio_desde || '—'}\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} estrellas\n📱 ${tech.whatsapp}\n\n👉 Ver perfil: https://solu.pe/tecnico/${tech.id}`,
                 })}
-                style={{ backgroundColor: '#EA580C', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                accessibilityLabel="Compartir mi tarjeta digital"
+                style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...THEME.shadow.brand }}
               >
                 <Ionicons name="share-social" size={16} color="#fff" />
                 <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Compartir mi tarjeta digital</Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           )}
 
@@ -1158,7 +1145,7 @@ export default function CuentaScreen() {
                   <Text style={{ fontSize: 10, color: COLORS.gray, fontWeight: '600' }}>Completados</Text>
                 </View>
                 <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.pri }}>S/{completedLeads * (tech.precio_desde || 80)}</Text>
+                  <Text style={{ fontSize: 28, fontWeight: '900', color: THEME.color.brand }}>S/{completedLeads * (tech.precio_desde || 80)}</Text>
                   <Text style={{ fontSize: 10, color: COLORS.gray, fontWeight: '600' }}>Ingresos est.</Text>
                 </View>
                 <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center' }}>
@@ -1207,7 +1194,7 @@ export default function CuentaScreen() {
                     <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                       <Text style={{ width: 35, fontSize: 11, fontWeight: '600', color: COLORS.gray, textTransform: 'capitalize' }}>{m.label}</Text>
                       <View style={{ flex: 1, height: 24, backgroundColor: '#F1F5F9', borderRadius: 6, overflow: 'hidden' }}>
-                        <View style={{ width: `${(m.count / maxCount) * 100}%`, height: '100%', backgroundColor: COLORS.pri, borderRadius: 6, minWidth: m.count > 0 ? 20 : 0, justifyContent: 'center', paddingLeft: 6 }}>
+                        <View style={{ width: `${(m.count / maxCount) * 100}%`, height: '100%', backgroundColor: THEME.color.brand, borderRadius: 6, minWidth: m.count > 0 ? 20 : 0, justifyContent: 'center', paddingLeft: 6 }}>
                           {m.count > 0 && <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{m.count}</Text>}
                         </View>
                       </View>
@@ -1251,8 +1238,8 @@ export default function CuentaScreen() {
                     return top.length > 0 ? top.map(([svc, count], i) => (
                       <View key={svc} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < top.length - 1 ? 1 : 0, borderBottomColor: '#F1F5F9' }}>
                         <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.dark }}>{svc}</Text>
-                        <View style={{ backgroundColor: COLORS.pri + '15', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.pri }}>{count}</Text>
+                        <View style={{ backgroundColor: THEME.color.brand + '15', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: THEME.color.brand }}>{count}</Text>
                         </View>
                       </View>
                     )) : <Text style={{ fontSize: 12, color: COLORS.gray2 }}>Sin datos aún</Text>
@@ -1329,7 +1316,7 @@ export default function CuentaScreen() {
                   { icon: 'trending-up-outline' as const, text: 'Cuanto más grande el paquete, mejor el precio por lead.' },
                 ].map((item, i) => (
                   <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: i < 3 ? 10 : 0 }}>
-                    <Ionicons name={item.icon} size={18} color={COLORS.pri} style={{ marginTop: 1 }} />
+                    <Ionicons name={item.icon} size={18} color={THEME.color.brand} style={{ marginTop: 1 }} />
                     <Text style={{ flex: 1, fontSize: 12, color: COLORS.gray, lineHeight: 18 }}>
                       {item.text}
                     </Text>
@@ -1386,7 +1373,7 @@ export default function CuentaScreen() {
                   </View>
                   <TouchableOpacity
                     onPress={() => setShowNewCotizacion(true)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E3A5F', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: THEME.color.navy, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
                   >
                     <Ionicons name="add" size={16} color="#fff" />
                     <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>Nueva</Text>
@@ -1423,7 +1410,7 @@ export default function CuentaScreen() {
                         <Text style={{ fontSize: 12, color: COLORS.gray }}>{cot.servicio}</Text>
                         {cot.descripcion ? <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 2 }}>{cot.descripcion}</Text> : null}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                          <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E3A5F' }}>S/{cot.monto}</Text>
+                          <Text style={{ fontSize: 16, fontWeight: '800', color: THEME.color.navy }}>S/{cot.monto}</Text>
                           <Text style={{ fontSize: 10, color: COLORS.gray2 }}>{new Date(cot.created_at).toLocaleDateString()}</Text>
                         </View>
                       </View>
@@ -1460,7 +1447,7 @@ export default function CuentaScreen() {
                           onPress={() => { setCotLeadId(String(l.id)); setCotServicio(l.servicio) }}
                           style={{
                             paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, marginRight: 6,
-                            backgroundColor: cotLeadId === String(l.id) ? '#1E3A5F' : '#F1F5F9',
+                            backgroundColor: cotLeadId === String(l.id) ? THEME.color.navy : THEME.color.lineSoft,
                           }}
                         >
                           <Text style={{ fontSize: 11, fontWeight: '700', color: cotLeadId === String(l.id) ? '#fff' : COLORS.dark }}>
@@ -1523,11 +1510,11 @@ export default function CuentaScreen() {
               {/* Profile photo */}
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, alignItems: 'center' }}>
                 <TouchableOpacity onPress={pickAndUploadProfilePhoto} style={{ alignItems: 'center' }}>
-                  <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8 }}>
+                  <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8 }}>
                     {tech.foto_url ? (
                       <Image source={{ uri: tech.foto_url }} style={{ width: 80, height: 80 }} />
                     ) : (
-                      <Text style={{ fontSize: 32, fontWeight: '900', color: COLORS.pri }}>{tech.nombre?.[0]}</Text>
+                      <Text style={{ fontSize: 32, fontWeight: '900', color: THEME.color.brand }}>{tech.nombre?.[0]}</Text>
                     )}
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -1550,7 +1537,7 @@ export default function CuentaScreen() {
                       <TouchableOpacity onPress={() => setEditing(false)} style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
                         <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.gray }}>Cancelar</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={saveProfile} disabled={savingProfile} style={{ backgroundColor: '#1E3A5F', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                      <TouchableOpacity onPress={saveProfile} disabled={savingProfile} style={{ backgroundColor: THEME.color.navy, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
                         <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>{savingProfile ? 'Guardando...' : 'Guardar'}</Text>
                       </TouchableOpacity>
                     </View>
@@ -1604,9 +1591,9 @@ export default function CuentaScreen() {
                       {editOficios.length > 0 && (
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                           {editOficios.map((o, i) => (
-                            <TouchableOpacity key={o} onPress={() => setEditOficios(editOficios.filter((_, idx) => idx !== i))} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: i === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: i === 0 ? '#fff' : '#1E3A5F' }}>{o}</Text>
-                              <Ionicons name="close-circle" size={12} color={i === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
+                            <TouchableOpacity key={o} onPress={() => setEditOficios(editOficios.filter((_, idx) => idx !== i))} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: i === 0 ? THEME.color.navy : THEME.color.infoBg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
+                              <Text style={{ fontSize: 11, fontWeight: '600', color: i === 0 ? '#fff' : THEME.color.navy }}>{o}</Text>
+                              <Ionicons name="close-circle" size={12} color={i === 0 ? 'rgba(255,255,255,0.7)' : THEME.color.navy} />
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -1633,9 +1620,9 @@ export default function CuentaScreen() {
                       {editZonas.length > 0 && (
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                           {editZonas.map((z, i) => (
-                            <TouchableOpacity key={z} onPress={() => setEditZonas(editZonas.filter((_, idx) => idx !== i))} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: i === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: i === 0 ? '#fff' : '#1E3A5F' }}>{z}</Text>
-                              <Ionicons name="close-circle" size={12} color={i === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
+                            <TouchableOpacity key={z} onPress={() => setEditZonas(editZonas.filter((_, idx) => idx !== i))} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: i === 0 ? THEME.color.navy : THEME.color.infoBg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
+                              <Text style={{ fontSize: 11, fontWeight: '600', color: i === 0 ? '#fff' : THEME.color.navy }}>{z}</Text>
+                              <Ionicons name="close-circle" size={12} color={i === 0 ? 'rgba(255,255,255,0.7)' : THEME.color.navy} />
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -1832,13 +1819,13 @@ export default function CuentaScreen() {
                           onPress={() => pickAndUploadDoc(doc.tipo)}
                           disabled={isUploading}
                           style={{
-                            backgroundColor: isUploading ? '#F1F5F9' : COLORS.pri,
+                            backgroundColor: isUploading ? THEME.color.lineSoft : THEME.color.brand,
                             borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
                             flexDirection: 'row', alignItems: 'center', gap: 4,
                           }}
                         >
                           {isUploading ? (
-                            <ActivityIndicator size="small" color={COLORS.pri} />
+                            <ActivityIndicator size="small" color={THEME.color.brand} />
                           ) : (
                             <Ionicons name="cloud-upload-outline" size={14} color="#fff" />
                           )}
@@ -1925,8 +1912,8 @@ function QuickStat({ icon, color, value, label }: { icon: string; color: string;
 
 function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStatusChange?: () => void; tech?: Tecnico | null; router?: any }) {
   const statusColors: Record<string, string> = {
-    Nuevo: '#2563EB', Asignado: '#F59E0B', 'En camino': '#8B5CF6',
-    'En proceso': '#F97316', Completado: '#10B981', Calificado: '#10B981', Cancelado: '#EF4444',
+    Nuevo: THEME.color.info, Asignado: THEME.color.warning, 'En camino': THEME.color.platino,
+    'En proceso': THEME.color.brand, Completado: THEME.color.success, Calificado: THEME.color.success, Cancelado: THEME.color.danger,
   }
   const statusLabels: Record<string, string> = {
     Nuevo: 'Nuevo', Asignado: 'Asignado', 'En camino': 'En camino',

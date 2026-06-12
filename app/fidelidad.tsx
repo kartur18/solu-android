@@ -27,7 +27,7 @@ const TIERS = [
   { name: 'Bronce', min: 0, color: THEME.color.bronce, emoji: '🥉' },
   { name: 'Plata', min: 100, color: THEME.color.plata, emoji: '🥈' },
   { name: 'Oro', min: 250, color: THEME.color.oro, emoji: '🥇' },
-  { name: 'Platino', min: 500, color: THEME.color.platino, emoji: '💎' },
+  { name: 'Platino', min: 500, color: THEME.color.platino, emoji: '🏆' },
 ]
 
 function tierFor(points: number) {
@@ -246,7 +246,7 @@ export default function FidelidadScreen() {
                   <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: THEME.space.sm, textAlign: 'center' }}>
                     {tier!.next
                       ? `Te faltan ${tier!.next.min - points} pts para nivel ${tier!.next.name}`
-                      : '¡Estás en el nivel máximo, Platino! 💎'}
+                      : '¡Estás en el nivel máximo, Platino! 🏆'}
                   </Text>
                 </View>
               </View>

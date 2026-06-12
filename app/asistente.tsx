@@ -540,7 +540,7 @@ export default function AsistenteScreen() {
       </ScrollView>
 
       {/* Input con sombra */}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', padding: THEME.space.md, paddingBottom: Platform.OS === 'android' ? THEME.space.xxxl + THEME.space.xxl : THEME.space.md, gap: THEME.space.sm, backgroundColor: THEME.color.surface, ...THEME.shadow.lg }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: THEME.space.md, paddingBottom: Platform.OS === 'android' ? THEME.space.xxxl + THEME.space.xxl : THEME.space.md, gap: THEME.space.sm, backgroundColor: THEME.color.surface, ...THEME.shadow.lg }}>
         <TextInput
           style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.xl, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md + 2, ...THEME.font.body, color: THEME.color.ink, maxHeight: 120 }}
           placeholder="Cuéntame qué necesitas…"

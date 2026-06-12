@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, Alert, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'

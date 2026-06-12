@@ -23,15 +23,17 @@ import { TECNICO_PUBLIC_SELECT } from '../../src/lib/tecnico-columns'
 const { width } = Dimensions.get('window')
 const CARD_SIZE = (width - THEME.space.lg * 2 - THEME.space.md * 3) / 4
 
+// Naranjas SOLU desde THEME (brand/brandDark) — sin hex sueltos off-brand.
+// Categorías no-oficio (limpieza/maquillaje/clases) usan acentos de dominio.
 const CATEGORIES = [
-  { name: 'Gasfitería',    icon: 'water'         as const, color: '#F26B21', bg: '#FFF1E8' },
-  { name: 'Electricidad', icon: 'flash'          as const, color: '#D9551A', bg: '#FEF1E8' },
-  { name: 'Pintura',      icon: 'color-palette'  as const, color: '#F26B21', bg: '#FFF1E8' },
-  { name: 'Cerrajería',   icon: 'key'            as const, color: '#B84D12', bg: '#FEEDE3' },
-  { name: 'Limpieza',     icon: 'sparkles'       as const, color: '#0EA5E9', bg: '#E0F2FE' },
-  { name: 'Carpintería',  icon: 'hammer'         as const, color: '#D9551A', bg: '#FEF1E8' },
-  { name: 'Maquillaje',   icon: 'color-wand'     as const, color: '#EC4899', bg: '#FDF2F8' },
-  { name: 'Clases',       icon: 'book'           as const, color: '#8B5CF6', bg: '#F5F3FF' },
+  { name: 'Gasfitería',   icon: 'water'         as const, color: THEME.color.brand,     bg: THEME.color.brandLight },
+  { name: 'Electricidad', icon: 'flash'         as const, color: THEME.color.brandDark, bg: THEME.color.brandSoft },
+  { name: 'Pintura',      icon: 'color-palette' as const, color: THEME.color.brand,     bg: THEME.color.brandLight },
+  { name: 'Cerrajería',   icon: 'key'           as const, color: THEME.color.brandDark, bg: THEME.color.brandSoft },
+  { name: 'Limpieza',     icon: 'sparkles'      as const, color: '#0EA5E9', bg: '#E0F2FE' },
+  { name: 'Carpintería',  icon: 'hammer'        as const, color: THEME.color.brand,     bg: THEME.color.brandLight },
+  { name: 'Maquillaje',   icon: 'color-wand'    as const, color: '#EC4899', bg: '#FDF2F8' },
+  { name: 'Clases',       icon: 'book'          as const, color: '#8B5CF6', bg: '#F5F3FF' },
 ]
 
 export default function HomeScreen() {

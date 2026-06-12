@@ -605,7 +605,7 @@ const styles = {
     borderWidth: 2,
     borderColor: active ? THEME.color.brand : THEME.color.line,
     paddingHorizontal: THEME.space.lg,
-    minHeight: 54,
+    minHeight: 56,
     marginBottom: THEME.space.lg,
   }),
   inputField: {
