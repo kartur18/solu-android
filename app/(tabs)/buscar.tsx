@@ -1,45 +1,60 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, Keyboard, Platform } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Keyboard } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, SERVICIOS, DISTRITOS, expandSearchToOficios } from '../../src/lib/constants'
+import { SERVICIOS, DISTRITOS, expandSearchToOficios } from '../../src/lib/constants'
+import { THEME } from '../../src/lib/theme'
+import { FadeInUp, Shimmer, PressableScale } from '../../src/components/ui/Motion'
 import { logger } from '../../src/lib/logger'
 import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
-import { SearchSkeleton } from '../../src/components/SkeletonLoader'
 import { TechMapView } from '../../src/components/TechMapView'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { useFavorites } from '../../src/lib/useFavorites'
 import { cacheSearchResults, getCachedSearchResults } from '../../src/lib/offlineCache'
 
-function FadeInView({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current
-  const translateAnim = useRef(new Animated.Value(12)).current
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 350,
-        delay,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateAnim, {
-        toValue: 0,
-        duration: 350,
-        delay,
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [])
-
+// Skeleton de una TechCard con la forma del contenido real (Shimmer).
+function TechCardShimmer() {
   return (
-    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: translateAnim }] }}>
-      {children}
-    </Animated.View>
+    <View style={{
+      backgroundColor: THEME.color.surface,
+      borderRadius: THEME.radius.xl,
+      padding: THEME.space.lg,
+      marginBottom: THEME.space.md,
+      ...THEME.shadow.sm,
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Shimmer style={{ width: 64, height: 64, borderRadius: THEME.radius.lg, marginRight: THEME.space.md }} />
+        <View style={{ flex: 1, gap: THEME.space.sm }}>
+          <Shimmer style={{ width: '55%', height: 16, borderRadius: 6 }} />
+          <Shimmer style={{ width: '38%', height: 12, borderRadius: 6 }} />
+          <Shimmer style={{ width: '48%', height: 12, borderRadius: 6 }} />
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.md }}>
+        <Shimmer style={{ width: 84, height: 22, borderRadius: THEME.radius.sm }} />
+        <Shimmer style={{ width: 100, height: 22, borderRadius: THEME.radius.sm }} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.lg }}>
+        <Shimmer style={{ flex: 1, height: 48, borderRadius: THEME.radius.lg }} />
+        <Shimmer style={{ width: 48, height: 48, borderRadius: THEME.radius.lg }} />
+      </View>
+    </View>
+  )
+}
+
+function SearchShimmerList() {
+  return (
+    <View style={{ paddingHorizontal: THEME.space.lg, paddingTop: THEME.space.sm }}>
+      {[0, 1, 2, 3].map((i) => (
+        <FadeInUp key={i} delay={i * 80}>
+          <TechCardShimmer />
+        </FadeInUp>
+      ))}
+    </View>
   )
 }
 
@@ -49,6 +64,7 @@ export default function BuscarScreen() {
   const [distrito, setDistrito] = useState(params.distrito || '')
   const [techs, setTechs] = useState<Tecnico[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [gpsActive, setGpsActive] = useState(false)
@@ -161,6 +177,7 @@ export default function BuscarScreen() {
 
   async function loadTechs() {
     setLoading(true)
+    setLoadError(false)
     if (search.trim()) saveToHistory(search.trim())
     try {
       let query = supabase
@@ -195,7 +212,7 @@ export default function BuscarScreen() {
       // Try loading from cache when offline
       const cached = await getCachedSearchResults()
       if (cached) setTechs(cached)
-      else setTechs([])
+      else { setTechs([]); setLoadError(true) }
     } finally {
       setLoading(false)
     }
@@ -208,138 +225,126 @@ export default function BuscarScreen() {
   }, [search, distrito])
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.light }}>
+    <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
       <OfflineBanner />
-      {/* Search bar */}
+      {/* Header: barra de búsqueda + acciones */}
       <View style={{
-        padding: 16,
-        paddingBottom: 12,
-        backgroundColor: COLORS.white,
-        shadowColor: '#1E3A5F',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 12,
-        elevation: 6,
+        paddingHorizontal: THEME.space.lg,
+        paddingTop: THEME.space.lg,
+        paddingBottom: THEME.space.md,
+        backgroundColor: THEME.color.surface,
+        borderBottomLeftRadius: THEME.radius.xxl,
+        borderBottomRightRadius: THEME.radius.xxl,
         zIndex: 10,
-        borderBottomWidth: 0,
+        ...THEME.shadow.md,
       }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: THEME.space.sm }}>
           <View style={{
             flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: '#F1F5F9',
-            borderRadius: 14,
-            paddingHorizontal: 14,
-            gap: 10,
-            height: 48,
-            borderWidth: 1.5,
-            borderColor: '#E2E8F0',
+            backgroundColor: THEME.color.surfaceAlt,
+            borderRadius: THEME.radius.lg,
+            paddingHorizontal: THEME.space.md,
+            gap: THEME.space.sm,
+            height: 52,
           }}>
-            <Ionicons name="search" size={20} color={COLORS.gray2} />
+            <Ionicons name="search" size={20} color={THEME.color.inkMuted} />
             <TextInput
-              placeholder="Buscar servicio o técnico..."
+              placeholder="Buscar servicio o técnico"
               value={search}
               onChangeText={setSearch}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
               returnKeyType="search"
               onSubmitEditing={() => Keyboard.dismiss()}
-              style={{ flex: 1, fontSize: 15, color: COLORS.dark, fontWeight: '500', paddingVertical: 12 }}
-              placeholderTextColor={COLORS.gray2}
+              style={{ flex: 1, ...THEME.font.body, color: THEME.color.ink, paddingVertical: 12 }}
+              placeholderTextColor={THEME.color.inkMuted}
             />
             {search ? (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name="close-circle" size={20} color={COLORS.gray2} />
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel="Limpiar búsqueda">
+                <Ionicons name="close-circle" size={20} color={THEME.color.inkMuted} />
               </TouchableOpacity>
             ) : null}
           </View>
 
-          {/* GPS location button */}
-          <TouchableOpacity
+          {/* Botón GPS */}
+          <PressableScale
             onPress={handleRedetectGPS}
-            activeOpacity={0.7}
+            accessibilityLabel="Detectar mi ubicación"
             style={{
-              backgroundColor: gpsActive ? '#EFF6FF' : '#F1F5F9',
-              borderRadius: 14,
-              width: 48,
-              height: 48,
+              backgroundColor: gpsActive ? THEME.color.infoBg : THEME.color.surfaceAlt,
+              borderRadius: THEME.radius.lg,
+              width: 52,
+              height: 52,
               alignItems: 'center',
               justifyContent: 'center',
-              borderWidth: gpsActive ? 1.5 : 1.5,
-              borderColor: gpsActive ? COLORS.blue : '#E2E8F0',
             }}
           >
             {location.loading ? (
-              <ActivityIndicator size="small" color={COLORS.blue} />
+              <ActivityIndicator size="small" color={THEME.color.info} />
             ) : (
               <Ionicons
                 name={gpsActive ? 'navigate' : 'navigate-outline'}
                 size={20}
-                color={gpsActive ? COLORS.blue : COLORS.gray}
+                color={gpsActive ? THEME.color.info : THEME.color.inkSoft}
               />
             )}
-          </TouchableOpacity>
+          </PressableScale>
 
-          <TouchableOpacity
+          {/* Botón filtros */}
+          <PressableScale
             onPress={() => setShowFilters(!showFilters)}
-            activeOpacity={0.7}
+            accessibilityLabel="Filtrar por distrito"
             style={{
-              backgroundColor: showFilters ? '#1E3A5F' : '#F1F5F9',
-              borderRadius: 14,
-              width: 48,
-              height: 48,
+              backgroundColor: showFilters ? THEME.color.navy : THEME.color.surfaceAlt,
+              borderRadius: THEME.radius.lg,
+              width: 52,
+              height: 52,
               alignItems: 'center',
               justifyContent: 'center',
-              borderWidth: showFilters ? 0 : 1.5,
-              borderColor: '#E2E8F0',
             }}
           >
-            <Ionicons name="options" size={20} color={showFilters ? COLORS.white : COLORS.gray} />
-          </TouchableOpacity>
+            <Ionicons name="options" size={20} color={showFilters ? THEME.color.white : THEME.color.inkSoft} />
+          </PressableScale>
         </View>
 
-        {/* GPS active badge */}
+        {/* Badge GPS activo */}
         {gpsActive && distrito ? (
           <View style={{
             flexDirection: 'row',
             alignItems: 'center',
             gap: 6,
-            marginTop: 10,
-            backgroundColor: '#EFF6FF',
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderRadius: 20,
+            marginTop: THEME.space.md,
+            backgroundColor: THEME.color.infoBg,
+            paddingHorizontal: THEME.space.md,
+            paddingVertical: THEME.space.sm,
+            borderRadius: THEME.radius.full,
             alignSelf: 'flex-start',
-            borderWidth: 1,
-            borderColor: '#BFDBFE',
           }}>
-            <Ionicons name="navigate" size={13} color={COLORS.blue} />
-            <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.blue }}>
+            <Ionicons name="navigate" size={13} color={THEME.color.info} />
+            <Text style={{ ...THEME.font.label, color: THEME.color.info }}>
               Cerca de ti: {distrito}
             </Text>
-            <TouchableOpacity onPress={() => { setDistrito(''); setGpsActive(false) }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close-circle" size={16} color={COLORS.blue} />
+            <TouchableOpacity onPress={() => { setDistrito(''); setGpsActive(false) }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Quitar ubicación">
+              <Ionicons name="close-circle" size={16} color={THEME.color.info} />
             </TouchableOpacity>
           </View>
         ) : null}
 
         {showFilters && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ paddingRight: 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: THEME.space.md }} contentContainerStyle={{ paddingRight: THEME.space.lg, gap: THEME.space.sm }}>
             <TouchableOpacity
               onPress={() => { setDistrito(''); setGpsActive(false) }}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
               style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                backgroundColor: !distrito ? '#1E3A5F' : '#F1F5F9',
-                marginRight: 8,
-                borderWidth: distrito ? 1 : 0,
-                borderColor: '#E2E8F0',
+                paddingHorizontal: THEME.space.lg,
+                paddingVertical: THEME.space.sm,
+                borderRadius: THEME.radius.full,
+                backgroundColor: !distrito ? THEME.color.navy : THEME.color.surfaceAlt,
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: !distrito ? COLORS.white : COLORS.gray }}>
+              <Text style={{ ...THEME.font.label, color: !distrito ? THEME.color.white : THEME.color.inkSoft }}>
                 Todos
               </Text>
             </TouchableOpacity>
@@ -347,18 +352,15 @@ export default function BuscarScreen() {
               <TouchableOpacity
                 key={d}
                 onPress={() => { setDistrito(distrito === d ? '' : d); setGpsActive(false) }}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
                 style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  backgroundColor: distrito === d ? '#1E3A5F' : '#F1F5F9',
-                  marginRight: 8,
-                  borderWidth: distrito === d ? 0 : 1,
-                  borderColor: '#E2E8F0',
+                  paddingHorizontal: THEME.space.lg,
+                  paddingVertical: THEME.space.sm,
+                  borderRadius: THEME.radius.full,
+                  backgroundColor: distrito === d ? THEME.color.navy : THEME.color.surfaceAlt,
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: distrito === d ? COLORS.white : COLORS.dark }}>
+                <Text style={{ ...THEME.font.label, color: distrito === d ? THEME.color.white : THEME.color.ink }}>
                   {d}
                 </Text>
               </TouchableOpacity>
@@ -366,48 +368,42 @@ export default function BuscarScreen() {
           </ScrollView>
         )}
 
-        {/* Service chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ paddingRight: 16 }}>
-          {SERVICIOS.map((s) => (
-            <TouchableOpacity
-              key={s}
-              onPress={() => setSearch(search === s ? '' : s)}
-              activeOpacity={0.7}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                backgroundColor: search === s ? COLORS.pri : COLORS.white,
-                borderWidth: 1.5,
-                borderColor: search === s ? COLORS.pri : '#E2E8F0',
-                marginRight: 8,
-              }}
-            >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: search === s ? COLORS.white : COLORS.dark }}>
-                {s}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Chips de servicio */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: THEME.space.md }} contentContainerStyle={{ paddingRight: THEME.space.lg, gap: THEME.space.sm }}>
+          {SERVICIOS.map((s) => {
+            const active = search === s
+            return (
+              <TouchableOpacity
+                key={s}
+                onPress={() => setSearch(active ? '' : s)}
+                activeOpacity={0.8}
+                style={{
+                  paddingHorizontal: THEME.space.lg,
+                  paddingVertical: THEME.space.sm,
+                  borderRadius: THEME.radius.full,
+                  backgroundColor: active ? THEME.color.brand : THEME.color.brandLight,
+                }}
+              >
+                <Text style={{ ...THEME.font.label, color: active ? THEME.color.white : THEME.color.brandDark }}>
+                  {s}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
         </ScrollView>
       </View>
 
-      {/* Search suggestions dropdown */}
+      {/* Dropdown de sugerencias */}
       {searchFocused && (
         <View style={{
-          backgroundColor: COLORS.white,
-          marginHorizontal: 16,
-          marginTop: 4,
-          borderRadius: 14,
-          shadowColor: '#1E3A5F',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          elevation: 6,
+          backgroundColor: THEME.color.surface,
+          marginHorizontal: THEME.space.lg,
+          marginTop: THEME.space.sm,
+          borderRadius: THEME.radius.lg,
+          ...THEME.shadow.lg,
           zIndex: 20,
           maxHeight: 320,
           overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: '#E2E8F0',
         }}>
           {search.trim() ? (
             suggestions.length > 0 ? (
@@ -423,26 +419,26 @@ export default function BuscarScreen() {
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 10,
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
+                      gap: THEME.space.sm,
+                      paddingHorizontal: THEME.space.lg,
+                      paddingVertical: THEME.space.md,
                       borderBottomWidth: 1,
-                      borderBottomColor: '#F1F5F9',
+                      borderBottomColor: THEME.color.lineSoft,
                     }}
                   >
-                    <Ionicons name="search" size={16} color={COLORS.gray2} />
-                    <Text style={{ fontSize: 14, color: COLORS.dark, fontWeight: '500' }}>{s}</Text>
+                    <Ionicons name="search" size={16} color={THEME.color.inkMuted} />
+                    <Text style={{ ...THEME.font.body, color: THEME.color.ink }}>{s}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             ) : null
           ) : (
-            <ScrollView keyboardShouldPersistTaps="handled" style={{ padding: 16 }}>
-              {/* Recent searches */}
+            <ScrollView keyboardShouldPersistTaps="handled" style={{ padding: THEME.space.lg }}>
+              {/* Búsquedas recientes */}
               {searchHistory.length > 0 && (
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray2, marginBottom: 10 }}>
-                    Recientes:
+                <View style={{ marginBottom: THEME.space.lg }}>
+                  <Text style={{ ...THEME.font.label, color: THEME.color.inkMuted, marginBottom: THEME.space.sm }}>
+                    Recientes
                   </Text>
                   {searchHistory.map((s) => (
                     <View
@@ -450,9 +446,9 @@ export default function BuscarScreen() {
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
-                        paddingVertical: 10,
+                        paddingVertical: THEME.space.sm,
                         borderBottomWidth: 1,
-                        borderBottomColor: '#F1F5F9',
+                        borderBottomColor: THEME.color.lineSoft,
                       }}
                     >
                       <TouchableOpacity
@@ -461,28 +457,29 @@ export default function BuscarScreen() {
                           setSearchFocused(false)
                           Keyboard.dismiss()
                         }}
-                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}
                       >
-                        <Ionicons name="time-outline" size={16} color={COLORS.gray2} />
-                        <Text style={{ fontSize: 14, color: COLORS.dark, fontWeight: '500' }}>{s}</Text>
+                        <Ionicons name="time-outline" size={16} color={THEME.color.inkMuted} />
+                        <Text style={{ ...THEME.font.body, color: THEME.color.ink }}>{s}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => removeFromHistory(s)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel={`Quitar ${s} del historial`}
                       >
-                        <Ionicons name="close" size={16} color={COLORS.gray2} />
+                        <Ionicons name="close" size={16} color={THEME.color.inkMuted} />
                       </TouchableOpacity>
                     </View>
                   ))}
-                  <TouchableOpacity onPress={clearHistory} style={{ marginTop: 8 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.pri }}>Borrar historial</Text>
+                  <TouchableOpacity onPress={clearHistory} style={{ marginTop: THEME.space.sm }}>
+                    <Text style={{ ...THEME.font.label, color: THEME.color.brand }}>Borrar historial</Text>
                   </TouchableOpacity>
                 </View>
               )}
 
-              {/* Popular searches */}
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray2, marginBottom: 10 }}>
-                Busquedas populares:
+              {/* Búsquedas populares */}
+              <Text style={{ ...THEME.font.label, color: THEME.color.inkMuted, marginBottom: THEME.space.sm }}>
+                Búsquedas populares
               </Text>
               {POPULAR_SEARCHES.map((s) => (
                 <TouchableOpacity
@@ -495,14 +492,14 @@ export default function BuscarScreen() {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 10,
-                    paddingVertical: 10,
+                    gap: THEME.space.sm,
+                    paddingVertical: THEME.space.sm,
                     borderBottomWidth: 1,
-                    borderBottomColor: '#F1F5F9',
+                    borderBottomColor: THEME.color.lineSoft,
                   }}
                 >
-                  <Ionicons name="trending-up" size={16} color={COLORS.pri} />
-                  <Text style={{ fontSize: 14, color: COLORS.dark, fontWeight: '500' }}>{s}</Text>
+                  <Ionicons name="trending-up" size={16} color={THEME.color.brand} />
+                  <Text style={{ ...THEME.font.body, color: THEME.color.ink }}>{s}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -510,130 +507,178 @@ export default function BuscarScreen() {
         </View>
       )}
 
-      {/* View toggle + Results */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 8, alignItems: 'center' }}>
-        <TouchableOpacity
-          onPress={() => setViewMode('list')}
-          activeOpacity={0.7}
-          style={{
-            flexDirection: 'row', alignItems: 'center', gap: 5,
-            paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-            backgroundColor: viewMode === 'list' ? '#1E3A5F' : COLORS.white,
-            borderWidth: viewMode === 'list' ? 0 : 1.5,
-            borderColor: '#E2E8F0',
-          }}
-        >
-          <Ionicons name="list" size={14} color={viewMode === 'list' ? COLORS.white : COLORS.gray} />
-          <Text style={{ fontSize: 12, fontWeight: '700', color: viewMode === 'list' ? COLORS.white : COLORS.gray }}>Lista</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setViewMode('map')}
-          activeOpacity={0.7}
-          style={{
-            flexDirection: 'row', alignItems: 'center', gap: 5,
-            paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-            backgroundColor: viewMode === 'map' ? '#1E3A5F' : COLORS.white,
-            borderWidth: viewMode === 'map' ? 0 : 1.5,
-            borderColor: '#E2E8F0',
-          }}
-        >
-          <Ionicons name="map" size={14} color={viewMode === 'map' ? COLORS.white : COLORS.gray} />
-          <Text style={{ fontSize: 12, fontWeight: '700', color: viewMode === 'map' ? COLORS.white : COLORS.gray }}>Mapa</Text>
-        </TouchableOpacity>
-        <Text style={{ flex: 1, textAlign: 'right', fontSize: 12, color: COLORS.gray, fontWeight: '600' }}>
+      {/* Toggle de vista + contador */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: THEME.space.lg, paddingTop: THEME.space.md, paddingBottom: THEME.space.xs, gap: THEME.space.xs, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', backgroundColor: THEME.color.surfaceSunken, borderRadius: THEME.radius.md, padding: 3 }}>
+          <TouchableOpacity
+            onPress={() => setViewMode('list')}
+            activeOpacity={0.8}
+            accessibilityLabel="Ver en lista"
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 5,
+              paddingHorizontal: THEME.space.md, paddingVertical: 7, borderRadius: THEME.radius.sm,
+              backgroundColor: viewMode === 'list' ? THEME.color.surface : 'transparent',
+              ...(viewMode === 'list' ? THEME.shadow.sm : {}),
+            }}
+          >
+            <Ionicons name="list" size={15} color={viewMode === 'list' ? THEME.color.navy : THEME.color.inkMuted} />
+            <Text style={{ ...THEME.font.label, color: viewMode === 'list' ? THEME.color.navy : THEME.color.inkMuted }}>Lista</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setViewMode('map')}
+            activeOpacity={0.8}
+            accessibilityLabel="Ver en mapa"
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 5,
+              paddingHorizontal: THEME.space.md, paddingVertical: 7, borderRadius: THEME.radius.sm,
+              backgroundColor: viewMode === 'map' ? THEME.color.surface : 'transparent',
+              ...(viewMode === 'map' ? THEME.shadow.sm : {}),
+            }}
+          >
+            <Ionicons name="map" size={15} color={viewMode === 'map' ? THEME.color.navy : THEME.color.inkMuted} />
+            <Text style={{ ...THEME.font.label, color: viewMode === 'map' ? THEME.color.navy : THEME.color.inkMuted }}>Mapa</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={{ flex: 1, textAlign: 'right', ...THEME.font.label, color: THEME.color.inkSoft }}>
           {filteredTechs.length} resultado{filteredTechs.length !== 1 ? 's' : ''}
         </Text>
       </View>
 
-      {/* Filter pills */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 44, paddingHorizontal: 16, marginBottom: 4 }}>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+      {/* Chips de filtro */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 48, paddingHorizontal: THEME.space.lg, marginBottom: THEME.space.xs }} contentContainerStyle={{ alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: THEME.space.xs, alignItems: 'center' }}>
           {[
-            { key: 'favorites', label: 'Favoritos', active: filterFavorites, onPress: () => setFilterFavorites(!filterFavorites), color: '#EF4444' },
-            { key: 'rating', label: '★ 4.5+', active: filterRating, onPress: () => setFilterRating(!filterRating), color: '#1E3A5F' },
-            { key: 'verified', label: 'Verificados', active: filterVerified, onPress: () => setFilterVerified(!filterVerified), color: '#1E3A5F' },
-            { key: 'price', label: 'Menor precio', active: sortPrice, onPress: () => setSortPrice(!sortPrice), color: '#1E3A5F' },
-            { key: 'available', label: 'Disponibles', active: filterAvailable, onPress: () => setFilterAvailable(!filterAvailable), color: '#16A34A' },
-            { key: 'services', label: 'Más contratados', active: sortBy === 'services', onPress: () => setSortBy(sortBy === 'services' ? '' : 'services'), color: '#1E3A5F' },
+            { key: 'favorites', label: 'Favoritos', icon: 'heart' as const, active: filterFavorites, onPress: () => setFilterFavorites(!filterFavorites), color: THEME.color.danger },
+            { key: 'rating', label: '4.5+', icon: 'star' as const, active: filterRating, onPress: () => setFilterRating(!filterRating), color: THEME.color.warning },
+            { key: 'verified', label: 'Verificados', icon: 'checkmark-circle' as const, active: filterVerified, onPress: () => setFilterVerified(!filterVerified), color: THEME.color.success },
+            { key: 'price', label: 'Menor precio', icon: 'pricetag' as const, active: sortPrice, onPress: () => setSortPrice(!sortPrice), color: THEME.color.navy },
+            { key: 'available', label: 'Disponibles', icon: 'ellipse' as const, active: filterAvailable, onPress: () => setFilterAvailable(!filterAvailable), color: THEME.color.success },
+            { key: 'services', label: 'Más contratados', icon: 'people' as const, active: sortBy === 'services', onPress: () => setSortBy(sortBy === 'services' ? '' : 'services'), color: THEME.color.navy },
           ].map((f) => (
             <TouchableOpacity
               key={f.key}
               onPress={f.onPress}
+              activeOpacity={0.8}
               style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
-                backgroundColor: f.active ? f.color : '#fff',
-                borderWidth: 1, borderColor: f.active ? f.color : '#E2E8F0',
+                flexDirection: 'row', alignItems: 'center', gap: 5,
+                paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm, borderRadius: THEME.radius.full,
+                backgroundColor: f.active ? f.color : THEME.color.surface,
+                ...(f.active ? {} : THEME.shadow.sm),
               }}
             >
-              <Text style={{ fontSize: 11, fontWeight: '700', color: f.active ? '#fff' : COLORS.gray }}>{f.label}</Text>
+              <Ionicons name={f.icon} size={13} color={f.active ? THEME.color.white : f.color} />
+              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: f.active ? THEME.color.white : THEME.color.inkSoft }}>{f.label}</Text>
             </TouchableOpacity>
           ))}
           {anyFilterActive && (
             <TouchableOpacity
               onPress={clearAllFilters}
+              activeOpacity={0.8}
+              accessibilityLabel="Limpiar todos los filtros"
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 4,
-                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
-                backgroundColor: '#FEF2F2',
-                borderWidth: 1, borderColor: '#FECACA',
+                paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm, borderRadius: THEME.radius.full,
+                backgroundColor: THEME.color.dangerBg,
               }}
             >
-              <Ionicons name="close-circle" size={14} color="#EF4444" />
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#EF4444' }}>Limpiar filtros</Text>
+              <Ionicons name="close-circle" size={14} color={THEME.color.danger} />
+              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.danger }}>Limpiar</Text>
             </TouchableOpacity>
           )}
         </View>
       </ScrollView>
 
       {loading ? (
-        <SearchSkeleton />
+        <SearchShimmerList />
       ) : viewMode === 'map' ? (
-        <View style={{ padding: 16 }}>
+        <View style={{ padding: THEME.space.lg }}>
           <TechMapView techs={filteredTechs} />
         </View>
-      ) : (
-        <ScrollView style={{ flex: 1, padding: 16 }} keyboardShouldPersistTaps="handled">
-          {filteredTechs.map((tech, index) => (
-            <FadeInView key={`${tech.id}-${resultsKey.current}`} delay={index * 60}>
-              <TechCard tech={tech} onToggleFavorite={toggleFavorite} isFavorite={isFavorite(tech.id)} />
-            </FadeInView>
-          ))}
-          {filteredTechs.length === 0 && (
+      ) : loadError ? (
+        // Estado de error: ícono + mensaje + Reintentar.
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: THEME.space.lg }} keyboardShouldPersistTaps="handled">
+          <FadeInUp>
             <View style={{
-              padding: 50, alignItems: 'center',
-              backgroundColor: COLORS.white, borderRadius: 20, marginTop: 20,
-              shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+              padding: THEME.space.xxxl, alignItems: 'center',
+              backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xxl, marginTop: THEME.space.xl,
+              ...THEME.shadow.md,
             }}>
               <View style={{
-                width: 80, height: 80, borderRadius: 40,
-                backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 16,
+                width: 88, height: 88, borderRadius: THEME.radius.full,
+                backgroundColor: THEME.color.dangerBg, alignItems: 'center', justifyContent: 'center',
+                marginBottom: THEME.space.lg,
               }}>
-                <Ionicons name="search-outline" size={40} color={COLORS.gray2} />
+                <Ionicons name="cloud-offline-outline" size={42} color={THEME.color.danger} />
               </View>
-              <Text style={{ color: COLORS.dark, fontSize: 16, fontWeight: '700' }}>
-                Sin resultados
+              <Text style={{ ...THEME.font.h2, color: THEME.color.ink }}>Algo salió mal</Text>
+              <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center', lineHeight: 21 }}>
+                No pudimos cargar los técnicos.{'\n'}Revisa tu conexión e inténtalo de nuevo.
               </Text>
-              <Text style={{ color: COLORS.gray2, marginTop: 6, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 }}>
-                No encontramos técnicos para tu búsqueda.{'\n'}Prueba con otro servicio o distrito.
-              </Text>
-              <TouchableOpacity
-                onPress={() => { setSearch(''); setDistrito('') }}
-                activeOpacity={0.8}
+              <PressableScale
+                onPress={() => loadTechs()}
+                accessibilityLabel="Reintentar búsqueda"
                 style={{
-                  marginTop: 18,
-                  backgroundColor: '#1E3A5F',
-                  borderRadius: 12,
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
+                  marginTop: THEME.space.xl,
+                  height: 52,
+                  paddingHorizontal: THEME.space.xxl,
+                  backgroundColor: THEME.color.brand,
+                  borderRadius: THEME.radius.lg,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.xs,
+                  ...THEME.shadow.brand,
                 }}
               >
-                <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 13 }}>Limpiar filtros</Text>
-              </TouchableOpacity>
+                <Ionicons name="refresh" size={18} color={THEME.color.white} />
+                <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Reintentar</Text>
+              </PressableScale>
             </View>
+          </FadeInUp>
+        </ScrollView>
+      ) : (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: THEME.space.lg, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
+          {filteredTechs.map((tech, index) => (
+            <FadeInUp key={`${tech.id}-${resultsKey.current}`} delay={Math.min(index * 60, 360)}>
+              <TechCard tech={tech} onToggleFavorite={toggleFavorite} isFavorite={isFavorite(tech.id)} />
+            </FadeInUp>
+          ))}
+          {filteredTechs.length === 0 && (
+            <FadeInUp>
+              <View style={{
+                padding: THEME.space.xxxl, alignItems: 'center',
+                backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xxl, marginTop: THEME.space.xl,
+                ...THEME.shadow.md,
+              }}>
+                <View style={{
+                  width: 88, height: 88, borderRadius: THEME.radius.full,
+                  backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center',
+                  marginBottom: THEME.space.lg,
+                }}>
+                  <Ionicons name="search-outline" size={42} color={THEME.color.brand} />
+                </View>
+                <Text style={{ ...THEME.font.h2, color: THEME.color.ink }}>
+                  No encontramos técnicos
+                </Text>
+                <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center', lineHeight: 21 }}>
+                  Ajusta los filtros o prueba con otro{'\n'}servicio o distrito.
+                </Text>
+                <PressableScale
+                  onPress={() => { setSearch(''); setDistrito(''); clearAllFilters() }}
+                  accessibilityLabel="Limpiar filtros y búsqueda"
+                  style={{
+                    marginTop: THEME.space.xl,
+                    height: 52,
+                    paddingHorizontal: THEME.space.xxl,
+                    backgroundColor: THEME.color.brand,
+                    borderRadius: THEME.radius.lg,
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.xs,
+                    ...THEME.shadow.brand,
+                  }}
+                >
+                  <Ionicons name="refresh" size={18} color={THEME.color.white} />
+                  <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Limpiar filtros</Text>
+                </PressableScale>
+              </View>
+            </FadeInUp>
           )}
-          <View style={{ height: 120 }} />
         </ScrollView>
       )}
     </View>

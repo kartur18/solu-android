@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Linking } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
+import { View, Text, ScrollView, TextInput, Image, Alert, Linking, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS } from '../src/lib/constants'
+import { THEME } from '../src/lib/theme'
+import { FadeInUp, PressableScale, Shimmer, haptics } from '../src/components/ui/Motion'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { compressImage } from '../src/lib/imageCompress'
 import { useClientProfile } from '../src/lib/useClientProfile'
@@ -54,10 +54,10 @@ type QuoteResponse = {
 type Estado = 'idle' | 'analyzing' | 'result'
 
 const SEVERIDAD_UI: Record<Severidad, { label: string; color: string; bg: string }> = {
-  baja: { label: 'Leve', color: '#059669', bg: '#ECFDF5' },
-  media: { label: 'Moderado', color: '#92400E', bg: '#FEF3C7' },
-  alta: { label: 'Urgente', color: '#C2410C', bg: '#FFF3EC' },
-  emergencia: { label: 'Emergencia', color: '#B91C1C', bg: '#FEE2E2' },
+  baja: { label: 'Leve', color: THEME.color.success, bg: THEME.color.successBg },
+  media: { label: 'Moderado', color: THEME.color.warning, bg: THEME.color.warningBg },
+  alta: { label: 'Urgente', color: THEME.color.brandDark, bg: THEME.color.brandLight },
+  emergencia: { label: 'Emergencia', color: THEME.color.danger, bg: THEME.color.dangerBg },
 }
 
 function fuenteLabel(p: Precio): string {
@@ -69,42 +69,45 @@ function fuenteLabel(p: Precio): string {
 function TecnicoMiniCard({ tech }: { tech: TecnicoSugerido }) {
   const router = useRouter()
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={() => router.push(`/tecnico/${tech.id}`)}
-      activeOpacity={0.85}
       style={{
-        backgroundColor: COLORS.white, borderRadius: 14, padding: 12, marginBottom: 10,
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        borderWidth: 1, borderColor: '#E2E8F0',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+        backgroundColor: THEME.color.surface,
+        borderRadius: THEME.radius.lg,
+        padding: THEME.space.md,
+        marginBottom: THEME.space.sm + 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: THEME.space.md,
+        ...THEME.shadow.sm,
       }}
     >
       {tech.foto_url ? (
-        <Image source={{ uri: tech.foto_url }} style={{ width: 48, height: 48, borderRadius: 14 }} />
+        <Image source={{ uri: tech.foto_url }} style={{ width: 52, height: 52, borderRadius: THEME.radius.md }} />
       ) : (
-        <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 18, fontWeight: '900', color: COLORS.pri }}>{tech.nombre?.charAt(0) || 'T'}</Text>
+        <View style={{ width: 52, height: 52, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: THEME.color.brand }}>{tech.nombre?.charAt(0) || 'T'}</Text>
         </View>
       )}
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-          <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }} numberOfLines={1}>{tech.nombre}</Text>
+          <Text style={{ ...THEME.font.h3, color: THEME.color.ink }} numberOfLines={1}>{tech.nombre}</Text>
           {tech.documentos_verificados ? (
-            <Ionicons name="checkmark-circle" size={14} color={COLORS.acc} />
+            <Ionicons name="checkmark-circle" size={14} color={THEME.color.info} />
           ) : null}
         </View>
-        <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 1 }} numberOfLines={1}>{tech.oficio} · {tech.distrito}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-          <Ionicons name="star" size={11} color="#F59E0B" />
-          <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.dark }}>{tech.calificacion?.toFixed(1) || '0.0'}</Text>
-          <Text style={{ fontSize: 11, color: COLORS.gray2 }}>({tech.num_resenas || 0} reseñas)</Text>
+        <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 1 }} numberOfLines={1}>{tech.oficio} · {tech.distrito}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.xs, marginTop: THEME.space.xs }}>
+          <Ionicons name="star" size={12} color={THEME.color.oro} />
+          <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>{tech.calificacion?.toFixed(1) || '0.0'}</Text>
+          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>({tech.num_resenas || 0} reseñas)</Text>
           {(tech.servicios_completados || 0) > 0 ? (
-            <Text style={{ fontSize: 11, color: COLORS.gray2 }}>· {tech.servicios_completados} trabajos</Text>
+            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>· {tech.servicios_completados} trabajos</Text>
           ) : null}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={COLORS.gray2} />
-    </TouchableOpacity>
+      <Ionicons name="chevron-forward" size={18} color={THEME.color.inkMuted} />
+    </PressableScale>
   )
 }
 
@@ -214,6 +217,7 @@ export default function CotizarFotoScreen() {
 
       const json: QuoteResponse = await res.json()
       setData(json)
+      haptics.success()
       setEstado('result')
     } catch (err) {
       logger.error('Error cotizando por foto:', err)
@@ -242,24 +246,55 @@ export default function CotizarFotoScreen() {
     setEstado('idle')
   }
 
-  // ── Estado: analizando ──
+  // ── Estado: analizando ── skeleton con forma del resultado real (no spinner pelado)
   if (estado === 'analyzing') {
     return (
-      <View style={{ flex: 1, backgroundColor: COLORS.light, padding: 20, justifyContent: 'center' }}>
-        {previewUri ? (
-          <Image source={{ uri: previewUri }} style={{ width: '100%', height: 240, borderRadius: 16, marginBottom: 24 }} resizeMode="cover" />
-        ) : null}
-        <View style={{ alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={COLORS.pri} />
-          <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.dark, marginTop: 16 }}>Analizando tu foto… ⏳</Text>
-          <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, textAlign: 'center' }}>
-            La IA está identificando el problema{'\n'}y calculando un precio estimado
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#ECFDF5', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-            <Ionicons name="lock-closed" size={12} color="#059669" />
-            <Text style={{ fontSize: 11, color: '#047857', fontWeight: '600' }}>Tu foto se elimina automático, no se guarda</Text>
+      <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
+        <StatusBar barStyle="dark-content" />
+        <ScrollView contentContainerStyle={{ padding: THEME.space.lg, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.xl }}>
+          {previewUri ? (
+            <View style={{ marginBottom: THEME.space.lg }}>
+              <Image source={{ uri: previewUri }} style={{ width: '100%', height: 200, borderRadius: THEME.radius.xl }} resizeMode="cover" />
+              <View style={{ position: 'absolute', bottom: THEME.space.md, left: THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, backgroundColor: 'rgba(15,27,45,0.78)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm }}>
+                <Ionicons name="sparkles" size={14} color={THEME.color.brand} />
+                <Text style={{ ...THEME.font.label, color: THEME.color.white }}>Analizando con IA…</Text>
+              </View>
+            </View>
+          ) : (
+            <Shimmer style={{ width: '100%', height: 200, borderRadius: THEME.radius.xl, marginBottom: THEME.space.lg }} />
+          )}
+
+          {/* Skeleton: tarjeta problema */}
+          <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, marginBottom: THEME.space.md, ...THEME.shadow.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.md }}>
+              <Shimmer style={{ width: 36, height: 36, borderRadius: THEME.radius.md }} />
+              <Shimmer style={{ width: 150, height: 16, borderRadius: THEME.radius.sm }} />
+            </View>
+            <Shimmer style={{ width: '60%', height: 12, borderRadius: THEME.radius.sm, marginBottom: THEME.space.sm }} />
+            <Shimmer style={{ width: '90%', height: 12, borderRadius: THEME.radius.sm, marginBottom: THEME.space.xs }} />
+            <Shimmer style={{ width: '80%', height: 12, borderRadius: THEME.radius.sm }} />
           </View>
-        </View>
+
+          {/* Skeleton: tarjeta precio */}
+          <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, marginBottom: THEME.space.md, ...THEME.shadow.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.md }}>
+              <Shimmer style={{ width: 36, height: 36, borderRadius: THEME.radius.md }} />
+              <Shimmer style={{ width: 120, height: 16, borderRadius: THEME.radius.sm }} />
+            </View>
+            <Shimmer style={{ width: '70%', height: 28, borderRadius: THEME.radius.sm }} />
+          </View>
+
+          <View style={{ alignItems: 'center', marginTop: THEME.space.sm }}>
+            <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Analizando tu foto…</Text>
+            <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: THEME.space.xs, textAlign: 'center', lineHeight: 19 }}>
+              La IA está identificando el problema{'\n'}y calculando un precio estimado
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginTop: THEME.space.lg, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm }}>
+              <Ionicons name="lock-closed" size={12} color={THEME.color.success} />
+              <Text style={{ ...THEME.font.caption, color: THEME.color.success }}>Tu foto se elimina automático, no se guarda</Text>
+            </View>
+          </View>
+        </ScrollView>
       </View>
     )
   }
@@ -269,191 +304,243 @@ export default function CotizarFotoScreen() {
     const analisis = data.analisis
     const sev = analisis ? SEVERIDAD_UI[analisis.severidad] || SEVERIDAD_UI.media : null
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} contentContainerStyle={{ padding: THEME.space.lg, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.md, paddingBottom: THEME.space.xxxl + THEME.space.md }}>
+        <StatusBar barStyle="dark-content" />
         {previewUri ? (
-          <Image source={{ uri: previewUri }} style={{ width: '100%', height: 160, borderRadius: 16, marginBottom: 14 }} resizeMode="cover" />
+          <FadeInUp delay={0}>
+            <Image source={{ uri: previewUri }} style={{ width: '100%', height: 170, borderRadius: THEME.radius.xl, marginBottom: THEME.space.lg }} resizeMode="cover" />
+          </FadeInUp>
         ) : null}
 
         {analisis && sev ? (
           <>
             {/* Problema detectado */}
-            <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="search" size={17} color={COLORS.pri} />
+            <FadeInUp delay={60}>
+              <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, marginBottom: THEME.space.md, ...THEME.shadow.sm }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.md }}>
+                  <View style={{ width: 38, height: 38, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="search" size={18} color={THEME.color.brand} />
+                  </View>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.ink, flex: 1 }}>Problema detectado</Text>
+                  <View style={{ backgroundColor: sev.bg, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.xs + 1 }}>
+                    <Text style={{ ...THEME.font.caption, fontWeight: '800', color: sev.color }}>{sev.label.toUpperCase()}</Text>
+                  </View>
                 </View>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, flex: 1 }}>Problema detectado</Text>
-                <View style={{ backgroundColor: sev.bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: sev.color }}>{sev.label.toUpperCase()}</Text>
-                </View>
+                <Text style={{ ...THEME.font.label, color: THEME.color.inkMuted }}>{analisis.categoria}</Text>
+                <Text style={{ ...THEME.font.h2, color: THEME.color.ink, marginTop: THEME.space.xs }}>{analisis.servicio_recomendado}</Text>
+                <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, lineHeight: 21 }}>{analisis.descripcion}</Text>
               </View>
-              <Text style={{ fontSize: 12, color: COLORS.gray2, fontWeight: '600' }}>{analisis.categoria}</Text>
-              <Text style={{ fontSize: 17, fontWeight: '900', color: COLORS.dark, marginTop: 2 }}>{analisis.servicio_recomendado}</Text>
-              <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, lineHeight: 19 }}>{analisis.descripcion}</Text>
-            </View>
+            </FadeInUp>
 
             {/* Precio estimado */}
             {data.precio ? (
-              <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="cash-outline" size={17} color="#059669" />
+              <FadeInUp delay={120}>
+                <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, marginBottom: THEME.space.md, ...THEME.shadow.sm }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.sm }}>
+                    <View style={{ width: 38, height: 38, borderRadius: THEME.radius.md, backgroundColor: THEME.color.successBg, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="cash-outline" size={18} color={THEME.color.success} />
+                    </View>
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Precio estimado</Text>
                   </View>
-                  <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>Precio estimado</Text>
+                  <Text style={{ ...THEME.font.display, color: THEME.color.brand }}>
+                    S/ {data.precio.min} – {data.precio.max}
+                  </Text>
+                  {data.precio.mediana ? (
+                    <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: THEME.space.xs }}>Precio típico: S/ {data.precio.mediana}</Text>
+                  ) : null}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.xs + 1, marginTop: THEME.space.sm }}>
+                    <Ionicons name="information-circle-outline" size={14} color={THEME.color.inkMuted} />
+                    <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, flex: 1 }}>{fuenteLabel(data.precio)}</Text>
+                  </View>
+                  {data.precio.ai_note ? (
+                    <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: THEME.space.xs, fontStyle: 'italic' }}>{data.precio.ai_note}</Text>
+                  ) : null}
                 </View>
-                <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.pri }}>
-                  S/ {data.precio.min} – S/ {data.precio.max}
-                </Text>
-                {data.precio.mediana ? (
-                  <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 2 }}>Precio típico: S/ {data.precio.mediana}</Text>
-                ) : null}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 }}>
-                  <Ionicons name="information-circle-outline" size={13} color={COLORS.gray2} />
-                  <Text style={{ fontSize: 11, color: COLORS.gray2, flex: 1 }}>{fuenteLabel(data.precio)}</Text>
-                </View>
-                {data.precio.ai_note ? (
-                  <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 4, fontStyle: 'italic' }}>{data.precio.ai_note}</Text>
-                ) : null}
-              </View>
+              </FadeInUp>
             ) : null}
 
             {/* CTA principal */}
-            <TouchableOpacity onPress={solicitarServicio} activeOpacity={0.85} style={{ marginBottom: 12 }}>
-              <LinearGradient
-                colors={[COLORS.pri, '#E55A10']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={{ borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            <FadeInUp delay={180}>
+              <PressableScale
+                onPress={solicitarServicio}
+                accessibilityLabel="Solicitar este servicio"
+                style={{
+                  height: 54,
+                  borderRadius: THEME.radius.lg,
+                  backgroundColor: THEME.color.brand,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: THEME.space.sm,
+                  marginBottom: THEME.space.md,
+                  ...THEME.shadow.brand,
+                }}
               >
-                <Ionicons name="flash" size={18} color={COLORS.white} />
-                <Text style={{ color: COLORS.white, fontSize: 15, fontWeight: '800' }}>Solicitar este servicio</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <Ionicons name="flash" size={19} color={THEME.color.white} />
+                <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Solicitar este servicio</Text>
+              </PressableScale>
+            </FadeInUp>
 
             {/* Técnicos sugeridos */}
             {data.tecnicos && data.tecnicos.length > 0 ? (
-              <View style={{ marginBottom: 8 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 10 }}>
-                  Técnicos disponibles para este trabajo
-                </Text>
-                {data.tecnicos.slice(0, 3).map((tech) => (
-                  <TecnicoMiniCard key={tech.id} tech={tech} />
-                ))}
-              </View>
+              <FadeInUp delay={240}>
+                <View style={{ marginBottom: THEME.space.sm }}>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.md }}>
+                    Técnicos disponibles para este trabajo
+                  </Text>
+                  {data.tecnicos.slice(0, 3).map((tech) => (
+                    <TecnicoMiniCard key={tech.id} tech={tech} />
+                  ))}
+                </View>
+              </FadeInUp>
             ) : null}
           </>
         ) : (
           // La IA no identificó el problema en la foto
-          <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 20, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
-            <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <Ionicons name="help-circle-outline" size={28} color="#92400E" />
+          <FadeInUp delay={60}>
+            <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.xl, marginBottom: THEME.space.md, alignItems: 'center', ...THEME.shadow.sm }}>
+              <View style={{ width: 60, height: 60, borderRadius: THEME.radius.xl, backgroundColor: THEME.color.warningBg, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.md }}>
+                <Ionicons name="help-circle-outline" size={30} color={THEME.color.warning} />
+              </View>
+              <Text style={{ ...THEME.font.h3, color: THEME.color.ink, textAlign: 'center' }}>No pudimos identificar el problema</Text>
+              <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center', lineHeight: 21 }}>{data.mensaje}</Text>
+              <PressableScale
+                onPress={() => router.push('/solicitar')}
+                style={{ marginTop: THEME.space.lg, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, paddingHorizontal: THEME.space.xl, height: 50, justifyContent: 'center', ...THEME.shadow.brand }}
+              >
+                <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Describir mi problema en palabras</Text>
+              </PressableScale>
             </View>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, textAlign: 'center' }}>No pudimos identificar el problema</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>{data.mensaje}</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/solicitar')}
-              activeOpacity={0.85}
-              style={{ marginTop: 14, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 20, minHeight: 48, justifyContent: 'center' }}
-            >
-              <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 13 }}>Describir mi problema en palabras</Text>
-            </TouchableOpacity>
-          </View>
+          </FadeInUp>
         )}
 
         {/* Tomar otra foto */}
-        <TouchableOpacity
-          onPress={reiniciar}
-          activeOpacity={0.8}
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.white }}
-        >
-          <Ionicons name="camera-outline" size={16} color={COLORS.dark} />
-          <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 13 }}>Tomar otra foto</Text>
-        </TouchableOpacity>
+        <FadeInUp delay={300}>
+          <PressableScale
+            onPress={reiniciar}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm, height: 50, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.surface, ...THEME.shadow.sm }}
+          >
+            <Ionicons name="camera-outline" size={17} color={THEME.color.ink} />
+            <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Tomar otra foto</Text>
+          </PressableScale>
+        </FadeInUp>
       </ScrollView>
     )
   }
 
   // ── Estado: inicial ──
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} contentContainerStyle={{ padding: THEME.space.xl, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.xl, paddingBottom: THEME.space.xxxl + THEME.space.md }} keyboardShouldPersistTaps="handled">
+      <StatusBar barStyle="dark-content" />
       {/* Hero */}
-      <View style={{ alignItems: 'center', marginBottom: 20 }}>
-        <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-          <Ionicons name="camera" size={34} color={COLORS.pri} />
+      <FadeInUp delay={0}>
+        <View style={{ alignItems: 'center', marginBottom: THEME.space.xxl }}>
+          <View style={{ width: 80, height: 80, borderRadius: THEME.radius.xxl, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+            <Ionicons name="camera" size={38} color={THEME.color.brand} />
+          </View>
+          <Text style={{ ...THEME.font.h1, color: THEME.color.ink, textAlign: 'center' }}>Cotiza con una foto</Text>
+          <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center', lineHeight: 21 }}>
+            Tómale una foto al problema y la IA te dice{'\n'}qué servicio necesitas y cuánto cuesta
+          </Text>
         </View>
-        <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark, textAlign: 'center' }}>Cotiza con una foto 📸</Text>
-        <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>
-          Tómale una foto al problema y la IA te dice{'\n'}qué servicio necesitas y cuánto cuesta
-        </Text>
-      </View>
+      </FadeInUp>
 
       {/* Pasos */}
-      <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-        {[
-          { icon: 'camera-outline' as const, text: 'Toma una foto del problema' },
-          { icon: 'sparkles-outline' as const, text: 'La IA lo analiza en segundos' },
-          { icon: 'cash-outline' as const, text: 'Recibes precio estimado y técnicos cerca' },
-        ].map((paso, i) => (
-          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}>
-            <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name={paso.icon} size={15} color={COLORS.pri} />
+      <FadeInUp delay={60}>
+        <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, marginBottom: THEME.space.lg, ...THEME.shadow.sm }}>
+          {[
+            { icon: 'camera-outline' as const, text: 'Toma una foto del problema' },
+            { icon: 'sparkles-outline' as const, text: 'La IA lo analiza en segundos' },
+            { icon: 'cash-outline' as const, text: 'Recibes precio estimado y técnicos cerca' },
+          ].map((paso, i) => (
+            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, paddingVertical: THEME.space.sm }}>
+              <View style={{ width: 34, height: 34, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name={paso.icon} size={16} color={THEME.color.brand} />
+              </View>
+              <Text style={{ ...THEME.font.body, color: THEME.color.ink, flex: 1 }}>{paso.text}</Text>
+              <View style={{ width: 24, height: 24, borderRadius: THEME.radius.full, backgroundColor: THEME.color.surfaceSunken, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ ...THEME.font.label, color: THEME.color.inkSoft }}>{i + 1}</Text>
+              </View>
             </View>
-            <Text style={{ fontSize: 13, color: COLORS.dark, fontWeight: '600', flex: 1 }}>{paso.text}</Text>
-            <Text style={{ fontSize: 12, fontWeight: '900', color: COLORS.gray2 }}>{i + 1}</Text>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      </FadeInUp>
 
       {/* Caption opcional */}
-      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>¿Algo más que debamos saber? (opcional)</Text>
-      <TextInput
-        value={caption}
-        onChangeText={setCaption}
-        placeholder="Ej: el caño gotea desde ayer"
-        placeholderTextColor={COLORS.gray2}
-        maxLength={500}
-        style={{
-          backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border,
-          paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: COLORS.dark, marginBottom: 12,
-        }}
-      />
+      <FadeInUp delay={120}>
+        <Text style={{ ...THEME.font.label, color: THEME.color.ink, marginBottom: THEME.space.sm }}>¿Algo más que debamos saber? (opcional)</Text>
+        <TextInput
+          value={caption}
+          onChangeText={setCaption}
+          placeholder="Ej: el caño gotea desde ayer"
+          placeholderTextColor={THEME.color.inkMuted}
+          maxLength={500}
+          style={{
+            backgroundColor: THEME.color.surface,
+            borderRadius: THEME.radius.lg,
+            paddingHorizontal: THEME.space.lg,
+            paddingVertical: THEME.space.md + 2,
+            ...THEME.font.body,
+            color: THEME.color.ink,
+            marginBottom: THEME.space.md,
+            ...THEME.shadow.sm,
+          }}
+        />
+      </FadeInUp>
 
       {/* Distrito detectado */}
       {distrito ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-          <Ionicons name="location" size={13} color={COLORS.pri} />
-          <Text style={{ fontSize: 12, color: COLORS.gray, fontWeight: '600' }}>
-            Cotizando para <Text style={{ color: COLORS.dark, fontWeight: '800' }}>{distrito}</Text>
-          </Text>
-        </View>
+        <FadeInUp delay={160}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.lg }}>
+            <Ionicons name="location" size={14} color={THEME.color.brand} />
+            <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft }}>
+              Cotizando para <Text style={{ color: THEME.color.ink, fontWeight: '800' }}>{distrito}</Text>
+            </Text>
+          </View>
+        </FadeInUp>
       ) : null}
 
       {/* Botón cámara */}
-      <TouchableOpacity onPress={tomarFoto} activeOpacity={0.85} style={{ marginBottom: 10 }}>
-        <LinearGradient
-          colors={[COLORS.pri, '#E55A10']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-          style={{ borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+      <FadeInUp delay={200}>
+        <PressableScale
+          onPress={tomarFoto}
+          accessibilityLabel="Tomar foto"
+          style={{
+            height: 54,
+            borderRadius: THEME.radius.lg,
+            backgroundColor: THEME.color.brand,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: THEME.space.sm,
+            marginBottom: THEME.space.md,
+            ...THEME.shadow.brand,
+          }}
         >
-          <Ionicons name="camera" size={20} color={COLORS.white} />
-          <Text style={{ color: COLORS.white, fontSize: 15, fontWeight: '800' }}>Tomar foto</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <Ionicons name="camera" size={20} color={THEME.color.white} />
+          <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Tomar foto</Text>
+        </PressableScale>
+      </FadeInUp>
 
       {/* Botón galería */}
-      <TouchableOpacity
-        onPress={elegirDeGaleria}
-        activeOpacity={0.8}
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.white }}
-      >
-        <Ionicons name="images-outline" size={18} color={COLORS.dark} />
-        <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 14 }}>Elegir de galería</Text>
-      </TouchableOpacity>
+      <FadeInUp delay={240}>
+        <PressableScale
+          onPress={elegirDeGaleria}
+          accessibilityLabel="Elegir de galería"
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm, height: 52, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.surface, ...THEME.shadow.sm }}
+        >
+          <Ionicons name="images-outline" size={18} color={THEME.color.ink} />
+          <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Elegir de galería</Text>
+        </PressableScale>
+      </FadeInUp>
 
       {/* Nota de privacidad */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 }}>
-        <Ionicons name="lock-closed" size={12} color={COLORS.gray2} />
-        <Text style={{ fontSize: 11, color: COLORS.gray2 }}>Tu foto se analiza al instante y se elimina automático</Text>
-      </View>
+      <FadeInUp delay={280}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm, marginTop: THEME.space.lg }}>
+          <Ionicons name="lock-closed" size={12} color={THEME.color.inkMuted} />
+          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>Tu foto se analiza al instante y se elimina automático</Text>
+        </View>
+      </FadeInUp>
     </ScrollView>
   )
 }

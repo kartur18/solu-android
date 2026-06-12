@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, StatusBar, Animated, Image } from 'react-native'
+import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, StatusBar, Animated, Image } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, SERVICIO_TO_OFICIO } from '../src/lib/constants'
+import { SERVICIO_TO_OFICIO } from '../src/lib/constants'
+import { THEME } from '../src/lib/theme'
+import { FadeInUp, PressableScale, PulseDot, haptics } from '../src/components/ui/Motion'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { supabase } from '../src/lib/supabase'
 import { optimizeUrl } from '../src/lib/cloudinary'
@@ -46,10 +48,10 @@ const QUICK_CHIPS = ['Tengo una fuga de agua', 'No tengo luz en casa', 'Mi puert
 
 const GREETING = '¡Hola! 👋 Soy el asistente de SOLU. Cuéntame qué necesitas y te conecto con un técnico verificado en minutos.\n\nPor ejemplo: "Tengo una fuga de agua en la cocina"'
 
-// ── Typing indicator: 3 puntos animados ──
+// ── Typing indicator: 3 puntos animados en burbuja SOLU ──
 
 function TypingDots() {
-  const dots = useRef([new Animated.Value(0.3), new Animated.Value(0.3), new Animated.Value(0.3)]).current
+  const dots = useRef([new Animated.Value(0.35), new Animated.Value(0.35), new Animated.Value(0.35)]).current
 
   useEffect(() => {
     const loops = dots.map((v, i) =>
@@ -57,7 +59,7 @@ function TypingDots() {
         Animated.sequence([
           Animated.delay(i * 160),
           Animated.timing(v, { toValue: 1, duration: 320, useNativeDriver: true }),
-          Animated.timing(v, { toValue: 0.3, duration: 320, useNativeDriver: true }),
+          Animated.timing(v, { toValue: 0.35, duration: 320, useNativeDriver: true }),
           Animated.delay((2 - i) * 160),
         ]),
       ),
@@ -67,9 +69,21 @@ function TypingDots() {
   }, [dots])
 
   return (
-    <View style={{ alignSelf: 'flex-start', backgroundColor: COLORS.white, borderRadius: 16, borderBottomLeftRadius: 4, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', gap: 5 }}>
+    <View
+      style={{
+        alignSelf: 'flex-start',
+        backgroundColor: THEME.color.surface,
+        borderRadius: THEME.radius.xl,
+        borderBottomLeftRadius: THEME.radius.sm,
+        paddingHorizontal: THEME.space.lg,
+        paddingVertical: THEME.space.md + 2,
+        flexDirection: 'row',
+        gap: 6,
+        ...THEME.shadow.sm,
+      }}
+    >
       {dots.map((v, i) => (
-        <Animated.View key={i} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.gray2, opacity: v }} />
+        <Animated.View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.color.inkMuted, opacity: v }} />
       ))}
     </View>
   )
@@ -80,40 +94,40 @@ function TypingDots() {
 function TechInlineCard({ tech, servicio }: { tech: TechSuggestion; servicio: string | null }) {
   const router = useRouter()
   return (
-    <View style={{ backgroundColor: COLORS.white, borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, marginBottom: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.md, marginBottom: THEME.space.sm, ...THEME.shadow.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
         {tech.foto_url ? (
-          <Image source={{ uri: optimizeUrl(tech.foto_url, { width: 48, height: 48 }) }} style={{ width: 48, height: 48, borderRadius: 14 }} />
+          <Image source={{ uri: optimizeUrl(tech.foto_url, { width: 48, height: 48 }) }} style={{ width: 50, height: 50, borderRadius: THEME.radius.md }} />
         ) : (
-          <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: COLORS.priLight, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.pri }}>{tech.nombre?.charAt(0) || 'T'}</Text>
+          <View style={{ width: 50, height: 50, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: THEME.color.brand }}>{tech.nombre?.charAt(0) || 'T'}</Text>
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }} numberOfLines={1}>{tech.nombre}</Text>
-            {tech.verificado && <Ionicons name="checkmark-circle" size={14} color={COLORS.acc} />}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.xs }}>
+            <Text style={{ ...THEME.font.h3, color: THEME.color.ink }} numberOfLines={1}>{tech.nombre}</Text>
+            {tech.verificado && <Ionicons name="checkmark-circle" size={14} color={THEME.color.info} />}
           </View>
-          <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 1 }} numberOfLines={1}>
+          <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 1 }} numberOfLines={1}>
             {tech.oficio || servicio || 'Técnico'}{tech.distrito ? ` · ${tech.distrito}` : ''}
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
-            <Ionicons name="star" size={12} color={COLORS.yellow} />
-            <Text style={{ fontSize: 12, fontWeight: '800', color: COLORS.dark }}>{(tech.calificacion ?? 0).toFixed(1)}</Text>
-            <Text style={{ fontSize: 11, color: COLORS.gray2 }}>({tech.num_resenas ?? 0} reseñas)</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.xs, marginTop: 2 }}>
+            <Ionicons name="star" size={12} color={THEME.color.oro} />
+            <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>{(tech.calificacion ?? 0).toFixed(1)}</Text>
+            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>({tech.num_resenas ?? 0} reseñas)</Text>
           </View>
         </View>
       </View>
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-        <TouchableOpacity
+      <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.md }}>
+        <PressableScale
           onPress={() => router.push(`/tecnico/${tech.id}`)}
-          activeOpacity={0.8}
-          style={{ flex: 1, minHeight: 44, backgroundColor: COLORS.light, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 }}
+          accessibilityLabel={`Ver perfil de ${tech.nombre}`}
+          style={{ flex: 1, minHeight: 44, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.xs + 1 }}
         >
-          <Ionicons name="person-outline" size={15} color={COLORS.dark} />
-          <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 12 }}>Ver perfil</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+          <Ionicons name="person-outline" size={15} color={THEME.color.ink} />
+          <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>Ver perfil</Text>
+        </PressableScale>
+        <PressableScale
           onPress={() =>
             router.push({
               pathname: '/solicitar',
@@ -125,12 +139,12 @@ function TechInlineCard({ tech, servicio }: { tech: TechSuggestion; servicio: st
               },
             })
           }
-          activeOpacity={0.8}
-          style={{ flex: 1, minHeight: 44, backgroundColor: COLORS.pri, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 }}
+          accessibilityLabel={`Contactar a ${tech.nombre}`}
+          style={{ flex: 1, minHeight: 44, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.xs + 1, ...THEME.shadow.brand }}
         >
-          <Ionicons name="flash" size={15} color={COLORS.white} />
-          <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 12 }}>Contactar</Text>
-        </TouchableOpacity>
+          <Ionicons name="flash" size={15} color={THEME.color.white} />
+          <Text style={{ ...THEME.font.label, color: THEME.color.white }}>Contactar</Text>
+        </PressableScale>
       </View>
     </View>
   )
@@ -313,6 +327,7 @@ export default function AsistenteScreen() {
       if (!techs.length) techs = await loadTechs(data.servicio)
 
       removeItem(confirmItemId)
+      haptics.success()
       const newOnes: ChatItem[] = [
         { id: nextId(), kind: 'success', codigo },
         { id: nextId(), kind: 'msg', role: 'assistant', content: `¡Listo, ${data.nombre}! 🎉 Tu solicitud de ${data.servicio} en ${data.distrito} ya está creada. Te contactaremos por WhatsApp al ${data.whatsapp}.` },
@@ -357,161 +372,179 @@ export default function AsistenteScreen() {
   const urgenciaLabel = (u: Urgencia) => (u === 'emergencia' ? '🚨 Emergencia' : u === 'urgente' ? '⏱️ Urgente' : '📅 Normal')
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: COLORS.light }} behavior="padding">
-      {/* Header */}
-      <View style={{ backgroundColor: COLORS.dark, padding: 16, paddingTop: (StatusBar.currentHeight || 40) + 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity accessibilityLabel="Volver" hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.white} />
-        </TouchableOpacity>
-        <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(242,107,33,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="sparkles" size={19} color={COLORS.pri} />
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} behavior="padding">
+      <StatusBar barStyle="light-content" />
+      {/* Header oscuro navy con avatar IA */}
+      <View style={{ backgroundColor: THEME.color.navy, paddingHorizontal: THEME.space.lg, paddingBottom: THEME.space.lg, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, ...THEME.shadow.md }}>
+        <PressableScale accessibilityLabel="Volver" haptic={false} onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="arrow-back" size={22} color={THEME.color.white} />
+        </PressableScale>
+        <View style={{ width: 42, height: 42, borderRadius: THEME.radius.full, backgroundColor: 'rgba(242,107,33,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="sparkles" size={20} color={THEME.color.brand} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Asistente SOLU</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>Te conecto con un técnico en minutos</Text>
+          <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Asistente SOLU</Text>
+          <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.62)' }}>Te conecto con un técnico en minutos</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16,185,129,0.15)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.green }} />
-          <Text style={{ color: COLORS.green, fontSize: 10, fontWeight: '700' }}>En línea</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, backgroundColor: 'rgba(22,163,74,0.16)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.xs + 1 }}>
+          <PulseDot color={THEME.color.success} size={7} />
+          <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.success }}>En línea</Text>
         </View>
       </View>
 
       {/* Mensajes */}
-      <ScrollView ref={scrollRef} style={{ flex: 1, padding: 12 }} contentContainerStyle={{ gap: 8, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: THEME.space.md, gap: THEME.space.sm + 2, paddingBottom: THEME.space.xxl }} keyboardShouldPersistTaps="handled">
         {items.map((it) => {
           if (it.kind === 'msg') {
+            const isUser = it.role === 'user'
             return (
-              <View key={it.id} style={{ alignSelf: it.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+              <FadeInUp key={it.id} distance={8} style={{ alignSelf: isUser ? 'flex-end' : 'flex-start', maxWidth: '86%' }}>
                 <View
                   style={{
-                    backgroundColor: it.role === 'user' ? COLORS.pri : COLORS.white,
-                    borderRadius: 16,
-                    borderBottomRightRadius: it.role === 'user' ? 4 : 16,
-                    borderBottomLeftRadius: it.role === 'assistant' ? 4 : 16,
-                    paddingHorizontal: 14,
-                    paddingVertical: 11,
-                    borderWidth: it.role === 'assistant' ? 1 : 0,
-                    borderColor: '#E2E8F0',
-                    elevation: 1,
+                    backgroundColor: isUser ? THEME.color.brand : THEME.color.surface,
+                    borderRadius: THEME.radius.xl,
+                    borderBottomRightRadius: isUser ? THEME.radius.sm : THEME.radius.xl,
+                    borderBottomLeftRadius: isUser ? THEME.radius.xl : THEME.radius.sm,
+                    paddingHorizontal: THEME.space.lg,
+                    paddingVertical: THEME.space.md,
+                    ...(isUser ? THEME.shadow.brand : THEME.shadow.sm),
                   }}
                 >
-                  <Text style={{ fontSize: 13.5, color: it.role === 'user' ? COLORS.white : COLORS.dark, lineHeight: 20 }}>{it.content}</Text>
+                  <Text style={{ ...THEME.font.body, color: isUser ? THEME.color.white : THEME.color.ink, lineHeight: 21 }}>{it.content}</Text>
                 </View>
-              </View>
+              </FadeInUp>
             )
           }
 
           if (it.kind === 'confirm') {
             return (
-              <View key={it.id} style={{ backgroundColor: COLORS.white, borderRadius: 16, borderWidth: 1.5, borderColor: COLORS.pri, padding: 14, maxWidth: '92%' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <Ionicons name="clipboard-outline" size={16} color={COLORS.pri} />
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.dark }}>Confirma tu solicitud</Text>
+              <FadeInUp key={it.id} distance={10}>
+                <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, maxWidth: '94%', ...THEME.shadow.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md }}>
+                    <View style={{ width: 32, height: 32, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="clipboard-outline" size={16} color={THEME.color.brand} />
+                    </View>
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Confirma tu solicitud</Text>
+                  </View>
+                  <View style={{ gap: THEME.space.sm }}>
+                    {[
+                      { icon: 'construct-outline' as const, val: it.data.servicio },
+                      { icon: 'location-outline' as const, val: it.data.distrito },
+                      { icon: 'person-outline' as const, val: it.data.nombre },
+                      { icon: 'call-outline' as const, val: it.data.whatsapp },
+                      { icon: 'time-outline' as const, val: urgenciaLabel(it.data.urgencia) },
+                    ].map((row, i) => (
+                      <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+                        <Ionicons name={row.icon} size={15} color={THEME.color.inkMuted} />
+                        <Text style={{ ...THEME.font.body, color: THEME.color.ink, flex: 1 }} numberOfLines={1}>{row.val}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <PressableScale
+                    onPress={() => handleConfirm(it.data, it.id)}
+                    disabled={submitting}
+                    accessibilityLabel="Confirmar solicitud"
+                    style={{ marginTop: THEME.space.lg, minHeight: 48, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.sm, ...THEME.shadow.brand }}
+                  >
+                    <Ionicons name="checkmark-circle" size={18} color={THEME.color.white} />
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>{submitting ? 'Enviando…' : 'Confirmar solicitud'}</Text>
+                  </PressableScale>
                 </View>
-                <Text style={{ fontSize: 12.5, color: COLORS.dark, lineHeight: 19 }}>
-                  🔧 {it.data.servicio}{'\n'}📍 {it.data.distrito}{'\n'}👤 {it.data.nombre}{'\n'}📱 {it.data.whatsapp}{'\n'}{urgenciaLabel(it.data.urgencia)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => handleConfirm(it.data, it.id)}
-                  disabled={submitting}
-                  activeOpacity={0.8}
-                  style={{ marginTop: 12, minHeight: 46, backgroundColor: COLORS.green, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, opacity: submitting ? 0.6 : 1 }}
-                >
-                  <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
-                  <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 14 }}>{submitting ? 'Enviando...' : 'Confirmar solicitud'}</Text>
-                </TouchableOpacity>
-              </View>
+              </FadeInUp>
             )
           }
 
           if (it.kind === 'success') {
             return (
-              <View key={it.id} style={{ backgroundColor: '#F0FDF4', borderRadius: 16, borderWidth: 1, borderColor: '#BBF7D0', padding: 14, maxWidth: '92%' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#059669' }}>Solicitud creada{it.codigo ? ` · ${it.codigo}` : ''}</Text>
+              <FadeInUp key={it.id} distance={10}>
+                <View style={{ backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.xl, padding: THEME.space.lg, maxWidth: '94%' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+                    <Ionicons name="checkmark-circle" size={20} color={THEME.color.success} />
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.success }}>Solicitud creada{it.codigo ? ` · ${it.codigo}` : ''}</Text>
+                  </View>
+                  {it.codigo && (
+                    <PressableScale
+                      onPress={() => router.push(`/tracking/${it.codigo}`)}
+                      accessibilityLabel="Ver seguimiento"
+                      style={{ marginTop: THEME.space.md, minHeight: 44, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.sm, ...THEME.shadow.sm }}
+                    >
+                      <Ionicons name="navigate-outline" size={15} color={THEME.color.success} />
+                      <Text style={{ ...THEME.font.label, color: THEME.color.success }}>Ver seguimiento</Text>
+                    </PressableScale>
+                  )}
                 </View>
-                {it.codigo && (
-                  <TouchableOpacity
-                    onPress={() => router.push(`/tracking/${it.codigo}`)}
-                    activeOpacity={0.8}
-                    style={{ marginTop: 10, minHeight: 44, backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: '#BBF7D0', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}
-                  >
-                    <Ionicons name="navigate-outline" size={15} color="#059669" />
-                    <Text style={{ color: '#059669', fontWeight: '700', fontSize: 13 }}>Ver seguimiento</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              </FadeInUp>
             )
           }
 
           if (it.kind === 'techs') {
             return (
-              <View key={it.id} style={{ width: '100%' }}>
+              <FadeInUp key={it.id} distance={10} style={{ width: '100%' }}>
                 {it.techs.map((t) => (
                   <TechInlineCard key={t.id} tech={t} servicio={lastServicioRef.current} />
                 ))}
-              </View>
+              </FadeInUp>
             )
           }
 
           // kind === 'error'
           return (
-            <View key={it.id} style={{ backgroundColor: '#FEF2F2', borderRadius: 16, borderWidth: 1, borderColor: '#FECACA', padding: 14, maxWidth: '92%' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-                <Ionicons name="cloud-offline-outline" size={16} color={COLORS.red} style={{ marginTop: 1 }} />
-                <Text style={{ flex: 1, fontSize: 12.5, color: COLORS.dark, lineHeight: 19 }}>{it.text}</Text>
+            <FadeInUp key={it.id} distance={10}>
+              <View style={{ backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.xl, padding: THEME.space.lg, maxWidth: '94%' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: THEME.space.sm }}>
+                  <Ionicons name="cloud-offline-outline" size={18} color={THEME.color.danger} style={{ marginTop: 1 }} />
+                  <Text style={{ flex: 1, ...THEME.font.body, color: THEME.color.ink, lineHeight: 21 }}>{it.text}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.md }}>
+                  {it.retry && (
+                    <PressableScale
+                      onPress={() => handleRetry(it)}
+                      accessibilityLabel="Reintentar"
+                      style={{ flex: 1, minHeight: 44, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.xs + 1, ...THEME.shadow.brand }}
+                    >
+                      <Ionicons name="refresh" size={15} color={THEME.color.white} />
+                      <Text style={{ ...THEME.font.label, color: THEME.color.white }}>Reintentar</Text>
+                    </PressableScale>
+                  )}
+                  {it.servicio && (
+                    <PressableScale
+                      onPress={() => goSolicitar(it.servicio!, it.urgencia)}
+                      accessibilityLabel="Solicitar técnico"
+                      style={{ flex: 1, minHeight: 44, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.xs + 1, ...THEME.shadow.sm }}
+                    >
+                      <Ionicons name="flash" size={15} color={THEME.color.brand} />
+                      <Text style={{ ...THEME.font.label, color: THEME.color.brand }} numberOfLines={1}>Solicitar técnico</Text>
+                    </PressableScale>
+                  )}
+                </View>
               </View>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                {it.retry && (
-                  <TouchableOpacity
-                    onPress={() => handleRetry(it)}
-                    activeOpacity={0.8}
-                    style={{ flex: 1, minHeight: 44, backgroundColor: COLORS.pri, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 }}
-                  >
-                    <Ionicons name="refresh" size={15} color={COLORS.white} />
-                    <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 12 }}>Reintentar</Text>
-                  </TouchableOpacity>
-                )}
-                {it.servicio && (
-                  <TouchableOpacity
-                    onPress={() => goSolicitar(it.servicio!, it.urgencia)}
-                    activeOpacity={0.8}
-                    style={{ flex: 1, minHeight: 44, backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 5 }}
-                  >
-                    <Ionicons name="flash" size={15} color={COLORS.pri} />
-                    <Text style={{ color: COLORS.pri, fontWeight: '700', fontSize: 12 }} numberOfLines={1}>Solicitar técnico</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+            </FadeInUp>
           )
         })}
 
         {loading && <TypingDots />}
 
         {showChips && !loading && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: THEME.space.sm, marginTop: THEME.space.xs }}>
             {QUICK_CHIPS.map((chip) => (
-              <TouchableOpacity
+              <PressableScale
                 key={chip}
                 onPress={() => handleSend(chip)}
-                activeOpacity={0.8}
-                style={{ backgroundColor: COLORS.white, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' }}
+                style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.lg, minHeight: 44, justifyContent: 'center', ...THEME.shadow.sm }}
               >
-                <Text style={{ fontSize: 12, color: COLORS.dark, fontWeight: '600' }}>{chip}</Text>
-              </TouchableOpacity>
+                <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>{chip}</Text>
+              </PressableScale>
             ))}
           </View>
         )}
       </ScrollView>
 
-      {/* Input */}
-      <View style={{ flexDirection: 'row', padding: 12, paddingBottom: Platform.OS === 'android' ? 56 : 12, gap: 8, borderTopWidth: 1, borderTopColor: '#E2E8F0', backgroundColor: COLORS.white }}>
+      {/* Input con sombra */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', padding: THEME.space.md, paddingBottom: Platform.OS === 'android' ? THEME.space.xxxl + THEME.space.xxl : THEME.space.md, gap: THEME.space.sm, backgroundColor: THEME.color.surface, ...THEME.shadow.lg }}>
         <TextInput
-          style={{ flex: 1, backgroundColor: COLORS.light, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, borderWidth: 1, borderColor: COLORS.border, color: COLORS.dark }}
-          placeholder="Cuéntame qué necesitas..."
-          placeholderTextColor={COLORS.gray2}
+          style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.xl, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md + 2, ...THEME.font.body, color: THEME.color.ink, maxHeight: 120 }}
+          placeholder="Cuéntame qué necesitas…"
+          placeholderTextColor={THEME.color.inkMuted}
           value={input}
           onChangeText={setInput}
           onSubmitEditing={() => handleSend()}
@@ -520,14 +553,14 @@ export default function AsistenteScreen() {
           multiline={false}
           maxLength={2000}
         />
-        <TouchableOpacity
+        <PressableScale
           onPress={() => handleSend()}
           disabled={loading || !input.trim()}
           accessibilityLabel="Enviar mensaje"
-          style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center', opacity: loading || !input.trim() ? 0.5 : 1 }}
+          style={{ width: 48, height: 48, borderRadius: THEME.radius.full, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.brand }}
         >
-          <Ionicons name="send" size={18} color={COLORS.white} />
-        </TouchableOpacity>
+          <Ionicons name="send" size={18} color={THEME.color.white} />
+        </PressableScale>
       </View>
     </KeyboardAvoidingView>
   )
