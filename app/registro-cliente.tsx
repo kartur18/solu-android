@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, DISTRITOS } from '../src/lib/constants'
+import { DISTRITOS } from '../src/lib/constants'
 import { ENV } from '../src/lib/env'
+import { THEME } from '../src/lib/theme'
+import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
 export default function RegistroClienteScreen() {
   const router = useRouter()
@@ -16,6 +18,8 @@ export default function RegistroClienteScreen() {
   const [showDistritos, setShowDistritos] = useState(false)
   const [distritoFilter, setDistritoFilter] = useState('')
   const [loading, setLoading] = useState(false)
+  // Foco visual de inputs (borde brand 2px al enfocar)
+  const [focused, setFocused] = useState<string | null>(null)
 
   async function submit() {
     if (!nombre.trim()) return Alert.alert('Error', 'Ingresa tu nombre')
@@ -43,6 +47,7 @@ export default function RegistroClienteScreen() {
       if (!res.ok) {
         Alert.alert('Error', result.error || 'No se pudo crear la cuenta.')
       } else {
+        haptics.success()
         Alert.alert(
           '¡Cuenta creada!',
           'Ahora puedes iniciar sesión desde la pestaña Servicios.',
@@ -57,96 +62,230 @@ export default function RegistroClienteScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 40 }}>
-      <View style={{ padding: 20 }}>
-        <View style={{ alignItems: 'center', marginBottom: 24 }}>
-          <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-            <Ionicons name="person-add" size={28} color="#fff" />
-          </View>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark }}>Crear cuenta</Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 4 }}>Registra tu cuenta para solicitar servicios</Text>
-        </View>
-
-        <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E2E8F0' }}>
-          <Text style={s.label}>Nombre completo *</Text>
-          <TextInput placeholder="Tu nombre" value={nombre} onChangeText={setNombre} style={s.input} placeholderTextColor={COLORS.gray2} />
-
-          <Text style={s.label}>WhatsApp *</Text>
-          <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" style={s.input} placeholderTextColor={COLORS.gray2} />
-
-          <Text style={s.label}>Distrito</Text>
-          <TouchableOpacity onPress={() => setShowDistritos(!showDistritos)} style={s.input}>
-            <Text style={{ color: distrito ? COLORS.dark : COLORS.gray2, fontSize: 14 }}>{distrito || 'Seleccionar distrito'}</Text>
-          </TouchableOpacity>
-          {showDistritos && (
-            <View style={{ backgroundColor: '#fff', borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 280, borderWidth: 1, borderColor: COLORS.border }}>
-              <TextInput
-                placeholder="Escribe para buscar distrito..."
-                placeholderTextColor="#9CA3AF"
-                value={distritoFilter}
-                onChangeText={setDistritoFilter}
-                style={{ padding: 12, fontSize: 14, color: COLORS.dark, borderBottomWidth: 1, borderBottomColor: COLORS.border }}
-                autoFocus
-              />
-              <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-                {DISTRITOS.filter(d => !distritoFilter || d.toLowerCase().includes(distritoFilter.toLowerCase())).map((d) => (
-                  <TouchableOpacity key={d} onPress={() => { setDistrito(d); setDistritoFilter(''); setShowDistritos(false) }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                    <Text style={{ fontSize: 13, color: COLORS.dark }}>{d}</Text>
-                  </TouchableOpacity>
-                ))}
-                {distritoFilter.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoFilter.toLowerCase()) && (
-                  <TouchableOpacity onPress={() => { setDistrito(distritoFilter.trim()); setDistritoFilter(''); setShowDistritos(false) }} style={{ padding: 12, backgroundColor: '#EFF6FF' }}>
-                    <Text style={{ fontSize: 13, color: '#2563EB', fontWeight: '700' }}>+ Agregar "{distritoFilter.trim()}"</Text>
-                  </TouchableOpacity>
-                )}
-              </ScrollView>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={{ padding: THEME.space.xl }}>
+        <FadeInUp delay={0}>
+          <View style={{ alignItems: 'center', marginBottom: THEME.space.xxl }}>
+            <View
+              style={{
+                width: 64, height: 64, borderRadius: THEME.radius.xl,
+                backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center',
+                marginBottom: THEME.space.md, ...THEME.shadow.brand,
+              }}
+            >
+              <Ionicons name="person-add" size={28} color="#fff" />
             </View>
-          )}
-
-          <Text style={s.label}>Contraseña *</Text>
-          <View style={{ position: 'relative' }}>
-            <TextInput
-              placeholder="Mínimo 6 caracteres"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              style={[s.input, { paddingRight: 48 }]}
-              placeholderTextColor={COLORS.gray2}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: 14 }}>
-              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={s.label}>Confirmar contraseña *</Text>
-          <TextInput
-            placeholder="Repite tu contraseña"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showPassword}
-            style={s.input}
-            placeholderTextColor={COLORS.gray2}
-          />
-
-          <TouchableOpacity
-            onPress={submit}
-            disabled={loading}
-            style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8 }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
-              {loading ? 'Creando cuenta...' : 'Crear mi cuenta'}
+            <Text style={{ ...THEME.font.h1, color: THEME.color.ink }}>Crear cuenta</Text>
+            <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: THEME.space.xs, textAlign: 'center' }}>
+              Regístrate para solicitar servicios en minutos
             </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+        </FadeInUp>
+
+        <FadeInUp delay={80}>
+          <View
+            style={{
+              backgroundColor: THEME.color.surface,
+              borderRadius: THEME.radius.xl,
+              padding: THEME.space.xl,
+              ...THEME.shadow.md,
+            }}
+          >
+            <Text style={styles.label}>Nombre completo *</Text>
+            <View style={styles.inputWrap(focused === 'nombre')}>
+              <Ionicons name="person-outline" size={18} color={focused === 'nombre' ? THEME.color.brand : THEME.color.inkMuted} />
+              <TextInput
+                placeholder="Tu nombre"
+                value={nombre}
+                onChangeText={setNombre}
+                onFocus={() => setFocused('nombre')}
+                onBlur={() => setFocused(null)}
+                style={styles.inputField}
+                placeholderTextColor={THEME.color.inkMuted}
+              />
+            </View>
+
+            <Text style={styles.label}>WhatsApp *</Text>
+            <View style={styles.inputWrap(focused === 'whatsapp')}>
+              <Ionicons name="logo-whatsapp" size={18} color={focused === 'whatsapp' ? THEME.color.brand : THEME.color.inkMuted} />
+              <TextInput
+                placeholder="999 888 777"
+                value={whatsapp}
+                onChangeText={setWhatsapp}
+                keyboardType="phone-pad"
+                onFocus={() => setFocused('whatsapp')}
+                onBlur={() => setFocused(null)}
+                style={styles.inputField}
+                placeholderTextColor={THEME.color.inkMuted}
+              />
+            </View>
+
+            <Text style={styles.label}>Distrito</Text>
+            <TouchableOpacity
+              onPress={() => setShowDistritos(!showDistritos)}
+              activeOpacity={0.8}
+              style={styles.inputWrap(showDistritos)}
+            >
+              <Ionicons name="location-outline" size={18} color={showDistritos ? THEME.color.brand : THEME.color.inkMuted} />
+              <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: distrito ? THEME.color.ink : THEME.color.inkMuted }}>
+                {distrito || 'Seleccionar distrito'}
+              </Text>
+              <Ionicons name={showDistritos ? 'chevron-up' : 'chevron-down'} size={18} color={THEME.color.inkMuted} />
+            </TouchableOpacity>
+            {showDistritos && (
+              <View style={styles.dropdown}>
+                <TextInput
+                  placeholder="Escribe para buscar distrito…"
+                  placeholderTextColor={THEME.color.inkMuted}
+                  value={distritoFilter}
+                  onChangeText={setDistritoFilter}
+                  style={{
+                    paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md,
+                    fontSize: 14, fontWeight: '500', color: THEME.color.ink,
+                    borderBottomWidth: 1, borderBottomColor: THEME.color.line,
+                  }}
+                  autoFocus
+                />
+                <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                  {DISTRITOS.filter(d => !distritoFilter || d.toLowerCase().includes(distritoFilter.toLowerCase())).map((d) => (
+                    <TouchableOpacity
+                      key={d}
+                      onPress={() => { setDistrito(d); setDistritoFilter(''); setShowDistritos(false) }}
+                      style={styles.dropdownItem}
+                    >
+                      <Ionicons name="location-outline" size={15} color={THEME.color.inkMuted} />
+                      <Text style={{ ...THEME.font.bodySm, color: THEME.color.ink }}>{d}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  {distritoFilter.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoFilter.toLowerCase()) && (
+                    <TouchableOpacity
+                      onPress={() => { setDistrito(distritoFilter.trim()); setDistritoFilter(''); setShowDistritos(false) }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, backgroundColor: THEME.color.brandLight }}
+                    >
+                      <Ionicons name="add-circle" size={16} color={THEME.color.brand} />
+                      <Text style={{ ...THEME.font.bodySm, color: THEME.color.brand, fontWeight: '700' }}>Agregar &quot;{distritoFilter.trim()}&quot;</Text>
+                    </TouchableOpacity>
+                  )}
+                </ScrollView>
+              </View>
+            )}
+
+            <Text style={styles.label}>Contraseña *</Text>
+            <View style={styles.inputWrap(focused === 'pass')}>
+              <Ionicons name="lock-closed-outline" size={18} color={focused === 'pass' ? THEME.color.brand : THEME.color.inkMuted} />
+              <TextInput
+                placeholder="Mínimo 6 caracteres"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                onFocus={() => setFocused('pass')}
+                onBlur={() => setFocused(null)}
+                style={styles.inputField}
+                placeholderTextColor={THEME.color.inkMuted}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.label}>Confirmar contraseña *</Text>
+            <View style={styles.inputWrap(focused === 'confirm')}>
+              <Ionicons name="lock-closed-outline" size={18} color={focused === 'confirm' ? THEME.color.brand : THEME.color.inkMuted} />
+              <TextInput
+                placeholder="Repite tu contraseña"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showPassword}
+                onFocus={() => setFocused('confirm')}
+                onBlur={() => setFocused(null)}
+                style={styles.inputField}
+                placeholderTextColor={THEME.color.inkMuted}
+              />
+            </View>
+
+            <PressableScale
+              onPress={submit}
+              disabled={loading}
+              accessibilityLabel="Crear mi cuenta"
+              style={[styles.primaryBtn, { marginTop: THEME.space.sm }]}
+            >
+              <Text style={styles.primaryBtnText}>
+                {loading ? 'Creando cuenta…' : 'Crear mi cuenta'}
+              </Text>
+            </PressableScale>
+          </View>
+        </FadeInUp>
       </View>
     </ScrollView>
   )
 }
 
-const s = {
-  label: { fontSize: 13, fontWeight: '700' as const, color: COLORS.dark, marginBottom: 6 },
-  input: {
-    backgroundColor: '#F1F5F9', borderRadius: 12, padding: 14, fontSize: 14,
-    marginBottom: 16, color: COLORS.dark,
+const styles = {
+  label: {
+    ...THEME.font.label,
+    color: THEME.color.inkSoft,
+    marginBottom: THEME.space.sm,
+  },
+  // Wrapper de input con borde brand 2px al enfocar
+  inputWrap: (active: boolean) => ({
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: THEME.space.md,
+    backgroundColor: active ? THEME.color.surface : THEME.color.surfaceAlt,
+    borderRadius: THEME.radius.lg,
+    borderWidth: 2,
+    borderColor: active ? THEME.color.brand : THEME.color.line,
+    paddingHorizontal: THEME.space.lg,
+    minHeight: 54,
+    marginBottom: THEME.space.lg,
+  }),
+  inputField: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: THEME.color.ink,
+    paddingVertical: THEME.space.md,
+  },
+  dropdown: {
+    backgroundColor: THEME.color.surface,
+    borderRadius: THEME.radius.lg,
+    marginTop: -THEME.space.sm,
+    marginBottom: THEME.space.md,
+    maxHeight: 280,
+    borderWidth: 1,
+    borderColor: THEME.color.line,
+    overflow: 'hidden' as const,
+    ...THEME.shadow.sm,
+  },
+  dropdownItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: THEME.space.sm,
+    paddingHorizontal: THEME.space.lg,
+    paddingVertical: THEME.space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.color.lineSoft,
+  },
+  primaryBtn: {
+    backgroundColor: THEME.color.brand,
+    borderRadius: THEME.radius.lg,
+    height: 52,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    ...THEME.shadow.brand,
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800' as const,
+    letterSpacing: 0.2,
   },
 }

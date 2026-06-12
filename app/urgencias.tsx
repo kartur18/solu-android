@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Linking, ActivityIndicator, StatusBar } from 'react-native'
+import { View, Text, ScrollView, TextInput, Linking, ActivityIndicator, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, waLink, ESTADOS } from '../src/lib/constants'
+import { waLink, ESTADOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { findBestTech, type MatchableTech } from '../src/lib/matching'
 import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
+import { THEME } from '../src/lib/theme'
+import { FadeInUp, PressableScale, PulseDot, haptics } from '../src/components/ui/Motion'
 
 const EMERGENCIAS = [
   { name: 'Fuga de agua', icon: 'water' as const, color: '#3B82F6', oficio: 'Gasfitero', desc: 'Tuberías, inundación' },
@@ -82,6 +84,7 @@ export default function UrgenciasScreen() {
         if (token) upsertGuestClientPushToken(waClean, token, nombre || 'Cliente').catch(() => {})
       }).catch(() => {})
 
+      haptics.success()
       setAssignedTech(bestTech)
     } catch (err) {
       setErrorMsg('Hubo un problema de conexión. Revisa tu internet e intenta de nuevo.')
@@ -93,121 +96,153 @@ export default function UrgenciasScreen() {
   // --- SUCCESS SCREEN (TECH FOUND) ---
   if (assignedTech) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 20, paddingTop: (StatusBar.currentHeight || 40) + 20 }}>
-        <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, alignItems: 'center', elevation: 6 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <Ionicons name="checkmark-circle" size={40} color="#10B981" />
+      <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt, padding: THEME.space.xl, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.xl }}>
+        <StatusBar barStyle="dark-content" />
+        <FadeInUp>
+          <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xxl, padding: THEME.space.xxl, alignItems: 'center', ...THEME.shadow.lg }}>
+            <View style={{ width: 80, height: 80, borderRadius: THEME.radius.full, backgroundColor: THEME.color.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+              <Ionicons name="checkmark-circle" size={44} color={THEME.color.success} />
+            </View>
+            <Text style={{ ...THEME.font.h1, color: THEME.color.ink, textAlign: 'center', marginBottom: THEME.space.xs }}>¡Técnico encontrado!</Text>
+            <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, textAlign: 'center', marginBottom: THEME.space.xl, lineHeight: 21 }}>Te asignamos al especialista disponible más cercano. Contáctalo ahora mismo.</Text>
+
+            <View style={{ width: '100%', backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.xl }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.xs }}>
+                <PulseDot color={THEME.color.success} size={8} />
+                <Text style={{ ...THEME.font.h3, color: '#065F46' }}>{assignedTech.nombre}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginTop: THEME.space.xs }}>
+                <Ionicons name="construct-outline" size={14} color="#047857" />
+                <Text style={{ ...THEME.font.bodySm, color: '#065F46' }}>Especialidad: {assignedTech.oficio}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginTop: THEME.space.xs }}>
+                <Ionicons name="location-outline" size={14} color="#047857" />
+                <Text style={{ ...THEME.font.bodySm, color: '#065F46' }}>Ubicación actual: {assignedTech.distrito}</Text>
+              </View>
+            </View>
+
+            <PressableScale
+              onPress={() => Linking.openURL(`tel:+51${assignedTech.whatsapp}`)}
+              accessibilityLabel="Llamar al técnico ahora"
+              style={{ width: '100%', minHeight: 56, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md, ...THEME.shadow.brand }}
+            >
+              <Ionicons name="call" size={22} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Llamar al técnico ahora</Text>
+            </PressableScale>
+
+            <PressableScale
+              onPress={() => Linking.openURL(waLink(assignedTech.whatsapp, `🚨 URGENCIA SOLU: Hola ${assignedTech.nombre}, necesito tu ayuda inmediata con: ${selected?.name}. Mi nombre es ${nombre}.`))}
+              accessibilityLabel="Escribir por WhatsApp"
+              style={{ width: '100%', minHeight: 56, backgroundColor: '#25D366', borderRadius: THEME.radius.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, ...THEME.shadow.md }}
+            >
+              <Ionicons name="logo-whatsapp" size={24} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Escribir por WhatsApp</Text>
+            </PressableScale>
           </View>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark, textAlign: 'center', marginBottom: 6 }}>¡Técnico encontrado!</Text>
-          <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 24 }}>Te asignamos al especialista disponible más cercano. Contáctalo ahora mismo.</Text>
+        </FadeInUp>
 
-          <View style={{ width: '100%', backgroundColor: '#F0FDF4', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#BBF7D0', marginBottom: 20 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46', marginBottom: 4 }}>{assignedTech.nombre}</Text>
-            <Text style={{ fontSize: 12, color: '#065F46' }}>Especialidad: {assignedTech.oficio}</Text>
-            <Text style={{ fontSize: 12, color: '#065F46' }}>Ubicación actual: {assignedTech.distrito}</Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => Linking.openURL(`tel:+51${assignedTech.whatsapp}`)}
-            style={{ width: '100%', backgroundColor: '#1E3A5F', borderRadius: 16, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 12 }}
-          >
-            <Ionicons name="call" size={22} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Llamar al técnico ahora</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => Linking.openURL(waLink(assignedTech.whatsapp, `🚨 URGENCIA SOLU: Hola ${assignedTech.nombre}, necesito tu ayuda inmediata con: ${selected?.name}. Mi nombre es ${nombre}.`))}
-            style={{ width: '100%', backgroundColor: '#25D366', borderRadius: 16, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}
-          >
-            <Ionicons name="logo-whatsapp" size={24} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Escribir por WhatsApp</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity onPress={() => router.replace('/')} style={{ marginTop: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, minHeight: 44 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.pri }}>← Volver al inicio</Text>
-        </TouchableOpacity>
+        <PressableScale onPress={() => router.replace('/')} haptic={false} accessibilityLabel="Volver al inicio" style={{ marginTop: THEME.space.lg, alignItems: 'center', justifyContent: 'center', paddingVertical: THEME.space.md, minHeight: 44, flexDirection: 'row', gap: THEME.space.xs }}>
+          <Ionicons name="arrow-back" size={16} color={THEME.color.brand} />
+          <Text style={{ ...THEME.font.body, fontWeight: '700', color: THEME.color.brand }}>Volver al inicio</Text>
+        </PressableScale>
       </View>
     )
   }
 
   // --- SEARCH SCREEN ---
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-      <View style={{ backgroundColor: '#7F1D1D', padding: 24, paddingTop: (StatusBar.currentHeight || 40) + 16, paddingBottom: 40, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, elevation: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Volver" style={{ width: 44, height: 44, justifyContent: 'center' }}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center' }}>
+    <ScrollView style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} contentContainerStyle={{ paddingBottom: THEME.space.xxxl + THEME.space.sm }} keyboardShouldPersistTaps="handled">
+      <StatusBar barStyle="light-content" />
+      {/* Header danger */}
+      <View style={{ backgroundColor: '#7F1D1D', paddingHorizontal: THEME.space.xl, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.lg, paddingBottom: THEME.space.xxxl, borderBottomLeftRadius: THEME.radius.xxl, borderBottomRightRadius: THEME.radius.xxl, ...THEME.shadow.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.md }}>
+          <PressableScale onPress={() => router.back()} haptic={false} accessibilityLabel="Volver" style={{ width: 44, height: 44, justifyContent: 'center' }}>
+            <Ionicons name="arrow-back" size={24} color={THEME.color.white} />
+          </PressableScale>
+          <View style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: THEME.color.danger, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.md }}>
             <Ionicons name="warning" size={24} color="#FDE68A" />
           </View>
-          <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff' }}>SOS Automático</Text>
+          <Text style={{ ...THEME.font.h1, color: THEME.color.white }}>SOS Automático</Text>
         </View>
-        <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.9)', fontWeight: '600', lineHeight: 22 }}>
+        <Text style={{ ...THEME.font.body, color: 'rgba(255,255,255,0.9)', fontWeight: '600', lineHeight: 22 }}>
           Encuentra un técnico libre en segundos para emergencias críticas del hogar.
         </Text>
       </View>
 
-      <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>1. ¿Qué se rompió?</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
-          {EMERGENCIAS.map((e) => (
-            <TouchableOpacity
-              key={e.name}
-              onPress={() => { setSelected(e); setErrorMsg(null) }}
-              style={{
-                width: '48%', backgroundColor: selected?.name === e.name ? e.color + '15' : '#fff',
-                borderRadius: 16, padding: 16, borderWidth: 2,
-                borderColor: selected?.name === e.name ? e.color : '#E2E8F0',
-                alignItems: 'center'
-              }}
-            >
-              <Ionicons name={e.icon} size={32} color={e.color} style={{ marginBottom: 8 }} />
-              <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.dark, textAlign: 'center' }}>{e.name}</Text>
-              <Text style={{ fontSize: 10, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>{e.desc}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <View style={{ padding: THEME.space.xl }}>
+        <FadeInUp delay={0}>
+          <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.md }}>1. ¿Qué se rompió?</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: THEME.space.md, marginBottom: THEME.space.xxl }}>
+            {EMERGENCIAS.map((e) => {
+              const active = selected?.name === e.name
+              return (
+                <PressableScale
+                  key={e.name}
+                  onPress={() => { setSelected(e); setErrorMsg(null) }}
+                  accessibilityLabel={e.name}
+                  style={{
+                    width: '47%', backgroundColor: active ? e.color + '14' : THEME.color.surface,
+                    borderRadius: THEME.radius.lg, padding: THEME.space.lg,
+                    borderWidth: active ? 2 : 0,
+                    borderColor: active ? e.color : 'transparent',
+                    alignItems: 'center',
+                    ...(active ? THEME.shadow.md : THEME.shadow.sm),
+                  }}
+                >
+                  <View style={{ width: 52, height: 52, borderRadius: THEME.radius.md, backgroundColor: e.color + '18', alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.sm }}>
+                    <Ionicons name={e.icon} size={28} color={e.color} />
+                  </View>
+                  <Text style={{ ...THEME.font.h3, fontSize: 14, color: THEME.color.ink, textAlign: 'center' }}>{e.name}</Text>
+                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, textAlign: 'center', marginTop: 2 }}>{e.desc}</Text>
+                </PressableScale>
+              )
+            })}
+          </View>
+        </FadeInUp>
 
-        <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>2. Datos rápidos de contacto</Text>
-        <TextInput
-          value={nombre} onChangeText={(t) => { setNombre(t); setErrorMsg(null) }}
-          placeholder="Tu nombre"
-          placeholderTextColor="#9CA3AF"
-          style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0', color: COLORS.dark }}
-        />
-        <TextInput
-          value={whatsapp} onChangeText={(t) => { setWhatsapp(t); setErrorMsg(null) }}
-          placeholder="Tu celular (WhatsApp)" keyboardType="phone-pad"
-          placeholderTextColor="#9CA3AF"
-          style={{ backgroundColor: '#fff', borderRadius: 14, padding: 16, fontSize: 15, marginBottom: 24, borderWidth: 1, borderColor: '#E2E8F0', color: COLORS.dark }}
-        />
+        <FadeInUp delay={80}>
+          <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.md }}>2. Datos rápidos de contacto</Text>
+          <TextInput
+            value={nombre} onChangeText={(t) => { setNombre(t); setErrorMsg(null) }}
+            placeholder="Tu nombre"
+            placeholderTextColor={THEME.color.inkMuted}
+            style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg, ...THEME.font.body, marginBottom: THEME.space.md, color: THEME.color.ink, ...THEME.shadow.sm }}
+          />
+          <TextInput
+            value={whatsapp} onChangeText={(t) => { setWhatsapp(t); setErrorMsg(null) }}
+            placeholder="Tu celular (WhatsApp)" keyboardType="phone-pad"
+            placeholderTextColor={THEME.color.inkMuted}
+            style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg, ...THEME.font.body, marginBottom: THEME.space.xl, color: THEME.color.ink, ...THEME.shadow.sm }}
+          />
+        </FadeInUp>
 
         {errorMsg ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#FECACA', marginBottom: 12 }}>
-            <Ionicons name="alert-circle" size={18} color="#DC2626" />
-            <Text style={{ flex: 1, fontSize: 13, color: '#991B1B', fontWeight: '600' }}>{errorMsg}</Text>
-          </View>
+          <FadeInUp distance={8}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.md, padding: THEME.space.md, marginBottom: THEME.space.md }}>
+              <Ionicons name="alert-circle" size={18} color={THEME.color.danger} />
+              <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#991B1B', fontWeight: '600' }}>{errorMsg}</Text>
+            </View>
+          </FadeInUp>
         ) : null}
 
-        <TouchableOpacity
+        <PressableScale
           onPress={handleSearch}
           disabled={loading}
-          style={{ backgroundColor: '#DC2626', borderRadius: 14, padding: 18, minHeight: 56, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, elevation: 8, opacity: loading ? 0.7 : 1 }}
+          accessibilityLabel="Buscar técnico ahora"
+          style={{ backgroundColor: THEME.color.danger, borderRadius: THEME.radius.lg, minHeight: 56, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, opacity: loading ? 0.7 : 1, shadowColor: THEME.color.danger, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 6 }}
         >
           {loading ? (
             <>
-              <ActivityIndicator color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Buscando técnico...</Text>
+              <ActivityIndicator color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Buscando técnico...</Text>
             </>
           ) : (
             <>
-              <Ionicons name="search" size={22} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 }}>Buscar técnico ahora</Text>
+              <Ionicons name="search" size={22} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white, letterSpacing: 0.3 }}>Buscar técnico ahora</Text>
             </>
           )}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </ScrollView>
   )

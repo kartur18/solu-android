@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { View, Text } from 'react-native'
-import { useLocalSearchParams, Stack } from 'expo-router'
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { LiveChat } from '../../src/components/LiveChat'
 import { supabase } from '../../src/lib/supabase'
-import { COLORS } from '../../src/lib/constants'
+import { THEME } from '../../src/lib/theme'
+import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 
 export default function ChatPedidoScreen() {
+  const router = useRouter()
   const { code, as } = useLocalSearchParams<{ code: string; as?: 'cliente' | 'tecnico' }>()
   const role: 'cliente' | 'tecnico' = as === 'tecnico' ? 'tecnico' : 'cliente'
   const [techNombre, setTechNombre] = useState<string | undefined>()
@@ -26,12 +29,24 @@ export default function ChatPedidoScreen() {
 
   if (!code) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: COLORS.light }}>
-        <Text style={{ fontSize: 40 }}>🔍</Text>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginTop: 12 }}>No encontramos este chat</Text>
-        <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>
-          Vuelve a abrirlo desde el seguimiento de tu pedido
-        </Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xl, backgroundColor: THEME.color.surfaceAlt }}>
+        <FadeInUp style={{ alignItems: 'center', width: '100%' }}>
+          <View style={{ width: 84, height: 84, borderRadius: THEME.radius.full, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+            <Ionicons name="chatbubble-ellipses-outline" size={40} color={THEME.color.brand} />
+          </View>
+          <Text style={{ ...THEME.font.h1, color: THEME.color.ink, textAlign: 'center' }}>No encontramos este chat</Text>
+          <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center', lineHeight: 21, maxWidth: 280 }}>
+            Vuelve a abrirlo desde el seguimiento de tu pedido
+          </Text>
+          <PressableScale
+            onPress={() => router.replace('/')}
+            accessibilityLabel="Volver al inicio"
+            style={{ marginTop: THEME.space.xl, minHeight: 52, paddingHorizontal: THEME.space.xxl, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.sm, ...THEME.shadow.brand }}
+          >
+            <Ionicons name="home-outline" size={18} color={THEME.color.white} />
+            <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Ir al inicio</Text>
+          </PressableScale>
+        </FadeInUp>
       </View>
     )
   }

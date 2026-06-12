@@ -12,6 +12,8 @@ import { registerForPushNotifications, savePushToken } from '../../src/lib/notif
 import { sendPush } from '../../src/lib/integrations'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 import NotificationCenter from '../../src/components/NotificationCenter'
+import { THEME } from '../../src/lib/theme'
+import { FadeInUp, PressableScale, haptics } from '../../src/components/ui/Motion'
 
 type Tab = 'dashboard' | 'servicios' | 'resenas' | 'cotizaciones' | 'ingresos' | 'plan' | 'perfil'
 
@@ -542,9 +544,12 @@ export default function CuentaScreen() {
   // Splash mientras se restaura la sesión guardada (evita pantalla en blanco / flash del login)
   if (!loggedIn && restoring) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1A1A2E', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-        <ActivityIndicator size="large" color="#EA580C" />
-        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' }}>Cargando tu cuenta...</Text>
+      <View style={{ flex: 1, backgroundColor: THEME.color.navy, alignItems: 'center', justifyContent: 'center', gap: THEME.space.lg }}>
+        <View style={{ width: 64, height: 64, borderRadius: THEME.radius.xl, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.brand }}>
+          <Text style={{ fontSize: 30, fontWeight: '900', color: THEME.color.white }}>S</Text>
+        </View>
+        <ActivityIndicator size="small" color={THEME.color.brand} />
+        <Text style={{ color: 'rgba(255,255,255,0.6)', ...THEME.font.bodySm, fontWeight: '600' }}>Cargando tu cuenta...</Text>
       </View>
     )
   }
@@ -552,72 +557,74 @@ export default function CuentaScreen() {
   // LOGIN SCREEN
   if (!loggedIn) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1A1A2E', justifyContent: 'center', padding: 24 }}>
-        <View style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 28, padding: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-          {/* Logo SOLU */}
-          <View style={{ width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 20, overflow: 'hidden' }}>
-            <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 32, fontWeight: '900', color: '#fff' }}>S</Text>
+      <ScrollView style={{ flex: 1, backgroundColor: THEME.color.navy }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: THEME.space.xxl }} keyboardShouldPersistTaps="handled">
+        <FadeInUp delay={0}>
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: THEME.radius.xxl, padding: THEME.space.xxxl, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+            {/* Logo SOLU */}
+            <View style={{ width: 72, height: 72, borderRadius: THEME.radius.xl, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: THEME.space.xl, ...THEME.shadow.brand }}>
+              <Text style={{ fontSize: 32, fontWeight: '900', color: THEME.color.white }}>S</Text>
             </View>
-          </View>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 4 }}>Bienvenido, Técnico</Text>
-          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginBottom: 28 }}>Ingresa para gestionar tus servicios</Text>
+            <Text style={{ ...THEME.font.h1, color: THEME.color.white, textAlign: 'center', marginBottom: THEME.space.xs }}>Bienvenido, técnico</Text>
+            <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginBottom: THEME.space.xxl }}>Ingresa para gestionar tus servicios</Text>
 
-          <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>Email o WhatsApp</Text>
-          <TextInput
-            placeholder="correo@email.com o 999888777"
-            value={loginId}
-            onChangeText={setLoginId}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 18, fontSize: 16, marginBottom: 14, fontWeight: '700', color: '#fff', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-          />
-
-          <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>Contraseña</Text>
-          <View style={{ position: 'relative', marginBottom: 6 }}>
+            <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.7)', marginBottom: THEME.space.sm }}>Email o WhatsApp</Text>
             <TextInput
-              placeholder="Tu contraseña"
-              value={loginPassword}
-              onChangeText={setLoginPassword}
-              secureTextEntry={!showLoginPassword}
-              style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 18, paddingRight: 52, fontSize: 16, fontWeight: '700', color: '#fff', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+              placeholder="correo@email.com o 999888777"
+              value={loginId}
+              onChangeText={setLoginId}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: THEME.radius.lg, padding: 18, fontSize: 16, marginBottom: THEME.space.md, fontWeight: '700', color: THEME.color.white, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
               placeholderTextColor="rgba(255,255,255,0.3)"
             />
+
+            <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.7)', marginBottom: THEME.space.sm }}>Contraseña</Text>
+            <View style={{ position: 'relative', marginBottom: THEME.space.sm }}>
+              <TextInput
+                placeholder="Tu contraseña"
+                value={loginPassword}
+                onChangeText={setLoginPassword}
+                secureTextEntry={!showLoginPassword}
+                style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: THEME.radius.lg, padding: 18, paddingRight: 52, fontSize: 16, fontWeight: '700', color: THEME.color.white, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                placeholderTextColor="rgba(255,255,255,0.3)"
+              />
+              <TouchableOpacity
+                onPress={() => setShowLoginPassword(!showLoginPassword)}
+                style={{ position: 'absolute', right: 16, top: 18 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel={showLoginPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                <Ionicons name={showLoginPassword ? 'eye-off' : 'eye'} size={22} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
-              onPress={() => setShowLoginPassword(!showLoginPassword)}
-              style={{ position: 'absolute', right: 16, top: 18 }}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel={showLoginPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              onPress={() => router.push('/recuperar')}
+              style={{ alignSelf: 'flex-end', marginBottom: THEME.space.xl }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name={showLoginPassword ? 'eye-off' : 'eye'} size={22} color="rgba(255,255,255,0.4)" />
+              <Text style={{ ...THEME.font.label, color: THEME.color.brand }}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
-          </View>
 
-          <TouchableOpacity
-            onPress={() => router.push('/recuperar')}
-            style={{ alignSelf: 'flex-end', marginBottom: 20 }}
-          >
-            <Text style={{ fontSize: 12, color: '#EA580C', fontWeight: '700' }}>¿Olvidaste tu contraseña?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={doLogin}
-            disabled={loading}
-            style={{ backgroundColor: '#EA580C', borderRadius: 18, padding: 18, alignItems: 'center', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8, opacity: loading ? 0.7 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-          >
-            {loading && <ActivityIndicator size="small" color="#fff" />}
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 }}>{loading ? 'Verificando...' : 'INGRESAR'}</Text>
-          </TouchableOpacity>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16, gap: 4 }}>
-            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>¿No tienes cuenta?</Text>
-            <TouchableOpacity onPress={() => router.push('/registro')}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#EA580C' }}>Crear cuenta</Text>
-            </TouchableOpacity>
+            <PressableScale
+              onPress={doLogin}
+              disabled={loading}
+              accessibilityLabel="Ingresar"
+              style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, height: 52, alignItems: 'center', ...THEME.shadow.brand, flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm }}
+            >
+              {loading && <ActivityIndicator size="small" color={THEME.color.white} />}
+              <Text style={{ color: THEME.color.white, fontWeight: '900', fontSize: 16, letterSpacing: 0.5 }}>{loading ? 'Verificando...' : 'INGRESAR'}</Text>
+            </PressableScale>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: THEME.space.lg, gap: THEME.space.xs }}>
+              <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.5)' }}>¿No tienes cuenta?</Text>
+              <TouchableOpacity onPress={() => router.push('/registro')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.brand }}>Crear cuenta</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </FadeInUp>
         <LegalSection router={router} />
-      </View>
+      </ScrollView>
     )
   }
 
@@ -629,58 +636,58 @@ export default function CuentaScreen() {
   // alimentan las pantallas que antes usaban planInfo.
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1E3A5F" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={THEME.color.navy} />}
       >
         {/* Header Premium */}
-        <View style={{ backgroundColor: '#1A1A2E', padding: 24, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <TouchableOpacity onPress={pickAndUploadProfilePhoto} accessibilityLabel="Cambiar foto de perfil" style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}>
+        <View style={{ backgroundColor: THEME.color.navy, padding: THEME.space.xxl, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, ...THEME.shadow.lg }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: THEME.space.xl }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
+              <PressableScale onPress={pickAndUploadProfilePhoto} accessibilityLabel="Cambiar foto de perfil" style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...THEME.shadow.brand }}>
                 {tech.foto_url ? (
                   <Image source={{ uri: tech.foto_url }} style={{ width: 48, height: 48 }} />
                 ) : (
-                  <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff' }}>{tech.nombre?.[0] || 'S'}</Text>
+                  <Text style={{ fontSize: 22, fontWeight: '900', color: THEME.color.white }}>{tech.nombre?.[0] || 'S'}</Text>
                 )}
-              </TouchableOpacity>
+              </PressableScale>
               <View>
-                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>Bienvenido</Text>
-                <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff' }}>{tech.nombre}</Text>
+                <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.4)' }}>Bienvenido</Text>
+                <Text style={{ ...THEME.font.h2, color: THEME.color.white }}>{tech.nombre}</Text>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
+            <View style={{ flexDirection: 'row', gap: THEME.space.sm }}>
+              <PressableScale
                 onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}`, title: `${tech.nombre} - SOLU` })}
                 accessibilityLabel="Compartir mi perfil"
-                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+                style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
                 <Ionicons name="share-social-outline" size={20} color="rgba(255,255,255,0.7)" />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </PressableScale>
+              <PressableScale
                 onPress={() => setShowNotifications(true)}
                 accessibilityLabel={unreadCount > 0 ? `Ver notificaciones, ${unreadCount} sin leer` : 'Ver notificaciones'}
-                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+                style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
                 <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.7)" />
                 {unreadCount > 0 && (
-                  <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#1A1A2E' }}>
-                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: THEME.color.danger, borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: THEME.color.navy }}>
+                    <Text style={{ color: THEME.color.white, fontSize: 10, fontWeight: '900' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
                   </View>
                 )}
-              </TouchableOpacity>
-              <TouchableOpacity
+              </PressableScale>
+              <PressableScale
                 onPress={() => Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
                   { text: 'Cancelar', style: 'cancel' },
                   { text: 'Salir', style: 'destructive', onPress: () => { AsyncStorage.removeItem('solu_tech_session'); setLoggedIn(false); setTech(null); setTab('dashboard') } },
                 ])}
                 accessibilityLabel="Cerrar sesión"
-                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+                style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
                 <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.7)" />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </View>
 
@@ -698,15 +705,15 @@ export default function CuentaScreen() {
           </View>
 
           {/* Tier loyalty badge (V3.1: reemplaza el badge de plan mensual) */}
-          <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={{ backgroundColor: 'rgba(234,88,12,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#F97316' }}>
+          <View style={{ marginTop: THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+            <View style={{ backgroundColor: 'rgba(242,107,33,0.2)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm }}>
+              <Text style={{ ...THEME.font.label, fontWeight: '800', color: THEME.color.brand }}>
                 {level.emoji} Tier {level.name}
               </Text>
             </View>
             {tech.verificado && (
-              <View style={{ backgroundColor: 'rgba(16,185,129,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#34D399' }}>✅ Verificado</Text>
+              <View style={{ backgroundColor: 'rgba(22,163,74,0.18)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm }}>
+                <Text style={{ ...THEME.font.caption, fontWeight: '800', color: '#34D399' }}>✅ Verificado</Text>
               </View>
             )}
           </View>
@@ -714,15 +721,20 @@ export default function CuentaScreen() {
 
         {/* Low balance alert — V3.1: reemplaza el "Plan vencido" del modelo viejo */}
         {(tech.coins_balance ?? 0) < 500 && (
-          <View style={{ margin: 16, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FCD34D' }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>⚠️ Saldo bajo de SoluCoins</Text>
-            <Text style={{ fontSize: 12, color: '#78350F', marginTop: 4, lineHeight: 17 }}>
-              Tu perfil sigue visible pero pronto te quedarás sin saldo para responder leads. Compra un paquete para seguir trabajando.
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/comprar-coins')} style={{ backgroundColor: COLORS.pri, borderRadius: 10, padding: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: 10 }}>
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Comprar SoluCoins →</Text>
-            </TouchableOpacity>
-          </View>
+          <FadeInUp delay={60}>
+            <View style={{ margin: THEME.space.lg, backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, ...THEME.shadow.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+                <Ionicons name="warning" size={18} color={THEME.color.warning} />
+                <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: '#92400E' }}>Saldo bajo de SoluCoins</Text>
+              </View>
+              <Text style={{ ...THEME.font.bodySm, color: '#78350F', marginTop: THEME.space.xs, lineHeight: 18 }}>
+                Tu perfil sigue visible pero pronto te quedarás sin saldo para responder leads. Compra un paquete para seguir trabajando.
+              </Text>
+              <PressableScale onPress={() => router.push('/comprar-coins')} accessibilityLabel="Comprar SoluCoins" style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: THEME.space.md, ...THEME.shadow.brand }}>
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.white, fontWeight: '700' }}>Comprar SoluCoins →</Text>
+              </PressableScale>
+            </View>
+          </FadeInUp>
         )}
 
         {/* V3.1: el banner "Tu plan vence" del modelo viejo fue reemplazado
@@ -730,25 +742,29 @@ export default function CuentaScreen() {
             tech.coins_balance en vez de fecha_vencimiento. */}
 
         {/* Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 12, paddingHorizontal: 12 }}>
-          {TABS.map((t) => (
-            <TouchableOpacity
-              key={t.key}
-              onPress={() => setTab(t.key)}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 6,
-                paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
-                backgroundColor: tab === t.key ? '#1E3A5F' : '#fff',
-                marginRight: 6, borderWidth: 1,
-                borderColor: tab === t.key ? '#1E3A5F' : '#E2E8F0',
-              }}
-            >
-              <Ionicons name={t.icon as any} size={14} color={tab === t.key ? '#fff' : COLORS.gray} />
-              <Text style={{ fontWeight: '700', fontSize: 11, color: tab === t.key ? '#fff' : COLORS.gray }}>
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: THEME.space.md, paddingHorizontal: THEME.space.md }}>
+          {TABS.map((t) => {
+            const active = tab === t.key
+            return (
+              <PressableScale
+                key={t.key}
+                onPress={() => setTab(t.key)}
+                accessibilityLabel={t.label}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm,
+                  paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, borderRadius: THEME.radius.full,
+                  backgroundColor: active ? THEME.color.navy : THEME.color.surface,
+                  marginRight: THEME.space.sm,
+                  ...(active ? THEME.shadow.md : THEME.shadow.sm),
+                }}
+              >
+                <Ionicons name={t.icon as any} size={14} color={active ? THEME.color.white : THEME.color.inkSoft} />
+                <Text style={{ ...THEME.font.label, fontWeight: '700', color: active ? THEME.color.white : THEME.color.inkSoft }}>
+                  {t.label}
+                </Text>
+              </PressableScale>
+            )
+          })}
         </ScrollView>
 
         <View style={{ padding: 16, paddingTop: 4 }}>
@@ -757,7 +773,8 @@ export default function CuentaScreen() {
           {tab === 'dashboard' && (
             <View style={{ gap: 12 }}>
               {/* Quick stats */}
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+              <FadeInUp delay={0}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, ...THEME.shadow.sm }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 12 }}>Resumen del mes</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <QuickStat icon="trending-up" color="#2563EB" value={String(thisMonthLeads)} label="Solicitudes" />
@@ -765,9 +782,11 @@ export default function CuentaScreen() {
                   <QuickStat icon="time" color={COLORS.pri} value={String(activeLeads)} label="Activos" />
                 </View>
               </View>
+              </FadeInUp>
 
               {/* Profile views */}
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <FadeInUp delay={60}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, ...THEME.shadow.sm }}>
                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="eye-outline" size={22} color="#2563EB" />
                 </View>
@@ -779,9 +798,11 @@ export default function CuentaScreen() {
                   <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>Compartir</Text>
                 </TouchableOpacity>
               </View>
+              </FadeInUp>
 
               {/* Level progress */}
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+              <FadeInUp delay={120}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, ...THEME.shadow.sm }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <Text style={{ fontSize: 28 }}>{level.emoji}</Text>
                   <View style={{ flex: 1 }}>
@@ -804,9 +825,11 @@ export default function CuentaScreen() {
                   )
                 })()}
               </View>
+              </FadeInUp>
 
               {/* Achievements */}
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+              <FadeInUp delay={180}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, ...THEME.shadow.sm }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Logros</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 12 }}>
                   {ACHIEVEMENTS.filter(a => a.check(tech)).length}/{ACHIEVEMENTS.length} desbloqueados
@@ -823,9 +846,11 @@ export default function CuentaScreen() {
                   })}
                 </View>
               </View>
+              </FadeInUp>
 
               {/* Today's calendar */}
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+              <FadeInUp delay={240}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, ...THEME.shadow.sm }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <Ionicons name="calendar" size={18} color="#2563EB" />
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Agenda de hoy</Text>
@@ -862,10 +887,12 @@ export default function CuentaScreen() {
                   ))
                 })()}
               </View>
+              </FadeInUp>
 
               {/* Recent leads preview */}
               {leads.length > 0 && (
-                <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
+                <FadeInUp delay={300}>
+                <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, ...THEME.shadow.sm }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Últimas solicitudes</Text>
                     <TouchableOpacity onPress={() => setTab('servicios')} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
@@ -876,13 +903,14 @@ export default function CuentaScreen() {
                     <LeadRow key={l.id} lead={l} tech={tech} router={router} />
                   ))}
                 </View>
+                </FadeInUp>
               )}
             </View>
           )}
 
           {/* ═══ PROMOCIONES (Premium/Elite in dashboard) ═══ */}
           {tab === 'dashboard' && (
-            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, marginTop: -4 }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, marginTop: -4, ...THEME.shadow.sm }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Mis promociones</Text>
                 <TouchableOpacity
@@ -1246,44 +1274,47 @@ export default function CuentaScreen() {
           {tab === 'plan' && (
             <View style={{ gap: 12 }}>
               {/* Hero del wallet — saldo grande, tier, CTA comprar */}
+              <FadeInUp delay={0}>
               <View style={{
-                backgroundColor: '#1E3A5F', borderRadius: 18, padding: 22,
+                backgroundColor: THEME.color.navy, borderRadius: THEME.radius.xl, padding: 22, overflow: 'hidden', ...THEME.shadow.lg,
               }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(242,107,33,0.14)' }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.sm }}>
                   <Ionicons name="wallet" size={16} color="#FCD34D" />
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Text style={{ ...THEME.font.label, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     Mi billetera
                   </Text>
                 </View>
-                <Text style={{ fontSize: 36, fontWeight: '900', color: '#fff' }}>
+                <Text style={{ ...THEME.font.display, fontSize: 36, color: THEME.color.white }}>
                   {(tech.coins_balance ?? 0).toLocaleString('es-PE')}
                 </Text>
-                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
+                <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
                   SoluCoins disponibles
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginTop: THEME.space.md }}>
                   <Text style={{ fontSize: 14 }}>{level.emoji}</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FCD34D' }}>
+                  <Text style={{ ...THEME.font.label, fontWeight: '700', color: '#FCD34D' }}>
                     Tier {level.name}
                   </Text>
                 </View>
 
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => router.push('/comprar-coins')}
+                  accessibilityLabel="Comprar SoluCoins"
                   style={{
-                    backgroundColor: COLORS.pri,
-                    borderRadius: 12, padding: 14,
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    marginTop: 16,
+                    backgroundColor: THEME.color.brand,
+                    borderRadius: THEME.radius.lg, height: 52,
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
+                    marginTop: THEME.space.lg, ...THEME.shadow.brand,
                   }}
-                  activeOpacity={0.85}
                 >
                   <Ionicons name="add-circle-outline" size={18} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                  <Text style={{ ...THEME.font.body, color: THEME.color.white, fontWeight: '800' }}>
                     Comprar SoluCoins
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               </View>
+              </FadeInUp>
 
               {/* Cómo funciona el modelo prepago */}
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
@@ -1468,16 +1499,17 @@ export default function CuentaScreen() {
                       placeholderTextColor={COLORS.gray2}
                     />
 
-                    <TouchableOpacity
+                    <PressableScale
                       onPress={createCotizacion}
                       disabled={savingCotizacion}
-                      style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: savingCotizacion ? 0.7 : 1 }}
+                      accessibilityLabel="Enviar cotización"
+                      style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, height: 52, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, ...THEME.shadow.brand }}
                     >
                       {savingCotizacion && <ActivityIndicator size="small" color="#fff" />}
-                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>
+                      <Text style={{ ...THEME.font.body, color: THEME.color.white, fontWeight: '800' }}>
                         {savingCotizacion ? 'Enviando...' : 'Enviar cotización'}
                       </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                   </View>
                 </View>
               </Modal>
@@ -1826,18 +1858,19 @@ export default function CuentaScreen() {
               </View>
 
               {/* Danger zone */}
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray, marginBottom: 8 }}>Cuenta</Text>
-                <TouchableOpacity
+              <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg, ...THEME.shadow.sm }}>
+                <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.inkSoft, marginBottom: THEME.space.md }}>Cuenta</Text>
+                <PressableScale
                   onPress={() => Alert.alert('Cerrar sesión', '¿Seguro?', [
                     { text: 'Cancelar', style: 'cancel' },
                     { text: 'Salir', style: 'destructive', onPress: () => { AsyncStorage.removeItem('solu_tech_session'); setLoggedIn(false); setTech(null); setTab('dashboard') } },
                   ])}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 }}
+                  accessibilityLabel="Cerrar sesión"
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm, minHeight: 48, borderRadius: THEME.radius.md, backgroundColor: THEME.color.dangerBg }}
                 >
-                  <Ionicons name="log-out-outline" size={18} color={COLORS.gray} />
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.gray }}>Cerrar sesión</Text>
-                </TouchableOpacity>
+                  <Ionicons name="log-out-outline" size={18} color={THEME.color.danger} />
+                  <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: THEME.color.danger }}>Cerrar sesión</Text>
+                </PressableScale>
               </View>
             </View>
           )}
@@ -1863,20 +1896,19 @@ export default function CuentaScreen() {
 
 function StatCard({ value, label, highlight, onPress }: { value: string; label: string; highlight?: boolean; onPress?: () => void }) {
   return (
-    <TouchableOpacity
+    <PressableScale
       disabled={!onPress}
       onPress={onPress}
       accessibilityLabel={onPress ? `${label}: ${value}. Toca para ver tu billetera` : undefined}
-      activeOpacity={0.8}
       style={{
-        flex: 1, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1,
-        backgroundColor: highlight ? 'rgba(234,88,12,0.18)' : 'rgba(255,255,255,0.06)',
-        borderColor: highlight ? 'rgba(249,115,22,0.45)' : 'rgba(255,255,255,0.06)',
+        flex: 1, borderRadius: THEME.radius.lg, padding: THEME.space.md, alignItems: 'center', borderWidth: 1,
+        backgroundColor: highlight ? 'rgba(242,107,33,0.18)' : 'rgba(255,255,255,0.06)',
+        borderColor: highlight ? 'rgba(242,107,33,0.45)' : 'rgba(255,255,255,0.06)',
       }}
     >
-      <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff' }}>{value}</Text>
+      <Text style={{ fontSize: 18, fontWeight: '900', color: THEME.color.white }}>{value}</Text>
       <Text style={{ fontSize: 10, color: highlight ? '#FDBA74' : 'rgba(255,255,255,0.4)', fontWeight: '700', marginTop: 3 }}>{label}</Text>
-    </TouchableOpacity>
+    </PressableScale>
   )
 }
 
@@ -1950,7 +1982,7 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
   const nextStatus = NEXT_STATUS[lead.estado]
 
   return (
-    <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 4, borderLeftWidth: 4, borderLeftColor: color }}>
+    <View style={{ backgroundColor: '#fff', borderRadius: THEME.radius.xl, padding: 16, marginBottom: 12, ...THEME.shadow.md, borderLeftWidth: 4, borderLeftColor: color }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: color + '15', alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="build" size={22} color={color} />
@@ -1975,20 +2007,21 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
       {isActive && (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
           {/* WhatsApp */}
-          <TouchableOpacity
+          <PressableScale
             onPress={() => {
               const msg = `Hola ${lead.nombre}, soy tu técnico de SOLU. Sobre tu solicitud de ${lead.servicio} (${lead.codigo}).`
               Linking.openURL(`https://wa.me/51${lead.whatsapp}?text=${encodeURIComponent(msg)}`)
             }}
-            style={{ flex: 1, backgroundColor: '#25D366', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, shadowColor: '#25D366', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+            accessibilityLabel="Contactar por WhatsApp"
+            style={{ flex: 1, backgroundColor: '#25D366', borderRadius: THEME.radius.lg, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, shadowColor: '#25D366', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
           >
             <Ionicons name="logo-whatsapp" size={16} color="#fff" />
             <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>WhatsApp</Text>
-          </TouchableOpacity>
+          </PressableScale>
 
           {/* Chat */}
           {router && tech && (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => router.push({
                 pathname: '/chat/[id]',
                 params: {
@@ -2000,22 +2033,24 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
                   senderId: tech.id.toString(),
                 },
               })}
-              style={{ flex: 1, backgroundColor: '#1A1A2E', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              accessibilityLabel="Abrir chat"
+              style={{ flex: 1, backgroundColor: THEME.color.navy, borderRadius: THEME.radius.lg, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
               <Ionicons name="chatbubbles" size={16} color="#fff" />
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Chat</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
 
           {/* Next status - GRAN BOTÓN */}
           {nextStatus && (
-            <TouchableOpacity
-              onPress={() => updateStatus(nextStatus)}
-              style={{ flex: 1.3, backgroundColor: nextStatus === 'Completado' ? '#10B981' : '#EA580C', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, shadowColor: nextStatus === 'Completado' ? '#10B981' : '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 6 }}
+            <PressableScale
+              onPress={() => { if (nextStatus === 'Completado') haptics.success(); updateStatus(nextStatus) }}
+              accessibilityLabel={nextStatus === 'Completado' ? 'Marcar como completado y cobrar' : `Cambiar a ${nextStatus}`}
+              style={{ flex: 1.3, backgroundColor: nextStatus === 'Completado' ? THEME.color.success : THEME.color.brand, borderRadius: THEME.radius.lg, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, ...(nextStatus === 'Completado' ? { shadowColor: THEME.color.success, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 6 } : THEME.shadow.brand) }}
             >
               <Ionicons name={nextStatus === 'Completado' ? 'checkmark-circle' : 'arrow-forward'} size={18} color="#fff" />
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>{nextStatus === 'Completado' ? '✓ COBRAR' : nextStatus}</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
 
           {/* Reject (only when Asignado - return to pool) */}
@@ -2050,27 +2085,32 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
 }
 
 function LegalSection({ router }: { router: any }) {
+  const items: { icon: string; label: string; route: string | null; danger?: boolean }[] = [
+    { icon: 'shield-checkmark-outline', label: 'Política de Privacidad', route: '/privacidad' },
+    { icon: 'document-text-outline', label: 'Términos y Condiciones', route: '/terminos' },
+    { icon: 'chatbubble-ellipses-outline', label: 'Soporte por WhatsApp', route: null },
+    { icon: 'trash-outline', label: 'Eliminar mi cuenta', route: '/eliminar-cuenta', danger: true },
+  ]
   return (
-    <View style={{ margin: 16, marginBottom: 40 }}>
-      <View style={{ backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden' }}>
-        {[
-          { icon: 'shield-checkmark-outline', label: 'Política de Privacidad', route: '/privacidad', color: COLORS.gray },
-          { icon: 'document-text-outline', label: 'Términos y Condiciones', route: '/terminos', color: COLORS.gray },
-          { icon: 'chatbubble-ellipses-outline', label: 'Soporte por WhatsApp', route: null, color: COLORS.gray },
-          { icon: 'trash-outline', label: 'Eliminar mi cuenta', route: '/eliminar-cuenta', color: COLORS.gray },
-        ].map((item, i) => (
-          <TouchableOpacity
-            key={i}
-            onPress={() => item.route ? router.push(item.route) : Linking.openURL(waLink(SUPPORT_PHONE, 'Hola, necesito soporte con SOLU'))}
-            style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: i < 3 ? 1 : 0, borderBottomColor: '#F1F5F9' }}
-          >
-            <Ionicons name={item.icon as any} size={18} color={item.color} />
-            <Text style={{ flex: 1, marginLeft: 10, fontSize: 13, fontWeight: '600', color: item.color }}>{item.label}</Text>
-            <Ionicons name="chevron-forward" size={14} color={COLORS.gray2} />
-          </TouchableOpacity>
-        ))}
-        <View style={{ padding: 14, alignItems: 'center' }}>
-          <Text style={{ fontSize: 10, color: COLORS.gray2 }}>SOLU v1.0.0 · CITYLAND GROUP E.I.R.L.</Text>
+    <View style={{ margin: THEME.space.lg, marginBottom: 40 }}>
+      <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, overflow: 'hidden', ...THEME.shadow.sm }}>
+        {items.map((item, i) => {
+          const tint = item.danger ? THEME.color.danger : THEME.color.inkSoft
+          return (
+            <PressableScale
+              key={i}
+              onPress={() => item.route ? router.push(item.route) : Linking.openURL(waLink(SUPPORT_PHONE, 'Hola, necesito soporte con SOLU'))}
+              accessibilityLabel={item.label}
+              style={{ flexDirection: 'row', alignItems: 'center', padding: THEME.space.lg, minHeight: 48, borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: THEME.color.lineSoft }}
+            >
+              <Ionicons name={item.icon as any} size={18} color={tint} />
+              <Text style={{ flex: 1, marginLeft: THEME.space.md, ...THEME.font.bodySm, fontWeight: '600', color: tint }}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={14} color={THEME.color.inkMuted} />
+            </PressableScale>
+          )
+        })}
+        <View style={{ padding: THEME.space.lg, alignItems: 'center' }}>
+          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>SOLU v1.0.0 · CITYLAND GROUP E.I.R.L.</Text>
         </View>
       </View>
     </View>

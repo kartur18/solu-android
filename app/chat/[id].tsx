@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, ScrollView,
+  View, Text, TextInput, FlatList, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
 import { useLocalSearchParams, Stack } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
+import { THEME } from '../../src/lib/theme'
+import { FadeInUp, PressableScale, Shimmer } from '../../src/components/ui/Motion'
 
 interface Mensaje {
   id: number
@@ -222,33 +223,33 @@ export default function ChatScreen() {
     return (
       <View>
         {showDate && (
-          <View style={{ alignItems: 'center', marginVertical: 12 }}>
-            <View style={{ backgroundColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4 }}>
-              <Text style={{ fontSize: 10, fontWeight: '600', color: '#64748B' }}>
+          <View style={{ alignItems: 'center', marginVertical: THEME.space.md }}>
+            <View style={{ backgroundColor: THEME.color.surfaceSunken, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.xs }}>
+              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.inkSoft }}>
                 {formatDateHeader(item.created_at)}
               </Text>
             </View>
           </View>
         )}
-        <View style={{
+        <FadeInUp distance={8} style={{
           alignSelf: mine ? 'flex-end' : 'flex-start',
-          maxWidth: '78%',
-          marginBottom: 6,
-          marginHorizontal: 12,
+          maxWidth: '80%',
+          marginBottom: THEME.space.xs + 2,
+          marginHorizontal: THEME.space.md,
         }}>
           <View style={{
-            backgroundColor: mine ? '#1E3A5F' : '#fff',
-            borderRadius: 16,
-            borderBottomRightRadius: mine ? 4 : 16,
-            borderBottomLeftRadius: mine ? 16 : 4,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            elevation: mine ? 0 : 1,
+            backgroundColor: mine ? THEME.color.brand : THEME.color.surface,
+            borderRadius: THEME.radius.xl,
+            borderBottomRightRadius: mine ? THEME.radius.sm : THEME.radius.xl,
+            borderBottomLeftRadius: mine ? THEME.radius.xl : THEME.radius.sm,
+            paddingHorizontal: THEME.space.lg,
+            paddingVertical: THEME.space.md,
+            ...(mine ? THEME.shadow.brand : THEME.shadow.sm),
           }}>
             <Text style={{
-              fontSize: 14,
-              color: mine ? '#fff' : COLORS.dark,
-              lineHeight: 20,
+              ...THEME.font.body,
+              color: mine ? THEME.color.white : THEME.color.ink,
+              lineHeight: 21,
             }}>
               {item.mensaje}
             </Text>
@@ -256,23 +257,23 @@ export default function ChatScreen() {
           <View style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 4,
-            marginTop: 2,
+            gap: THEME.space.xs,
+            marginTop: 3,
             alignSelf: mine ? 'flex-end' : 'flex-start',
-            paddingHorizontal: 4,
+            paddingHorizontal: THEME.space.xs,
           }}>
-            <Text style={{ fontSize: 10, color: COLORS.gray2 }}>
+            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>
               {formatTime(item.created_at)}
             </Text>
             {mine && (
               <Ionicons
                 name={item.leido ? 'checkmark-done' : 'checkmark'}
-                size={12}
-                color={item.leido ? '#2563EB' : COLORS.gray2}
+                size={13}
+                color={item.leido ? THEME.color.info : THEME.color.inkMuted}
               />
             )}
           </View>
-        </View>
+        </FadeInUp>
       </View>
     )
   }
@@ -281,15 +282,30 @@ export default function ChatScreen() {
     <>
       <Stack.Screen options={{ title: headerTitle }} />
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: '#F1F5F9' }}
+        style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <OfflineBanner />
         {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#1E3A5F" />
-            <Text style={{ marginTop: 10, fontSize: 12, color: COLORS.gray }}>Cargando mensajes...</Text>
+          <View style={{ flex: 1, paddingHorizontal: THEME.space.md, paddingTop: THEME.space.xl, gap: THEME.space.md }}>
+            {[
+              { mine: false, w: '64%' as const },
+              { mine: true, w: '52%' as const },
+              { mine: false, w: '72%' as const },
+              { mine: true, w: '44%' as const },
+              { mine: false, w: '58%' as const },
+            ].map((s, i) => (
+              <Shimmer
+                key={i}
+                style={{
+                  alignSelf: s.mine ? 'flex-end' : 'flex-start',
+                  width: s.w,
+                  height: 46,
+                  borderRadius: THEME.radius.xl,
+                }}
+              />
+            ))}
           </View>
         ) : (
           <FlatList
@@ -297,17 +313,19 @@ export default function ChatScreen() {
             data={messages}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderMessage}
-            contentContainerStyle={{ paddingVertical: 12, flexGrow: 1 }}
+            contentContainerStyle={{ paddingVertical: THEME.space.md, flexGrow: 1 }}
             ListEmptyComponent={
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-                <Ionicons name="chatbubbles-outline" size={48} color={COLORS.gray2} />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.dark, marginTop: 12 }}>
-                  Sin mensajes aun
+              <FadeInUp delay={80} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xxxl }}>
+                <View style={{ width: 76, height: 76, borderRadius: THEME.radius.full, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+                  <Ionicons name="chatbubbles-outline" size={38} color={THEME.color.brand} />
+                </View>
+                <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>
+                  Sin mensajes aún
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>
-                  Envia el primer mensaje para iniciar la conversacion
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, textAlign: 'center', marginTop: THEME.space.xs, lineHeight: 19 }}>
+                  Envía el primer mensaje para iniciar la conversación
                 </Text>
-              </View>
+              </FadeInUp>
             }
             onContentSizeChange={() => {
               if (messages.length > 0) {
@@ -319,26 +337,26 @@ export default function ChatScreen() {
 
         {/* Typing indicator */}
         {otherTyping && (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.sm, flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
             <View style={{ flexDirection: 'row', gap: 3 }}>
               {[0, 1, 2].map((i) => (
                 <View key={i} style={{
-                  width: 6, height: 6, borderRadius: 3, backgroundColor: '#94A3B8',
+                  width: 6, height: 6, borderRadius: 3, backgroundColor: THEME.color.inkMuted,
                   opacity: 0.6,
                 }} />
               ))}
             </View>
-            <Text style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>escribiendo...</Text>
+            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, fontStyle: 'italic' }}>escribiendo...</Text>
           </View>
         )}
 
         {/* Quick replies */}
         {senderType === 'tecnico' && !text.trim() && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingVertical: 8, paddingHorizontal: 10 }} contentContainerStyle={{ gap: 6 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: THEME.color.surface, paddingVertical: THEME.space.sm, paddingHorizontal: THEME.space.md, ...THEME.shadow.sm }} contentContainerStyle={{ gap: THEME.space.sm }}>
             {['Estoy en camino 🚗', 'Llego en 15 min', 'Ya llegué ✅', `Mi precio es S/${''} aprox`, 'Necesito ver el problema primero', 'Trabajo garantizado', '¿A qué hora le conviene?', 'Gracias por su confianza 🙏'].map(msg => (
-              <TouchableOpacity key={msg} onPress={() => { setText(msg); }} style={{ backgroundColor: '#EFF6FF', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#BFDBFE' }}>
-                <Text style={{ fontSize: 12, color: '#1E40AF', fontWeight: '600' }}>{msg}</Text>
-              </TouchableOpacity>
+              <PressableScale key={msg} onPress={() => { setText(msg); }} style={{ backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, minHeight: 36, justifyContent: 'center' }}>
+                <Text style={{ ...THEME.font.label, color: THEME.color.brandDark }}>{msg}</Text>
+              </PressableScale>
             ))}
           </ScrollView>
         )}
@@ -347,49 +365,50 @@ export default function ChatScreen() {
         <View style={{
           flexDirection: 'row',
           alignItems: 'flex-end',
-          padding: 10,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 10,
-          backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#E2E8F0',
-          gap: 8,
+          padding: THEME.space.md,
+          paddingBottom: Platform.OS === 'ios' ? THEME.space.xxl : THEME.space.md,
+          backgroundColor: THEME.color.surface,
+          gap: THEME.space.sm,
+          ...THEME.shadow.lg,
         }}>
           <TextInput
             value={text}
             onChangeText={handleTextChange}
             placeholder="Escribe un mensaje..."
-            placeholderTextColor={COLORS.gray2}
+            placeholderTextColor={THEME.color.inkMuted}
             multiline
             maxLength={1000}
             style={{
               flex: 1,
-              backgroundColor: '#F1F5F9',
-              borderRadius: 20,
-              paddingHorizontal: 16,
-              paddingVertical: 10,
-              fontSize: 14,
+              backgroundColor: THEME.color.surfaceAlt,
+              borderRadius: THEME.radius.xl,
+              paddingHorizontal: THEME.space.lg,
+              paddingVertical: THEME.space.md,
+              ...THEME.font.body,
               maxHeight: 100,
-              color: COLORS.dark,
+              color: THEME.color.ink,
             }}
           />
-          <TouchableOpacity
+          <PressableScale
             onPress={sendMessage}
             disabled={!text.trim() || sending}
+            accessibilityLabel="Enviar mensaje"
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 21,
-              backgroundColor: text.trim() ? '#1E3A5F' : '#CBD5E1',
+              width: 48,
+              height: 48,
+              borderRadius: THEME.radius.full,
+              backgroundColor: text.trim() ? THEME.color.brand : THEME.color.inkMuted,
               alignItems: 'center',
               justifyContent: 'center',
+              ...(text.trim() ? THEME.shadow.brand : {}),
             }}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={THEME.color.white} />
             ) : (
-              <Ionicons name="send" size={18} color="#fff" />
+              <Ionicons name="send" size={18} color={THEME.color.white} />
             )}
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </KeyboardAvoidingView>
     </>

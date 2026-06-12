@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from '../src/lib/constants'
 import { ENV } from '../src/lib/env'
+import { THEME } from '../src/lib/theme'
+import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
 type Step = 'phone' | 'code' | 'reset'
 
@@ -18,6 +19,8 @@ export default function RecuperarScreen() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [userType, setUserType] = useState<'tecnico' | 'cliente' | null>(null)
+  // Foco visual de inputs (borde brand 2px al enfocar)
+  const [focused, setFocused] = useState<string | null>(null)
   // userId no longer needed - password reset handled entirely by backend API
 
   async function sendCode() {
@@ -121,6 +124,7 @@ export default function RecuperarScreen() {
       if (!res.ok) {
         Alert.alert('Error', result.error || 'No se pudo actualizar la contraseña.')
       } else {
+        haptics.success()
         Alert.alert(
           'Contraseña actualizada',
           'Tu contraseña se cambió exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.',
@@ -134,126 +138,222 @@ export default function RecuperarScreen() {
     }
   }
 
+  const stepIndex = ['phone', 'code', 'reset'].indexOf(step)
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-      <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 28, elevation: 3 }}>
-        {/* Header */}
-        <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 }}>
-          <Ionicons name="key" size={28} color="#fff" />
-        </View>
-        <Text style={{ fontSize: 22, fontWeight: '900', color: COLORS.dark, textAlign: 'center', marginBottom: 4 }}>
-          Recuperar contraseña
-        </Text>
-        <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginBottom: 24 }}>
-          {step === 'phone' && 'Ingresa tu número de WhatsApp registrado'}
-          {step === 'code' && 'Ingresa el código de verificación'}
-          {step === 'reset' && 'Ingresa tu nueva contraseña'}
-        </Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}
+      contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: THEME.space.xxl }}
+      keyboardShouldPersistTaps="handled"
+    >
+      <FadeInUp delay={0}>
+        <View
+          style={{
+            backgroundColor: THEME.color.surface,
+            borderRadius: THEME.radius.xxl,
+            padding: THEME.space.xxl,
+            ...THEME.shadow.md,
+          }}
+        >
+          {/* Header */}
+          <View
+            style={{
+              width: 64, height: 64, borderRadius: THEME.radius.xl,
+              backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center',
+              alignSelf: 'center', marginBottom: THEME.space.lg, ...THEME.shadow.brand,
+            }}
+          >
+            <Ionicons name="key" size={28} color="#fff" />
+          </View>
+          <Text style={{ ...THEME.font.h1, color: THEME.color.ink, textAlign: 'center', marginBottom: THEME.space.xs }}>
+            Recuperar contraseña
+          </Text>
+          <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, textAlign: 'center', marginBottom: THEME.space.xxl }}>
+            {step === 'phone' && 'Ingresa tu número de WhatsApp registrado'}
+            {step === 'code' && 'Ingresa el código de verificación'}
+            {step === 'reset' && 'Crea tu nueva contraseña'}
+          </Text>
 
-        {/* Step indicators */}
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
-          {(['phone', 'code', 'reset'] as Step[]).map((s, i) => (
-            <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: (['phone', 'code', 'reset'].indexOf(step) >= i) ? '#1E3A5F' : '#E2E8F0' }} />
-          ))}
-        </View>
-
-        {/* STEP 1: Phone number */}
-        {step === 'phone' && (
-          <>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>WhatsApp</Text>
-            <TextInput
-              placeholder="999 888 777"
-              value={whatsapp}
-              onChangeText={setWhatsapp}
-              keyboardType="phone-pad"
-              style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, fontSize: 15, fontWeight: '600', marginBottom: 16 }}
-              placeholderTextColor={COLORS.gray2}
-            />
-
-            <TouchableOpacity
-              onPress={sendCode}
-              disabled={loading}
-              style={{ backgroundColor: '#1E3A5F', borderRadius: 14, padding: 16, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
-                {loading ? 'Verificando...' : 'Enviar código'}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* STEP 2: Code verification */}
-        {step === 'code' && (
-          <>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Código de 6 dígitos</Text>
-            <TextInput
-              placeholder="123456"
-              value={inputCode}
-              onChangeText={setInputCode}
-              keyboardType="number-pad"
-              maxLength={6}
-              style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, fontSize: 24, fontWeight: '900', marginBottom: 16, textAlign: 'center', letterSpacing: 8 }}
-              placeholderTextColor={COLORS.gray2}
-            />
-
-            <TouchableOpacity
-              onPress={verifyCode}
-              style={{ backgroundColor: '#1E3A5F', borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 12 }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Verificar código</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setStep('phone')} style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 12, color: '#1E3A5F', fontWeight: '600' }}>Reenviar código</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* STEP 3: New password */}
-        {step === 'reset' && (
-          <>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Nueva contraseña</Text>
-            <View style={{ position: 'relative', marginBottom: 12 }}>
-              <TextInput
-                placeholder="Mínimo 6 caracteres"
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry={!showPassword}
-                style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, paddingRight: 48, fontSize: 15, fontWeight: '600' }}
-                placeholderTextColor={COLORS.gray2}
+          {/* Step indicators */}
+          <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginBottom: THEME.space.xxl }}>
+            {(['phone', 'code', 'reset'] as Step[]).map((s, i) => (
+              <View
+                key={s}
+                style={{
+                  flex: 1, height: 5, borderRadius: THEME.radius.full,
+                  backgroundColor: stepIndex >= i ? THEME.color.brand : THEME.color.line,
+                }}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: 16 }}>
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
+            ))}
+          </View>
+
+          {/* STEP 1: Phone number */}
+          {step === 'phone' && (
+            <FadeInUp delay={80}>
+              <Text style={styles.label}>WhatsApp</Text>
+              <View style={styles.inputWrap(focused === 'whatsapp')}>
+                <Ionicons name="logo-whatsapp" size={18} color={focused === 'whatsapp' ? THEME.color.brand : THEME.color.inkMuted} />
+                <TextInput
+                  placeholder="999 888 777"
+                  value={whatsapp}
+                  onChangeText={setWhatsapp}
+                  keyboardType="phone-pad"
+                  onFocus={() => setFocused('whatsapp')}
+                  onBlur={() => setFocused(null)}
+                  style={styles.inputField}
+                  placeholderTextColor={THEME.color.inkMuted}
+                />
+              </View>
+
+              <PressableScale
+                onPress={sendCode}
+                disabled={loading}
+                accessibilityLabel="Enviar código de recuperación"
+                style={styles.primaryBtn}
+              >
+                <Text style={styles.primaryBtnText}>
+                  {loading ? 'Verificando…' : 'Enviar código'}
+                </Text>
+              </PressableScale>
+            </FadeInUp>
+          )}
+
+          {/* STEP 2: Code verification */}
+          {step === 'code' && (
+            <FadeInUp delay={80}>
+              <Text style={styles.label}>Código de 6 dígitos</Text>
+              <View style={[styles.inputWrap(focused === 'code'), { justifyContent: 'center' }]}>
+                <TextInput
+                  placeholder="------"
+                  value={inputCode}
+                  onChangeText={setInputCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  onFocus={() => setFocused('code')}
+                  onBlur={() => setFocused(null)}
+                  style={{
+                    flex: 1, fontSize: 26, fontWeight: '900', color: THEME.color.ink,
+                    textAlign: 'center', letterSpacing: 10, paddingVertical: 2,
+                  }}
+                  placeholderTextColor={THEME.color.inkMuted}
+                />
+              </View>
+
+              <PressableScale
+                onPress={verifyCode}
+                accessibilityLabel="Verificar código"
+                style={[styles.primaryBtn, { marginBottom: THEME.space.md }]}
+              >
+                <Text style={styles.primaryBtnText}>Verificar código</Text>
+              </PressableScale>
+
+              <TouchableOpacity onPress={() => setStep('phone')} style={{ alignItems: 'center', minHeight: 44, justifyContent: 'center' }}>
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.brand, fontWeight: '700' }}>Reenviar código</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInUp>
+          )}
 
-            <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.dark, marginBottom: 6 }}>Confirmar contraseña</Text>
-            <TextInput
-              placeholder="Repite tu contraseña"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showPassword}
-              style={{ backgroundColor: '#F1F5F9', borderRadius: 14, padding: 16, fontSize: 15, fontWeight: '600', marginBottom: 16 }}
-              placeholderTextColor={COLORS.gray2}
-            />
+          {/* STEP 3: New password */}
+          {step === 'reset' && (
+            <FadeInUp delay={80}>
+              <Text style={styles.label}>Nueva contraseña</Text>
+              <View style={[styles.inputWrap(focused === 'pass'), { marginBottom: THEME.space.md }]}>
+                <Ionicons name="lock-closed-outline" size={18} color={focused === 'pass' ? THEME.color.brand : THEME.color.inkMuted} />
+                <TextInput
+                  placeholder="Mínimo 6 caracteres"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry={!showPassword}
+                  onFocus={() => setFocused('pass')}
+                  onBlur={() => setFocused(null)}
+                  style={styles.inputField}
+                  placeholderTextColor={THEME.color.inkMuted}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
+                </TouchableOpacity>
+              </View>
 
-            <TouchableOpacity
-              onPress={resetPassword}
-              disabled={loading}
-              style={{ backgroundColor: '#10B981', borderRadius: 14, padding: 16, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
-                {loading ? 'Guardando...' : 'Cambiar contraseña'}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
+              <Text style={styles.label}>Confirmar contraseña</Text>
+              <View style={styles.inputWrap(focused === 'confirm')}>
+                <Ionicons name="lock-closed-outline" size={18} color={focused === 'confirm' ? THEME.color.brand : THEME.color.inkMuted} />
+                <TextInput
+                  placeholder="Repite tu contraseña"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showPassword}
+                  onFocus={() => setFocused('confirm')}
+                  onBlur={() => setFocused(null)}
+                  style={styles.inputField}
+                  placeholderTextColor={THEME.color.inkMuted}
+                />
+              </View>
 
-        {/* Back link */}
-        <TouchableOpacity onPress={() => router.back()} style={{ alignItems: 'center', marginTop: 20 }}>
-          <Text style={{ fontSize: 12, color: COLORS.gray, fontWeight: '600' }}>Volver al login</Text>
-        </TouchableOpacity>
-      </View>
+              <PressableScale
+                onPress={resetPassword}
+                disabled={loading}
+                accessibilityLabel="Cambiar contraseña"
+                style={styles.primaryBtn}
+              >
+                <Text style={styles.primaryBtnText}>
+                  {loading ? 'Guardando…' : 'Cambiar contraseña'}
+                </Text>
+              </PressableScale>
+            </FadeInUp>
+          )}
+
+          {/* Back link */}
+          <TouchableOpacity onPress={() => router.back()} style={{ alignItems: 'center', marginTop: THEME.space.xl, minHeight: 44, justifyContent: 'center' }}>
+            <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, fontWeight: '600' }}>Volver al login</Text>
+          </TouchableOpacity>
+        </View>
+      </FadeInUp>
     </ScrollView>
   )
+}
+
+const styles = {
+  label: {
+    ...THEME.font.label,
+    color: THEME.color.inkSoft,
+    marginBottom: THEME.space.sm,
+  },
+  // Wrapper de input con borde brand 2px al enfocar
+  inputWrap: (active: boolean) => ({
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: THEME.space.md,
+    backgroundColor: active ? THEME.color.surface : THEME.color.surfaceAlt,
+    borderRadius: THEME.radius.lg,
+    borderWidth: 2,
+    borderColor: active ? THEME.color.brand : THEME.color.line,
+    paddingHorizontal: THEME.space.lg,
+    minHeight: 56,
+    marginBottom: THEME.space.lg,
+  }),
+  inputField: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: THEME.color.ink,
+    paddingVertical: THEME.space.md,
+  },
+  primaryBtn: {
+    backgroundColor: THEME.color.brand,
+    borderRadius: THEME.radius.lg,
+    height: 52,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    ...THEME.shadow.brand,
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800' as const,
+    letterSpacing: 0.2,
+  },
 }

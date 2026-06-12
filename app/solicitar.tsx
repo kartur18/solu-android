@@ -5,9 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS, SERVICIOS, DISTRITOS, URGENCIAS } from '../src/lib/constants'
+import { SERVICIOS, DISTRITOS, URGENCIAS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
-import { ENV } from '../src/lib/env'
 import { sendPush } from '../src/lib/integrations'
 import { compressImage } from '../src/lib/imageCompress'
 import { useLocationDetection } from '../src/lib/useLocation'
@@ -15,8 +14,17 @@ import { useClientProfile } from '../src/lib/useClientProfile'
 import { getPrecioSugerido, formatPrecio } from '../src/lib/smartIntent'
 import { findBestTech } from '../src/lib/matching'
 import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
+import { THEME } from '../src/lib/theme'
+import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
 const DRAFT_KEY = 'solu_solicitar_draft'
+
+// Color de cada urgencia mapeado a la paleta semántica del theme.
+const URGENCIA_COLOR: Record<string, string> = {
+  normal: THEME.color.success,
+  urgente: THEME.color.warning,
+  emergencia: THEME.color.danger,
+}
 
 export default function SolicitarScreen() {
   const router = useRouter()
@@ -231,6 +239,7 @@ export default function SolicitarScreen() {
         if (token) upsertGuestClientPushToken(waClean, token, nombreFinal).catch(() => {})
       }).catch(() => {})
 
+      haptics.success()
       // Show success screen
       setResult({
         codigo,
@@ -259,197 +268,228 @@ export default function SolicitarScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} contentContainerStyle={{ paddingBottom: 48 }}>
       {/* Header Premium */}
-      <View style={{ backgroundColor: '#1A1A2E', padding: 24, paddingTop: 48, paddingBottom: 28, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, marginBottom: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="build" size={18} color="#fff" />
-          </View>
-          <View>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff' }}>Solicitar Técnico</Text>
-            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Completa el formulario y te asignamos uno</Text>
-          </View>
-        </View>
-        {/* Trust line (reemplaza indicador de pasos) */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(16,185,129,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, alignSelf: 'flex-start' }}>
-          <Ionicons name="flash" size={14} color="#10B981" />
-          <Text style={{ fontSize: 11, fontWeight: '700', color: '#10B981' }}>Asignación automática en menos de 2 minutos</Text>
-        </View>
-      </View>
-
-      <View style={{ paddingHorizontal: 20 }}>
-
-        <Text style={styles.label}>Nombre <Text style={{ color: COLORS.gray2, fontWeight: '600' }}>(opcional)</Text></Text>
-        <TextInput placeholder="Tu nombre" value={nombre} onChangeText={setNombre} style={styles.input} placeholderTextColor={COLORS.gray2} />
-
-        <Text style={styles.label}>WhatsApp *</Text>
-        <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" style={styles.input} placeholderTextColor={COLORS.gray2} />
-
-        <Text style={styles.label}>Servicio *</Text>
-        <TouchableOpacity
-          onPress={() => setShowServicios(!showServicios)}
-          accessibilityLabel="Seleccionar servicio"
-          style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-        >
-          <Text style={{ color: servicio ? COLORS.dark : COLORS.gray2, fontSize: 14 }}>{servicio || 'Seleccionar servicio'}</Text>
-          <Ionicons name={showServicios ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.gray2} />
-        </TouchableOpacity>
-        {showServicios && (
-          <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 200, borderWidth: 1, borderColor: COLORS.border }}>
-            <ScrollView nestedScrollEnabled>
-              {SERVICIOS.map((s) => (
-                <TouchableOpacity key={s} onPress={() => { setServicio(s); setShowServicios(false) }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                  <Text style={{ fontSize: 13, color: COLORS.dark }}>{s}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Precio sugerido (transparencia) */}
-        {servicio && getPrecioSugerido(servicio) ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12, marginTop: -8, marginBottom: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
-            <Ionicons name="pricetag" size={16} color="#2563EB" />
+      <FadeInUp delay={0}>
+        <View style={{ backgroundColor: THEME.color.navy, padding: THEME.space.xxl, paddingTop: 52, paddingBottom: THEME.space.xxxl, borderBottomLeftRadius: THEME.radius.xxl, borderBottomRightRadius: THEME.radius.xxl, marginBottom: THEME.space.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.lg }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              accessibilityLabel="Volver"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{ width: 40, height: 40, borderRadius: THEME.radius.full, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="chevron-back" size={22} color={THEME.color.white} />
+            </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, color: '#1E40AF', fontWeight: '700' }}>Precio referencial</Text>
-              <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: '800', marginTop: 1 }}>{formatPrecio(getPrecioSugerido(servicio)!)}</Text>
+              <Text style={{ ...THEME.font.h1, color: THEME.color.white }}>Solicitar técnico</Text>
+              <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.6)' }}>Completa y te asignamos al mejor</Text>
             </View>
-            <Text style={{ fontSize: 10, color: '#3B82F6', fontWeight: '600' }}>El técnico{'\n'}confirma</Text>
           </View>
-        ) : null}
+          {/* Trust line */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, backgroundColor: 'rgba(22,163,74,0.15)', paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm, borderRadius: THEME.radius.full, alignSelf: 'flex-start' }}>
+            <Ionicons name="flash" size={14} color="#4ADE80" />
+            <Text style={{ ...THEME.font.caption, fontWeight: '700', color: '#4ADE80' }}>Asignación automática en menos de 2 minutos</Text>
+          </View>
+        </View>
+      </FadeInUp>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={styles.label}>Distrito *</Text>
-          {distritoAutoDetected && distrito ? (
-            <View style={{ backgroundColor: '#D1FAE5', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 6 }}>
-              <Text style={{ fontSize: 10, color: '#065F46', fontWeight: '600' }}>📍 Detectado automáticamente</Text>
+      <View style={{ paddingHorizontal: THEME.space.xl }}>
+        <FadeInUp delay={60}>
+          <Text style={styles.label}>Nombre <Text style={{ color: THEME.color.inkMuted, fontWeight: '600' }}>(opcional)</Text></Text>
+          <TextInput placeholder="Tu nombre" value={nombre} onChangeText={setNombre} style={styles.input} placeholderTextColor={THEME.color.inkMuted} />
+
+          <Text style={styles.label}>WhatsApp *</Text>
+          <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" style={styles.input} placeholderTextColor={THEME.color.inkMuted} />
+        </FadeInUp>
+
+        <FadeInUp delay={120}>
+          <Text style={styles.label}>Servicio *</Text>
+          <TouchableOpacity
+            onPress={() => setShowServicios(!showServicios)}
+            accessibilityLabel="Seleccionar servicio"
+            style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+          >
+            <Text style={{ color: servicio ? THEME.color.ink : THEME.color.inkMuted, fontSize: 15 }}>{servicio || 'Seleccionar servicio'}</Text>
+            <Ionicons name={showServicios ? 'chevron-up' : 'chevron-down'} size={18} color={THEME.color.inkMuted} />
+          </TouchableOpacity>
+          {showServicios && (
+            <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, marginTop: -8, marginBottom: THEME.space.md, maxHeight: 220, ...THEME.shadow.md }}>
+              <ScrollView nestedScrollEnabled>
+                {SERVICIOS.map((s) => (
+                  <TouchableOpacity key={s} onPress={() => { setServicio(s); setShowServicios(false) }} style={{ paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, borderBottomWidth: 1, borderBottomColor: THEME.color.lineSoft }}>
+                    <Text style={{ ...THEME.font.body, color: THEME.color.ink }}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Precio sugerido (transparencia) */}
+          {servicio && getPrecioSugerido(servicio) ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, backgroundColor: THEME.color.infoBg, borderRadius: THEME.radius.lg, padding: THEME.space.md, marginTop: -4, marginBottom: THEME.space.lg }}>
+              <View style={{ width: 40, height: 40, borderRadius: THEME.radius.md, backgroundColor: THEME.color.surface, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="pricetag" size={18} color={THEME.color.info} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...THEME.font.caption, color: THEME.color.info, fontWeight: '700' }}>Precio referencial</Text>
+                <Text style={{ ...THEME.font.h3, color: '#1E3A8A', marginTop: 1 }}>{formatPrecio(getPrecioSugerido(servicio)!)}</Text>
+              </View>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.info, fontWeight: '600', textAlign: 'right' }}>El técnico{'\n'}confirma</Text>
             </View>
           ) : null}
-        </View>
-        <TouchableOpacity
-          onPress={() => setShowDistritos(!showDistritos)}
-          accessibilityLabel="Seleccionar distrito"
-          style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-        >
-          <Text style={{ color: distrito ? COLORS.dark : COLORS.gray2, fontSize: 14 }}>{distrito || 'Seleccionar distrito'}</Text>
-          <Ionicons name={showDistritos ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.gray2} />
-        </TouchableOpacity>
-        {showDistritos && (
-          <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 280, borderWidth: 1, borderColor: COLORS.border }}>
-            <TextInput
-              placeholder="Escribe para buscar distrito..."
-              placeholderTextColor="#9CA3AF"
-              value={distritoFilter}
-              onChangeText={setDistritoFilter}
-              style={{ padding: 12, fontSize: 14, color: COLORS.dark, borderBottomWidth: 1, borderBottomColor: COLORS.border }}
-              autoFocus
-            />
-            <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-              {DISTRITOS.filter(d => !distritoFilter || d.toLowerCase().includes(distritoFilter.toLowerCase())).map((d) => (
-                <TouchableOpacity key={d} onPress={() => { handleDistritoChange(d); setDistritoFilter(''); setShowDistritos(false) }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                  <Text style={{ fontSize: 13, color: COLORS.dark }}>{d}</Text>
-                </TouchableOpacity>
-              ))}
-              {distritoFilter.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoFilter.toLowerCase()) && (
-                <TouchableOpacity onPress={() => { handleDistritoChange(distritoFilter.trim()); setDistritoFilter(''); setShowDistritos(false) }} style={{ padding: 12, backgroundColor: '#EFF6FF' }}>
-                  <Text style={{ fontSize: 13, color: '#2563EB', fontWeight: '700' }}>+ Agregar "{distritoFilter.trim()}"</Text>
-                </TouchableOpacity>
-              )}
-            </ScrollView>
-          </View>
-        )}
+        </FadeInUp>
 
-        <Text style={styles.label}>Urgencia</Text>
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-          {URGENCIAS.map((u) => (
-            <TouchableOpacity
-              key={u.value}
-              onPress={() => setUrgencia(u.value)}
-              style={{
-                flex: 1, padding: 12, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                backgroundColor: urgencia === u.value ? u.color : COLORS.white,
-                borderWidth: 1, borderColor: urgencia === u.value ? u.color : COLORS.border,
-              }}
-            >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: urgencia === u.value ? COLORS.white : COLORS.gray }}>{u.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Descripción del problema</Text>
-        <TextInput
-          placeholder="Describe qué necesitas..."
-          value={descripcion}
-          onChangeText={(text) => setDescripcion(text.slice(0, 500))}
-          multiline
-          numberOfLines={4}
-          maxLength={500}
-          style={[styles.input, { height: 100, textAlignVertical: 'top', marginBottom: 4 }]}
-          placeholderTextColor={COLORS.gray2}
-        />
-        <Text style={{ fontSize: 11, color: COLORS.gray2, textAlign: 'right', marginBottom: 16 }}>
-          {descripcion.length}/500
-        </Text>
-
-        {/* Photos */}
-        <Text style={styles.label}>Fotos del problema (opcional, máx 3)</Text>
-        {fotos.length > 0 && (
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-            {fotos.map((uri, i) => (
-              <View key={i} style={{ position: 'relative' }}>
-                <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 10, backgroundColor: '#F1F5F9' }} />
-                <TouchableOpacity
-                  onPress={() => setFotos(fotos.filter((_, idx) => idx !== i))}
-                  accessibilityLabel={`Eliminar foto ${i + 1}`}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                  style={{ position: 'absolute', top: -6, right: -6, backgroundColor: '#EF4444', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Ionicons name="close" size={12} color="#fff" />
-                </TouchableOpacity>
+        <FadeInUp delay={180}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.xs }}>
+            <Text style={styles.label}>Distrito *</Text>
+            {distritoAutoDetected && distrito ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.sm, paddingVertical: 2, marginBottom: THEME.space.sm }}>
+                <Ionicons name="location" size={11} color={THEME.color.success} />
+                <Text style={{ ...THEME.font.caption, color: '#15803D', fontWeight: '600' }}>Detectado automáticamente</Text>
               </View>
-            ))}
+            ) : null}
           </View>
-        )}
-        {fotos.length < 3 && (
           <TouchableOpacity
-            onPress={pickFoto}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: '#93C5FD' }}
+            onPress={() => setShowDistritos(!showDistritos)}
+            accessibilityLabel="Seleccionar distrito"
+            style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
           >
-            <Ionicons name="camera-outline" size={20} color="#2563EB" />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#2563EB' }}>Agregar foto del problema</Text>
+            <Text style={{ color: distrito ? THEME.color.ink : THEME.color.inkMuted, fontSize: 15 }}>{distrito || 'Seleccionar distrito'}</Text>
+            <Ionicons name={showDistritos ? 'chevron-up' : 'chevron-down'} size={18} color={THEME.color.inkMuted} />
           </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          onPress={submit}
-          disabled={loading}
-          accessibilityLabel="Solicitar técnico"
-          style={{ backgroundColor: COLORS.pri, borderRadius: 20, padding: 20, alignItems: 'center', marginTop: 12, opacity: loading ? 0.7 : 1, shadowColor: COLORS.pri, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 }}
-        >
-          {loading ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <ActivityIndicator color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17 }}>Enviando tu solicitud...</Text>
+          {showDistritos && (
+            <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, marginTop: -8, marginBottom: THEME.space.md, maxHeight: 300, ...THEME.shadow.md }}>
+              <TextInput
+                placeholder="Escribe para buscar distrito..."
+                placeholderTextColor={THEME.color.inkMuted}
+                value={distritoFilter}
+                onChangeText={setDistritoFilter}
+                style={{ paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, fontSize: 15, color: THEME.color.ink, borderBottomWidth: 1, borderBottomColor: THEME.color.line }}
+                autoFocus
+              />
+              <ScrollView nestedScrollEnabled style={{ maxHeight: 220 }}>
+                {DISTRITOS.filter(d => !distritoFilter || d.toLowerCase().includes(distritoFilter.toLowerCase())).map((d) => (
+                  <TouchableOpacity key={d} onPress={() => { handleDistritoChange(d); setDistritoFilter(''); setShowDistritos(false) }} style={{ paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, borderBottomWidth: 1, borderBottomColor: THEME.color.lineSoft }}>
+                    <Text style={{ ...THEME.font.body, color: THEME.color.ink }}>{d}</Text>
+                  </TouchableOpacity>
+                ))}
+                {distritoFilter.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoFilter.toLowerCase()) && (
+                  <TouchableOpacity onPress={() => { handleDistritoChange(distritoFilter.trim()); setDistritoFilter(''); setShowDistritos(false) }} style={{ paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, backgroundColor: THEME.color.brandLight }}>
+                    <Text style={{ ...THEME.font.body, color: THEME.color.brand, fontWeight: '700' }}>+ Agregar "{distritoFilter.trim()}"</Text>
+                  </TouchableOpacity>
+                )}
+              </ScrollView>
             </View>
-          ) : (
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 17, letterSpacing: 0.5 }}>Solicitar técnico →</Text>
           )}
-        </TouchableOpacity>
+        </FadeInUp>
 
-        {/* Info */}
-        <View style={{ marginTop: 16, padding: 16, backgroundColor: 'rgba(234,88,12,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(234,88,12,0.15)' }}>
-          <Text style={{ fontSize: 12, color: '#9A3412', lineHeight: 18, fontWeight: '600' }}>
-            🛡️ Buscaremos al mejor técnico verificado con DNI/RENIEC en tu zona. Solo necesitas tu WhatsApp para coordinar. Solicitar no te cuesta nada: el precio del trabajo lo acuerdas directo con el técnico.
+        <FadeInUp delay={240}>
+          <Text style={styles.label}>Urgencia</Text>
+          <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginBottom: THEME.space.lg }}>
+            {URGENCIAS.map((u) => {
+              const uColor = URGENCIA_COLOR[u.value] || THEME.color.brand
+              const active = urgencia === u.value
+              return (
+                <TouchableOpacity
+                  key={u.value}
+                  onPress={() => setUrgencia(u.value)}
+                  accessibilityLabel={`Urgencia ${u.label}`}
+                  style={{
+                    flex: 1, minHeight: 48, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: active ? uColor : THEME.color.surface,
+                    borderWidth: 1.5, borderColor: active ? uColor : THEME.color.line,
+                  }}
+                >
+                  <Text style={{ ...THEME.font.label, fontWeight: '700', color: active ? THEME.color.white : THEME.color.inkSoft }}>{u.label}</Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </FadeInUp>
+
+        <FadeInUp delay={300}>
+          <Text style={styles.label}>Descripción del problema</Text>
+          <TextInput
+            placeholder="Describe qué necesitas..."
+            value={descripcion}
+            onChangeText={(text) => setDescripcion(text.slice(0, 500))}
+            multiline
+            numberOfLines={4}
+            maxLength={500}
+            style={[styles.input, { height: 104, textAlignVertical: 'top', marginBottom: THEME.space.xs }]}
+            placeholderTextColor={THEME.color.inkMuted}
+          />
+          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, textAlign: 'right', marginBottom: THEME.space.lg }}>
+            {descripcion.length}/500
           </Text>
-        </View>
+
+          {/* Photos */}
+          <Text style={styles.label}>Fotos del problema (opcional, máx 3)</Text>
+          {fotos.length > 0 && (
+            <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginBottom: THEME.space.sm }}>
+              {fotos.map((uri, i) => (
+                <View key={i} style={{ position: 'relative' }}>
+                  <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: THEME.radius.md, backgroundColor: THEME.color.surfaceSunken }} />
+                  <TouchableOpacity
+                    onPress={() => setFotos(fotos.filter((_, idx) => idx !== i))}
+                    accessibilityLabel={`Eliminar foto ${i + 1}`}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={{ position: 'absolute', top: -6, right: -6, backgroundColor: THEME.color.danger, borderRadius: 11, width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: THEME.color.surface }}
+                  >
+                    <Ionicons name="close" size={12} color={THEME.color.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+          {fotos.length < 3 && (
+            <TouchableOpacity
+              onPress={pickFoto}
+              accessibilityLabel="Agregar foto del problema"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, backgroundColor: THEME.color.infoBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#93C5FD' }}
+            >
+              <Ionicons name="camera-outline" size={20} color={THEME.color.info} />
+              <Text style={{ ...THEME.font.body, fontWeight: '600', color: THEME.color.info }}>Agregar foto del problema</Text>
+            </TouchableOpacity>
+          )}
+        </FadeInUp>
+
+        <FadeInUp delay={360}>
+          <PressableScale
+            onPress={submit}
+            disabled={loading}
+            accessibilityLabel="Solicitar técnico"
+            style={{ height: 52, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', marginTop: THEME.space.sm, ...THEME.shadow.brand }}
+          >
+            {loading ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+                <ActivityIndicator color={THEME.color.white} />
+                <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Enviando tu solicitud...</Text>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+                <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Solicitar técnico</Text>
+                <Ionicons name="arrow-forward" size={18} color={THEME.color.white} />
+              </View>
+            )}
+          </PressableScale>
+
+          {/* Info */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: THEME.space.sm, marginTop: THEME.space.lg, padding: THEME.space.lg, backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.lg }}>
+            <Ionicons name="shield-checkmark" size={18} color={THEME.color.brand} style={{ marginTop: 1 }} />
+            <Text style={{ ...THEME.font.bodySm, color: THEME.color.brandDark, lineHeight: 19, flex: 1 }}>
+              Buscaremos al mejor técnico verificado con DNI/RENIEC en tu zona. Solo necesitas tu WhatsApp para coordinar. Solicitar no te cuesta nada: el precio del trabajo lo acuerdas directo con el técnico.
+            </Text>
+          </View>
+        </FadeInUp>
       </View>
     </ScrollView>
   )
 }
 
 // --- Confetti dot colors ---
-const CONFETTI_COLORS = ['#10B981', '#F26B21', '#2563EB', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#EF4444']
+const CONFETTI_COLORS = ['#16A34A', '#F26B21', '#2563EB', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#EF4444']
 
 function ConfettiDot({ delay, color, startX, startY }: { delay: number; color: string; startX: number; startY: number }) {
   const anim = useRef(new Animated.Value(0)).current
@@ -521,9 +561,9 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
   })
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC' }} contentContainerStyle={{ padding: 20, paddingTop: 40 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} contentContainerStyle={{ padding: THEME.space.xl, paddingTop: 48 }}>
       {/* Animated success icon with confetti */}
-      <View style={{ alignItems: 'center', marginBottom: 28 }}>
+      <View style={{ alignItems: 'center', marginBottom: THEME.space.xxxl }}>
         <View style={{ width: 120, height: 120, alignItems: 'center', justifyContent: 'center' }}>
           {/* Confetti dots */}
           {confettiDots.map((dot, i) => (
@@ -532,23 +572,23 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
           {/* Checkmark circle */}
           <Animated.View style={{
             width: 88, height: 88, borderRadius: 44,
-            backgroundColor: '#10B981',
+            backgroundColor: THEME.color.success,
             alignItems: 'center', justifyContent: 'center',
             transform: [{ scale: checkScale }],
-            shadowColor: '#10B981',
+            shadowColor: THEME.color.success,
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.35,
             shadowRadius: 16,
             elevation: 12,
           }}>
-            <Ionicons name="checkmark" size={48} color="#fff" />
+            <Ionicons name="checkmark" size={48} color={THEME.color.white} />
           </Animated.View>
         </View>
-        <Animated.View style={{ opacity: contentOpacity, alignItems: 'center', marginTop: 8 }}>
-          <Text style={{ fontSize: 24, fontWeight: '900', color: COLORS.dark, textAlign: 'center' }}>
+        <Animated.View style={{ opacity: contentOpacity, alignItems: 'center', marginTop: THEME.space.sm }}>
+          <Text style={{ ...THEME.font.h1, color: THEME.color.ink, textAlign: 'center' }}>
             ¡Solicitud enviada!
           </Text>
-          <Text style={{ fontSize: 14, color: COLORS.gray, textAlign: 'center', marginTop: 6, lineHeight: 20 }}>
+          <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, textAlign: 'center', marginTop: THEME.space.xs, lineHeight: 20 }}>
             {result.techName ? 'Te asignamos un técnico verificado' : 'Estamos buscando el mejor técnico para ti'}
           </Text>
         </Animated.View>
@@ -557,33 +597,32 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
       <Animated.View style={{ opacity: contentOpacity }}>
         {/* Tracking code with copy button */}
         <View style={{
-          backgroundColor: '#fff', borderRadius: 20, padding: 24, marginBottom: 14,
-          borderWidth: 1, borderColor: '#E2E8F0',
-          shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+          backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.xxl, marginBottom: THEME.space.md,
+          ...THEME.shadow.md,
         }}>
-          <Text style={{ fontSize: 12, color: COLORS.gray, marginBottom: 6, fontWeight: '600' }}>
+          <Text style={{ ...THEME.font.label, color: THEME.color.inkSoft, marginBottom: THEME.space.xs }}>
             Tu código de seguimiento
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 30, fontWeight: '900', color: COLORS.pri, letterSpacing: 2 }}>
+            <Text style={{ fontSize: 30, fontWeight: '800', color: THEME.color.brand, letterSpacing: 2 }}>
               {result.codigo}
             </Text>
-            <TouchableOpacity
+            <PressableScale
               onPress={copyCode}
+              accessibilityLabel="Copiar código"
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: copied ? '#10B98115' : '#F1F5F9',
-                borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+                backgroundColor: copied ? THEME.color.successBg : THEME.color.surfaceAlt,
+                borderRadius: THEME.radius.md, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm,
               }}
             >
-              <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={copied ? '#10B981' : COLORS.gray} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: copied ? '#10B981' : COLORS.gray }}>
+              <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={copied ? THEME.color.success : THEME.color.inkSoft} />
+              <Text style={{ ...THEME.font.label, fontWeight: '700', color: copied ? THEME.color.success : THEME.color.inkSoft }}>
                 {copied ? 'Copiado' : 'Copiar'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
-          <Text style={{ fontSize: 11, color: COLORS.gray2, marginTop: 8 }}>
+          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: THEME.space.sm }}>
             Guarda este código para consultar el estado de tu servicio
           </Text>
         </View>
@@ -591,80 +630,78 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
         {/* Assigned tech info */}
         {result.techName && (
           <View style={{
-            backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 14,
-            borderWidth: 1, borderColor: '#E2E8F0',
-            shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+            backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, marginBottom: THEME.space.md,
+            ...THEME.shadow.md,
           }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.md }}>
               <View style={{
-                width: 52, height: 52, borderRadius: 26, backgroundColor: '#1E3A5F',
+                width: 52, height: 52, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.navy,
                 alignItems: 'center', justifyContent: 'center',
               }}>
-                <Ionicons name="person" size={24} color="#fff" />
+                <Ionicons name="person" size={24} color={THEME.color.white} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark }}>{result.techName}</Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray }}>Técnico asignado</Text>
+                <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>{result.techName}</Text>
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft }}>Técnico asignado</Text>
               </View>
-              <View style={{ backgroundColor: '#10B98115', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#10B981' }}>Asignado</Text>
+              <View style={{ backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: 6 }}>
+                <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.success }}>Asignado</Text>
               </View>
             </View>
 
             {/* WhatsApp direct contact */}
-            <TouchableOpacity
+            <PressableScale
               onPress={() => {
                 const msg = `Hola ${result.techName}, soy ${nombre}. Solicité un servicio de ${servicio} en ${distrito} por SOLU (código: ${result.codigo}).`
                 Linking.openURL(`https://wa.me/51${result.techWhatsapp}?text=${encodeURIComponent(msg)}`)
               }}
+              accessibilityLabel="Contactar por WhatsApp"
               style={{
-                backgroundColor: '#25D366', borderRadius: 14, padding: 15,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                shadowColor: '#25D366', shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+                height: 48, backgroundColor: '#25D366', borderRadius: THEME.radius.lg,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
               }}
             >
-              <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Contactar por WhatsApp</Text>
-            </TouchableOpacity>
+              <Ionicons name="logo-whatsapp" size={20} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Contactar por WhatsApp</Text>
+            </PressableScale>
           </View>
         )}
 
         {/* Track service */}
-        <TouchableOpacity
+        <PressableScale
           onPress={() => router.replace({ pathname: '/tracking/[code]', params: { code: result.codigo } })}
+          accessibilityLabel="Seguir mi servicio"
           style={{
-            backgroundColor: '#1E3A5F', borderRadius: 16, padding: 17,
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12,
-            shadowColor: '#1E3A5F', shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25, shadowRadius: 8, elevation: 4,
+            height: 52, backgroundColor: THEME.color.navy, borderRadius: THEME.radius.lg,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md,
+            ...THEME.shadow.md,
           }}
         >
-          <Ionicons name="navigate" size={18} color="#fff" />
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Seguir mi servicio</Text>
-        </TouchableOpacity>
+          <Ionicons name="navigate" size={18} color={THEME.color.white} />
+          <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Seguir mi servicio</Text>
+        </PressableScale>
 
         {/* Back to home */}
-        <TouchableOpacity
+        <PressableScale
           onPress={() => router.back()}
+          accessibilityLabel="Volver al inicio"
           style={{
-            backgroundColor: '#fff', borderRadius: 16, padding: 17, borderWidth: 1, borderColor: '#E2E8F0',
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            height: 52, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, borderWidth: 1, borderColor: THEME.color.line,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
           }}
         >
-          <Ionicons name="home" size={18} color={COLORS.dark} />
-          <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 14 }}>Volver al inicio</Text>
-        </TouchableOpacity>
+          <Ionicons name="home" size={18} color={THEME.color.ink} />
+          <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Volver al inicio</Text>
+        </PressableScale>
 
         {/* Help */}
         {!result.techName && (
-          <View style={{ backgroundColor: '#FEF3C7', borderRadius: 14, padding: 18, marginTop: 14 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <View style={{ backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginTop: THEME.space.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.xs }}>
               <Ionicons name="time" size={18} color="#92400E" />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>Buscando técnico...</Text>
+              <Text style={{ ...THEME.font.h3, color: '#92400E' }}>Buscando técnico...</Text>
             </View>
-            <Text style={{ fontSize: 12, color: '#92400E', lineHeight: 18 }}>
+            <Text style={{ ...THEME.font.bodySm, color: '#92400E', lineHeight: 19 }}>
               No encontramos un técnico disponible en {distrito} ahora mismo. Tu solicitud quedó registrada y te contactaremos pronto por WhatsApp al {whatsapp}.
             </Text>
           </View>
@@ -675,16 +712,17 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
 }
 
 const styles = {
-  label: { fontSize: 13, fontWeight: '800' as const, color: '#1A1A2E', marginBottom: 8 },
+  label: { ...THEME.font.label, fontWeight: '700' as const, color: THEME.color.ink, marginBottom: THEME.space.sm },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: THEME.color.surface,
+    borderRadius: THEME.radius.lg,
+    paddingHorizontal: THEME.space.lg,
+    paddingVertical: THEME.space.md + 2,
     fontSize: 15,
-    marginBottom: 16,
+    marginBottom: THEME.space.lg,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    color: '#1A1A2E',
-    fontWeight: '600' as const,
+    borderColor: THEME.color.line,
+    color: THEME.color.ink,
+    fontWeight: '500' as const,
   },
 }

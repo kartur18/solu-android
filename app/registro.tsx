@@ -15,12 +15,14 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'reac
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { COLORS, DISTRITOS } from '../src/lib/constants'
+import { DISTRITOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { logger } from '../src/lib/logger'
 import { ENV } from '../src/lib/env'
 import { verifyDNI } from '../src/lib/integrations'
 import { compressDNIPhoto } from '../src/lib/imageCompress'
+import { THEME } from '../src/lib/theme'
+import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
 const OFICIOS = [
   'Gasfitero', 'Electricista', 'Pintor', 'Cerrajero', 'Técnico en refrigeración',
@@ -39,6 +41,8 @@ export default function RegistroScreen() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  // Foco visual de inputs (borde brand 2px al enfocar)
+  const [focused, setFocused] = useState<string | null>(null)
 
   // Step 1
   const [nombre, setNombre] = useState('')
@@ -178,6 +182,7 @@ export default function RegistroScreen() {
       if (!res.ok) {
         Alert.alert('Error', result.error || 'No se pudo completar el registro.')
       } else {
+        haptics.success()
         Alert.alert(
           '¡Bienvenido a SOLU! 🎉',
           'Tu cuenta está creada. Recibes 5,000 SoluCoins gratis para tus primeros leads. Inicia sesión desde Mi cuenta.',
@@ -191,296 +196,512 @@ export default function RegistroScreen() {
     }
   }
 
+  const STEP_TITLES = ['Datos personales', 'Tu servicio', 'Verificación']
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }} keyboardShouldPersistTaps="handled">
-      <View style={{ padding: 20 }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}
+      contentContainerStyle={{ paddingBottom: 48 }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={{ padding: THEME.space.xl }}>
         {/* Progress */}
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
-          {[1, 2, 3].map((s) => (
-            <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: s <= step ? COLORS.pri : COLORS.border }} />
-          ))}
-        </View>
+        <FadeInUp delay={0}>
+          <View style={{ marginBottom: THEME.space.xl }}>
+            <View style={{ flexDirection: 'row', gap: THEME.space.sm }}>
+              {[1, 2, 3].map((s) => (
+                <View
+                  key={s}
+                  style={{
+                    flex: 1, height: 5, borderRadius: THEME.radius.full,
+                    backgroundColor: s <= step ? THEME.color.brand : THEME.color.line,
+                  }}
+                />
+              ))}
+            </View>
+            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: THEME.space.sm }}>
+              Paso {step} de 3 · {STEP_TITLES[step - 1]}
+            </Text>
+          </View>
+        </FadeInUp>
 
         {step === 1 && (
           <>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Datos personales</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 4 }}>Paso 1 de 3 · Los campos con * son obligatorios</Text>
-            {/* Banner bienvenida — anuncia los 5,000 SoluCoins gratis antes de empezar */}
-            <View style={{
-              backgroundColor: '#FFF7ED', borderRadius: 12, padding: 12, marginBottom: 18,
-              borderLeftWidth: 4, borderLeftColor: COLORS.pri, flexDirection: 'row', gap: 10,
-            }}>
-              <Text style={{ fontSize: 22 }}>🎁</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>5,000 SoluCoins gratis</Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 2 }}>
-                  Te llegan al crear tu cuenta. Alcanzan para tus primeros leads.
-                </Text>
+            <FadeInUp delay={60}>
+              <Text style={{ ...THEME.font.h1, color: THEME.color.ink, marginBottom: THEME.space.xs }}>Datos personales</Text>
+              <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginBottom: THEME.space.lg }}>
+                Los campos con * son obligatorios
+              </Text>
+              {/* Banner bienvenida — anuncia los 5,000 SoluCoins gratis antes de empezar */}
+              <View
+                style={{
+                  flexDirection: 'row', gap: THEME.space.md, alignItems: 'center',
+                  backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.lg,
+                  padding: THEME.space.lg, marginBottom: THEME.space.xl,
+                }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brandSoft, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 22 }}>🎁</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.brandDark }}>5,000 SoluCoins gratis</Text>
+                  <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 2 }}>
+                    Te llegan al crear tu cuenta. Alcanzan para tus primeros leads.
+                  </Text>
+                </View>
               </View>
-            </View>
+            </FadeInUp>
 
-            <Text style={styles.label}>Nombre completo *</Text>
-            <TextInput placeholder="Juan Pérez López" value={nombre} onChangeText={setNombre} style={styles.input} placeholderTextColor={COLORS.gray2} />
+            <FadeInUp delay={120}>
+              <View style={styles.card}>
+                <Text style={styles.label}>Nombre completo *</Text>
+                <View style={styles.inputWrap(focused === 'nombre')}>
+                  <Ionicons name="person-outline" size={18} color={focused === 'nombre' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="Juan Pérez López" value={nombre} onChangeText={setNombre} onFocus={() => setFocused('nombre')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
 
-            <Text style={styles.label}>WhatsApp *</Text>
-            <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" style={styles.input} placeholderTextColor={COLORS.gray2} />
+                <Text style={styles.label}>WhatsApp *</Text>
+                <View style={styles.inputWrap(focused === 'whatsapp')}>
+                  <Ionicons name="logo-whatsapp" size={18} color={focused === 'whatsapp' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="999 888 777" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" onFocus={() => setFocused('whatsapp')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
 
-            <Text style={styles.label}>Email (opcional)</Text>
-            <TextInput placeholder="correo@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} placeholderTextColor={COLORS.gray2} />
+                <Text style={styles.label}>Email (opcional)</Text>
+                <View style={styles.inputWrap(focused === 'email')}>
+                  <Ionicons name="mail-outline" size={18} color={focused === 'email' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="correo@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
 
-            <Text style={styles.label}>Contraseña (opcional)</Text>
-            <View style={{ position: 'relative' }}>
-              <TextInput
-                placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                style={[styles.input, { paddingRight: 48 }]}
-                placeholderTextColor={COLORS.gray2}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: 14, top: 14 }}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                <Text style={styles.label}>Contraseña (opcional)</Text>
+                <View style={styles.inputWrap(focused === 'pass')}>
+                  <Ionicons name="lock-closed-outline" size={18} color={focused === 'pass' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput
+                    placeholder="Mínimo 6 caracteres"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    onFocus={() => setFocused('pass')}
+                    onBlur={() => setFocused(null)}
+                    style={styles.inputField}
+                    placeholderTextColor={THEME.color.inkMuted}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.label}>Confirmar contraseña</Text>
+                <View style={styles.inputWrap(focused === 'confirm')}>
+                  <Ionicons name="lock-closed-outline" size={18} color={focused === 'confirm' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput
+                    placeholder="Repite tu contraseña"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    onFocus={() => setFocused('confirm')}
+                    onBlur={() => setFocused(null)}
+                    style={styles.inputField}
+                    placeholderTextColor={THEME.color.inkMuted}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    accessibilityLabel={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.label}>DNI *</Text>
+                <View style={styles.inputWrap(focused === 'dni')}>
+                  <Ionicons name="card-outline" size={18} color={focused === 'dni' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="12345678" value={dni} onChangeText={setDni} keyboardType="number-pad" maxLength={8} onFocus={() => setFocused('dni')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
+              </View>
+            </FadeInUp>
+
+            <FadeInUp delay={180}>
+              <PressableScale
+                onPress={() => { if (validateStep1()) setStep(2) }}
+                accessibilityLabel="Continuar al paso 2"
+                style={[styles.primaryBtn, { marginTop: THEME.space.xl }]}
               >
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Confirmar contraseña</Text>
-            <View style={{ position: 'relative' }}>
-              <TextInput
-                placeholder="Repite tu contraseña"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                style={[styles.input, { paddingRight: 48 }]}
-                placeholderTextColor={COLORS.gray2}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{ position: 'absolute', right: 14, top: 14 }}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                accessibilityLabel={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              >
-                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.gray2} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>DNI *</Text>
-            <TextInput placeholder="12345678" value={dni} onChangeText={setDni} keyboardType="number-pad" maxLength={8} style={styles.input} placeholderTextColor={COLORS.gray2} />
-
-            <TouchableOpacity onPress={() => { if (validateStep1()) setStep(2) }} style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8 }}>
-              <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>Siguiente →</Text>
-            </TouchableOpacity>
+                <Text style={styles.primaryBtnText}>Siguiente</Text>
+                <Ionicons name="arrow-forward" size={18} color="#fff" />
+              </PressableScale>
+            </FadeInUp>
           </>
         )}
 
         {step === 2 && (
           <>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Tu servicio</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Paso 2 de 3 — Configura qué ofreces y dónde</Text>
+            <FadeInUp delay={60}>
+              <Text style={{ ...THEME.font.h1, color: THEME.color.ink, marginBottom: THEME.space.xs }}>Tu servicio</Text>
+              <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginBottom: THEME.space.lg }}>
+                Configura qué ofreces y dónde
+              </Text>
+            </FadeInUp>
 
-            {/* Oficios — sin gate por plan, tope generoso */}
-            <Text style={styles.label}>Oficios * {oficios.length > 0 ? `(${oficios.length}/${MAX_OFICIOS})` : ''}</Text>
-            {oficios.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                {oficios.map((o, idx) => (
-                  <TouchableOpacity
-                    key={o}
-                    onPress={() => setOficios(oficios.filter((_, i) => i !== idx))}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: idx === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: idx === 0 ? '#fff' : '#1E3A5F' }}>{o}</Text>
-                    <Ionicons name="close-circle" size={14} color={idx === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
-                  </TouchableOpacity>
-                ))}
+            <FadeInUp delay={120}>
+              <View style={styles.card}>
+                {/* Oficios — sin gate por plan, tope generoso */}
+                <Text style={styles.label}>Oficios * {oficios.length > 0 ? `(${oficios.length}/${MAX_OFICIOS})` : ''}</Text>
+                {oficios.length > 0 && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: THEME.space.sm, marginBottom: THEME.space.sm }}>
+                    {oficios.map((o, idx) => (
+                      <TouchableOpacity
+                        key={o}
+                        onPress={() => setOficios(oficios.filter((_, i) => i !== idx))}
+                        style={[styles.chip, { backgroundColor: idx === 0 ? THEME.color.brand : THEME.color.brandLight }]}
+                        accessibilityLabel={`Quitar oficio ${o}`}
+                      >
+                        <Text style={{ ...THEME.font.label, color: idx === 0 ? '#fff' : THEME.color.brandDark }}>{o}</Text>
+                        <Ionicons name="close-circle" size={15} color={idx === 0 ? 'rgba(255,255,255,0.8)' : THEME.color.brand} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                <TouchableOpacity onPress={() => setShowOficios(!showOficios)} activeOpacity={0.8} style={styles.inputWrap(showOficios)}>
+                  <Ionicons name="construct-outline" size={18} color={showOficios ? THEME.color.brand : THEME.color.inkMuted} />
+                  <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: THEME.color.inkMuted }}>{oficios.length === 0 ? 'Seleccionar oficio' : 'Agregar otro oficio'}</Text>
+                  <Ionicons name={showOficios ? 'chevron-up' : 'chevron-down'} size={18} color={THEME.color.inkMuted} />
+                </TouchableOpacity>
+                {showOficios && (
+                  <View style={styles.dropdown}>
+                    <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                      {OFICIOS.filter(o => !oficios.includes(o)).map((o) => (
+                        <TouchableOpacity key={o} onPress={() => {
+                          if (oficios.length >= MAX_OFICIOS) {
+                            Alert.alert('Tope alcanzado', `Por ahora puedes registrar hasta ${MAX_OFICIOS} oficios. Si tienes más experiencia puedes agregar otros desde Mi cuenta.`)
+                            return
+                          }
+                          setOficios([...oficios, o])
+                          setShowOficios(false)
+                        }} style={styles.dropdownItem}>
+                          <Ionicons name="construct-outline" size={15} color={THEME.color.inkMuted} />
+                          <Text style={{ ...THEME.font.bodySm, color: THEME.color.ink }}>{o}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                <Text style={styles.label}>Zonas de cobertura * {distritos.length > 0 ? `(${distritos.length}/${MAX_ZONAS})` : ''}</Text>
+                {distritos.length > 0 && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: THEME.space.sm, marginBottom: THEME.space.sm }}>
+                    {distritos.map((d, idx) => (
+                      <TouchableOpacity
+                        key={d}
+                        onPress={() => setDistritos(distritos.filter((_, i) => i !== idx))}
+                        style={[styles.chip, { backgroundColor: idx === 0 ? THEME.color.brand : THEME.color.brandLight }]}
+                        accessibilityLabel={`Quitar zona ${d}`}
+                      >
+                        <Text style={{ ...THEME.font.label, color: idx === 0 ? '#fff' : THEME.color.brandDark }}>{d}</Text>
+                        <Ionicons name="close-circle" size={15} color={idx === 0 ? 'rgba(255,255,255,0.8)' : THEME.color.brand} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                <TouchableOpacity onPress={() => setShowDistritos(!showDistritos)} activeOpacity={0.8} style={styles.inputWrap(showDistritos)}>
+                  <Ionicons name="location-outline" size={18} color={showDistritos ? THEME.color.brand : THEME.color.inkMuted} />
+                  <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: THEME.color.inkMuted }}>{distritos.length === 0 ? 'Seleccionar distrito' : 'Agregar otro distrito'}</Text>
+                  <Ionicons name={showDistritos ? 'chevron-up' : 'chevron-down'} size={18} color={THEME.color.inkMuted} />
+                </TouchableOpacity>
+                {showDistritos && (
+                  <View style={styles.dropdown}>
+                    <TextInput
+                      placeholder="Escribe para buscar distrito…"
+                      placeholderTextColor={THEME.color.inkMuted}
+                      value={distritoSearch}
+                      onChangeText={setDistritoSearch}
+                      style={{
+                        paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md,
+                        fontSize: 14, fontWeight: '500', color: THEME.color.ink,
+                        borderBottomWidth: 1, borderBottomColor: THEME.color.line,
+                      }}
+                      autoFocus
+                    />
+                    <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                      {DISTRITOS.filter(d => !distritos.includes(d) && (!distritoSearch || d.toLowerCase().includes(distritoSearch.toLowerCase()))).map((d) => (
+                        <TouchableOpacity key={d} onPress={() => {
+                          if (distritos.length >= MAX_ZONAS) {
+                            Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro. Puedes ajustarlos luego desde Mi cuenta.`)
+                            return
+                          }
+                          setDistritos([...distritos, d])
+                          setDistritoSearch('')
+                          setShowDistritos(false)
+                        }} style={styles.dropdownItem}>
+                          <Ionicons name="location-outline" size={15} color={THEME.color.inkMuted} />
+                          <Text style={{ ...THEME.font.bodySm, color: THEME.color.ink }}>{d}</Text>
+                        </TouchableOpacity>
+                      ))}
+                      {distritoSearch.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoSearch.toLowerCase()) && (
+                        <TouchableOpacity onPress={() => {
+                          if (distritos.length >= MAX_ZONAS) {
+                            Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro.`)
+                            return
+                          }
+                          setDistritos([...distritos, distritoSearch.trim()])
+                          setDistritoSearch('')
+                          setShowDistritos(false)
+                        }} style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, backgroundColor: THEME.color.brandLight }}>
+                          <Ionicons name="add-circle" size={16} color={THEME.color.brand} />
+                          <Text style={{ ...THEME.font.bodySm, color: THEME.color.brand, fontWeight: '700' }}>Agregar &quot;{distritoSearch.trim()}&quot;</Text>
+                        </TouchableOpacity>
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+
+                <Text style={styles.label}>Precio desde (S/) — opcional</Text>
+                <View style={styles.inputWrap(focused === 'precio')}>
+                  <Ionicons name="cash-outline" size={18} color={focused === 'precio' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="Ej: 50" value={precio} onChangeText={setPrecio} keyboardType="number-pad" onFocus={() => setFocused('precio')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
+
+                <Text style={styles.label}>Experiencia (opcional)</Text>
+                <View style={styles.inputWrap(focused === 'experiencia')}>
+                  <Ionicons name="ribbon-outline" size={18} color={focused === 'experiencia' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="Ej: 5 años" value={experiencia} onChangeText={setExperiencia} onFocus={() => setFocused('experiencia')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
+
+                <Text style={styles.label}>Descripción (opcional)</Text>
+                <View style={[styles.inputWrap(focused === 'descripcion'), { alignItems: 'flex-start', minHeight: 96, paddingTop: THEME.space.md }]}>
+                  <TextInput placeholder="Describe tus servicios…" value={descripcion} onChangeText={setDescripcion} multiline numberOfLines={3} onFocus={() => setFocused('descripcion')} onBlur={() => setFocused(null)} style={[styles.inputField, { height: 72, textAlignVertical: 'top', paddingVertical: 0 }]} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
               </View>
-            )}
-            <TouchableOpacity onPress={() => setShowOficios(!showOficios)} style={styles.input}>
-              <Text style={{ color: COLORS.gray2 }}>{oficios.length === 0 ? 'Seleccionar oficio' : 'Agregar otro oficio'}</Text>
-            </TouchableOpacity>
-            {showOficios && (
-              <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 200, borderWidth: 1, borderColor: COLORS.border }}>
-                <ScrollView nestedScrollEnabled>
-                  {OFICIOS.filter(o => !oficios.includes(o)).map((o) => (
-                    <TouchableOpacity key={o} onPress={() => {
-                      if (oficios.length >= MAX_OFICIOS) {
-                        Alert.alert('Tope alcanzado', `Por ahora puedes registrar hasta ${MAX_OFICIOS} oficios. Si tienes más experiencia puedes agregar otros desde Mi cuenta.`)
-                        return
-                      }
-                      setOficios([...oficios, o])
-                      setShowOficios(false)
-                    }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                      <Text style={{ fontSize: 13, color: COLORS.dark }}>{o}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+            </FadeInUp>
+
+            <FadeInUp delay={180}>
+              <View style={{ flexDirection: 'row', gap: THEME.space.md, marginTop: THEME.space.xl }}>
+                <PressableScale onPress={() => setStep(1)} accessibilityLabel="Volver al paso 1" style={styles.secondaryBtn}>
+                  <Ionicons name="arrow-back" size={18} color={THEME.color.inkSoft} />
+                  <Text style={styles.secondaryBtnText}>Atrás</Text>
+                </PressableScale>
+                <PressableScale onPress={() => {
+                  if (oficios.length === 0) return Alert.alert('Error', 'Selecciona al menos un oficio')
+                  if (distritos.length === 0) return Alert.alert('Error', 'Selecciona al menos un distrito')
+                  setStep(3)
+                }} accessibilityLabel="Continuar al paso 3" style={[styles.primaryBtn, { flex: 1 }]}>
+                  <Text style={styles.primaryBtnText}>Siguiente</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                </PressableScale>
               </View>
-            )}
-
-            <Text style={styles.label}>Zonas de cobertura * {distritos.length > 0 ? `(${distritos.length}/${MAX_ZONAS})` : ''}</Text>
-            {distritos.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                {distritos.map((d, idx) => (
-                  <TouchableOpacity
-                    key={d}
-                    onPress={() => setDistritos(distritos.filter((_, i) => i !== idx))}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: idx === 0 ? '#1E3A5F' : '#EFF6FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: idx === 0 ? '#fff' : '#1E3A5F' }}>{d}</Text>
-                    <Ionicons name="close-circle" size={14} color={idx === 0 ? 'rgba(255,255,255,0.7)' : '#1E3A5F'} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-            <TouchableOpacity onPress={() => setShowDistritos(!showDistritos)} style={styles.input}>
-              <Text style={{ color: COLORS.gray2 }}>{distritos.length === 0 ? 'Seleccionar distrito' : 'Agregar otro distrito'}</Text>
-            </TouchableOpacity>
-            {showDistritos && (
-              <View style={{ backgroundColor: COLORS.white, borderRadius: 12, marginTop: -8, marginBottom: 12, maxHeight: 280, borderWidth: 1, borderColor: COLORS.border }}>
-                <TextInput
-                  placeholder="Escribe para buscar distrito..."
-                  placeholderTextColor={COLORS.gray2}
-                  value={distritoSearch}
-                  onChangeText={setDistritoSearch}
-                  style={{ padding: 12, fontSize: 14, color: COLORS.dark, borderBottomWidth: 1, borderBottomColor: COLORS.border }}
-                  autoFocus
-                />
-                <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-                  {DISTRITOS.filter(d => !distritos.includes(d) && (!distritoSearch || d.toLowerCase().includes(distritoSearch.toLowerCase()))).map((d) => (
-                    <TouchableOpacity key={d} onPress={() => {
-                      if (distritos.length >= MAX_ZONAS) {
-                        Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro. Puedes ajustarlos luego desde Mi cuenta.`)
-                        return
-                      }
-                      setDistritos([...distritos, d])
-                      setDistritoSearch('')
-                      setShowDistritos(false)
-                    }} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                      <Text style={{ fontSize: 13, color: COLORS.dark }}>{d}</Text>
-                    </TouchableOpacity>
-                  ))}
-                  {distritoSearch.trim() && !DISTRITOS.some(d => d.toLowerCase() === distritoSearch.toLowerCase()) && (
-                    <TouchableOpacity onPress={() => {
-                      if (distritos.length >= MAX_ZONAS) {
-                        Alert.alert('Tope alcanzado', `Hasta ${MAX_ZONAS} distritos en registro.`)
-                        return
-                      }
-                      setDistritos([...distritos, distritoSearch.trim()])
-                      setDistritoSearch('')
-                      setShowDistritos(false)
-                    }} style={{ padding: 12, backgroundColor: '#EFF6FF' }}>
-                      <Text style={{ fontSize: 13, color: '#2563EB', fontWeight: '700' }}>+ Agregar &quot;{distritoSearch.trim()}&quot;</Text>
-                    </TouchableOpacity>
-                  )}
-                </ScrollView>
-              </View>
-            )}
-
-            <Text style={styles.label}>Precio desde (S/) — opcional</Text>
-            <TextInput placeholder="Ej: 50" value={precio} onChangeText={setPrecio} keyboardType="number-pad" style={styles.input} placeholderTextColor={COLORS.gray2} />
-
-            <Text style={styles.label}>Experiencia (opcional)</Text>
-            <TextInput placeholder="Ej: 5 años" value={experiencia} onChangeText={setExperiencia} style={styles.input} placeholderTextColor={COLORS.gray2} />
-
-            <Text style={styles.label}>Descripción (opcional)</Text>
-            <TextInput placeholder="Describe tus servicios..." value={descripcion} onChangeText={setDescripcion} multiline numberOfLines={3} style={[styles.input, { height: 80, textAlignVertical: 'top' }]} placeholderTextColor={COLORS.gray2} />
-
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity onPress={() => setStep(1)} style={{ flex: 1, backgroundColor: COLORS.white, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
-                <Text style={{ color: COLORS.gray, fontWeight: '700', fontSize: 14 }}>← Atrás</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => {
-                if (oficios.length === 0) return Alert.alert('Error', 'Selecciona al menos un oficio')
-                if (distritos.length === 0) return Alert.alert('Error', 'Selecciona al menos un distrito')
-                setStep(3)
-              }} style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center' }}>
-                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 14 }}>Siguiente →</Text>
-              </TouchableOpacity>
-            </View>
+            </FadeInUp>
           </>
         )}
 
         {step === 3 && (
           <>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Verificación</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 16 }}>Paso 3 de 3 — Sube fotos de tu DNI</Text>
-
-            {/* Nota de confianza: por qué pedimos el DNI */}
-            <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, padding: 12, marginBottom: 16, flexDirection: 'row', gap: 10 }}>
-              <Ionicons name="lock-closed" size={18} color="#10B981" style={{ marginTop: 1 }} />
-              <Text style={{ flex: 1, fontSize: 12, color: '#065F46', lineHeight: 17 }}>
-                Tus fotos solo se usan para verificar tu identidad y darte el badge ✅ Verificado. Los clientes nunca las ven.
+            <FadeInUp delay={60}>
+              <Text style={{ ...THEME.font.h1, color: THEME.color.ink, marginBottom: THEME.space.xs }}>Verificación</Text>
+              <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginBottom: THEME.space.lg }}>
+                Sube fotos de tu DNI para validar tu identidad
               </Text>
-            </View>
 
-            <TouchableOpacity onPress={() => pickImage(setDniFront)} style={styles.photoBox} accessibilityLabel={dniFront ? 'Foto del DNI frente subida. Toca para cambiarla' : 'Subir foto del frente de tu DNI'}>
-              {dniFront ? (
-                <View style={{ alignItems: 'center' }}>
-                  <Ionicons name="checkmark-circle" size={32} color={COLORS.acc} />
-                  <Text style={{ color: COLORS.acc, fontWeight: '700', marginTop: 4 }}>DNI Frente ✓</Text>
-                </View>
-              ) : (
-                <View style={{ alignItems: 'center' }}>
-                  <Ionicons name="camera-outline" size={32} color={COLORS.gray2} />
-                  <Text style={{ color: COLORS.gray, fontWeight: '600', marginTop: 4 }}>DNI Frente</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+              {/* Nota de confianza: por qué pedimos el DNI */}
+              <View
+                style={{
+                  flexDirection: 'row', gap: THEME.space.md, alignItems: 'flex-start',
+                  backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg,
+                  padding: THEME.space.lg, marginBottom: THEME.space.xl,
+                }}
+              >
+                <Ionicons name="lock-closed" size={18} color={THEME.color.success} style={{ marginTop: 1 }} />
+                <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#065F46', lineHeight: 19 }}>
+                  Tus fotos solo se usan para verificar tu identidad y darte el badge ✅ Verificado. Los clientes nunca las ven.
+                </Text>
+              </View>
+            </FadeInUp>
 
-            <TouchableOpacity onPress={() => pickImage(setDniBack)} style={styles.photoBox} accessibilityLabel={dniBack ? 'Foto del DNI posterior subida. Toca para cambiarla' : 'Subir foto de la parte posterior de tu DNI'}>
-              {dniBack ? (
-                <View style={{ alignItems: 'center' }}>
-                  <Ionicons name="checkmark-circle" size={32} color={COLORS.acc} />
-                  <Text style={{ color: COLORS.acc, fontWeight: '700', marginTop: 4 }}>DNI Posterior ✓</Text>
-                </View>
-              ) : (
-                <View style={{ alignItems: 'center' }}>
-                  <Ionicons name="camera-outline" size={32} color={COLORS.gray2} />
-                  <Text style={{ color: COLORS.gray, fontWeight: '600', marginTop: 4 }}>DNI Posterior</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+            <FadeInUp delay={120}>
+              <PressableScale onPress={() => pickImage(setDniFront)} accessibilityLabel={dniFront ? 'Foto del DNI frente subida. Toca para cambiarla' : 'Subir foto del frente de tu DNI'} style={[styles.photoBox, dniFront ? styles.photoBoxDone : null]}>
+                {dniFront ? (
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={styles.photoCheck}>
+                      <Ionicons name="checkmark-circle" size={34} color={THEME.color.success} />
+                    </View>
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.success, marginTop: THEME.space.sm }}>DNI Frente listo</Text>
+                    <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>Toca para cambiar</Text>
+                  </View>
+                ) : (
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={styles.photoIcon}>
+                      <Ionicons name="camera-outline" size={28} color={THEME.color.brand} />
+                    </View>
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginTop: THEME.space.sm }}>DNI Frente</Text>
+                    <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 2 }}>Toca para subir</Text>
+                  </View>
+                )}
+              </PressableScale>
+            </FadeInUp>
 
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-              <TouchableOpacity onPress={() => setStep(2)} style={{ flex: 1, backgroundColor: COLORS.white, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
-                <Text style={{ color: COLORS.gray, fontWeight: '700', fontSize: 14 }}>← Atrás</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={submit} disabled={loading} style={{ flex: 1, backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, alignItems: 'center', opacity: loading ? 0.7 : 1 }}>
-                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 14 }}>{loading ? 'Creando tu cuenta...' : 'Crear mi cuenta ✓'}</Text>
-              </TouchableOpacity>
-            </View>
+            <FadeInUp delay={180}>
+              <PressableScale onPress={() => pickImage(setDniBack)} accessibilityLabel={dniBack ? 'Foto del DNI posterior subida. Toca para cambiarla' : 'Subir foto de la parte posterior de tu DNI'} style={[styles.photoBox, dniBack ? styles.photoBoxDone : null]}>
+                {dniBack ? (
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={styles.photoCheck}>
+                      <Ionicons name="checkmark-circle" size={34} color={THEME.color.success} />
+                    </View>
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.success, marginTop: THEME.space.sm }}>DNI Posterior listo</Text>
+                    <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>Toca para cambiar</Text>
+                  </View>
+                ) : (
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={styles.photoIcon}>
+                      <Ionicons name="camera-outline" size={28} color={THEME.color.brand} />
+                    </View>
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginTop: THEME.space.sm }}>DNI Posterior</Text>
+                    <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 2 }}>Toca para subir</Text>
+                  </View>
+                )}
+              </PressableScale>
+            </FadeInUp>
+
+            <FadeInUp delay={240}>
+              <View style={{ flexDirection: 'row', gap: THEME.space.md, marginTop: THEME.space.sm }}>
+                <PressableScale onPress={() => setStep(2)} accessibilityLabel="Volver al paso 2" style={styles.secondaryBtn}>
+                  <Ionicons name="arrow-back" size={18} color={THEME.color.inkSoft} />
+                  <Text style={styles.secondaryBtnText}>Atrás</Text>
+                </PressableScale>
+                <PressableScale onPress={submit} disabled={loading} accessibilityLabel="Crear mi cuenta" style={[styles.primaryBtn, { flex: 1 }]}>
+                  <Text style={styles.primaryBtnText}>{loading ? 'Creando tu cuenta…' : 'Crear mi cuenta'}</Text>
+                  {!loading && <Ionicons name="checkmark" size={18} color="#fff" />}
+                </PressableScale>
+              </View>
+            </FadeInUp>
           </>
         )}
       </View>
-      <View style={{ height: 40 }} />
     </ScrollView>
   )
 }
 
 const styles = {
-  label: { fontSize: 13, fontWeight: '700' as const, color: COLORS.dark, marginBottom: 6 },
-  input: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 14,
-    marginBottom: 16,
+  card: {
+    backgroundColor: THEME.color.surface,
+    borderRadius: THEME.radius.xl,
+    padding: THEME.space.xl,
+    ...THEME.shadow.md,
+  },
+  label: {
+    ...THEME.font.label,
+    color: THEME.color.inkSoft,
+    marginBottom: THEME.space.sm,
+  },
+  // Wrapper de input con borde brand 2px al enfocar
+  inputWrap: (active: boolean) => ({
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: THEME.space.md,
+    backgroundColor: active ? THEME.color.surface : THEME.color.surfaceAlt,
+    borderRadius: THEME.radius.lg,
+    borderWidth: 2,
+    borderColor: active ? THEME.color.brand : THEME.color.line,
+    paddingHorizontal: THEME.space.lg,
+    minHeight: 54,
+    marginBottom: THEME.space.lg,
+  }),
+  inputField: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: THEME.color.ink,
+    paddingVertical: THEME.space.md,
+  },
+  chip: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: THEME.space.xs,
+    borderRadius: THEME.radius.full,
+    paddingHorizontal: THEME.space.md,
+    paddingVertical: 7,
+  },
+  dropdown: {
+    backgroundColor: THEME.color.surface,
+    borderRadius: THEME.radius.lg,
+    marginTop: -THEME.space.sm,
+    marginBottom: THEME.space.md,
+    maxHeight: 280,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.dark,
+    borderColor: THEME.color.line,
+    overflow: 'hidden' as const,
+    ...THEME.shadow.sm,
+  },
+  dropdownItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: THEME.space.sm,
+    paddingHorizontal: THEME.space.lg,
+    paddingVertical: THEME.space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.color.lineSoft,
   },
   photoBox: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 30,
-    marginBottom: 12,
+    backgroundColor: THEME.color.surface,
+    borderRadius: THEME.radius.xl,
+    paddingVertical: THEME.space.xxxl,
+    paddingHorizontal: THEME.space.lg,
+    marginBottom: THEME.space.md,
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: THEME.color.line,
     borderStyle: 'dashed' as const,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
+  },
+  photoBoxDone: {
+    borderStyle: 'solid' as const,
+    borderColor: THEME.color.success,
+    backgroundColor: THEME.color.successBg,
+  },
+  photoIcon: {
+    width: 56, height: 56, borderRadius: THEME.radius.lg,
+    backgroundColor: THEME.color.brandLight,
+    alignItems: 'center' as const, justifyContent: 'center' as const,
+  },
+  photoCheck: {
+    width: 56, height: 56, borderRadius: THEME.radius.lg,
+    backgroundColor: '#fff',
+    alignItems: 'center' as const, justifyContent: 'center' as const,
+    ...THEME.shadow.sm,
+  },
+  primaryBtn: {
+    flexDirection: 'row' as const,
+    gap: THEME.space.sm,
+    backgroundColor: THEME.color.brand,
+    borderRadius: THEME.radius.lg,
+    height: 52,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    ...THEME.shadow.brand,
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800' as const,
+    letterSpacing: 0.2,
+  },
+  secondaryBtn: {
+    flexDirection: 'row' as const,
+    gap: THEME.space.xs,
+    backgroundColor: THEME.color.surface,
+    borderRadius: THEME.radius.lg,
+    height: 52,
+    paddingHorizontal: THEME.space.xl,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderWidth: 1,
+    borderColor: THEME.color.line,
+  },
+  secondaryBtnText: {
+    color: THEME.color.inkSoft,
+    fontSize: 15,
+    fontWeight: '700' as const,
   },
 }

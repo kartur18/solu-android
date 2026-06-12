@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Alert, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from '../../src/lib/constants'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { AvailabilityPicker } from '../../src/components/AvailabilityPicker'
+import { THEME } from '../../src/lib/theme'
+import { FadeInUp, PressableScale, haptics } from '../../src/components/ui/Motion'
 
 export default function AgendarScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -25,16 +26,21 @@ export default function AgendarScreen() {
 
   if (!id || isNaN(techId)) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
-        <Ionicons name="search-outline" size={48} color={COLORS.gray2} />
-        <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginTop: 12 }}>No encontramos a este técnico</Text>
-        <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 6, textAlign: 'center' }}>Vuelve atrás y elige otro técnico disponible.</Text>
-        <TouchableOpacity
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xxl, backgroundColor: THEME.color.surfaceAlt }}>
+        <View style={{ width: 72, height: 72, borderRadius: THEME.radius.full, backgroundColor: THEME.color.surfaceSunken, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+          <Ionicons name="search-outline" size={32} color={THEME.color.inkMuted} />
+        </View>
+        <Text style={{ ...THEME.font.h2, color: THEME.color.ink, textAlign: 'center' }}>No encontramos a este técnico</Text>
+        <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center', lineHeight: 20 }}>
+          Vuelve atrás y elige otro técnico disponible.
+        </Text>
+        <PressableScale
           onPress={() => router.back()}
-          style={{ marginTop: 20, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center' }}
+          accessibilityLabel="Volver"
+          style={{ marginTop: THEME.space.xl, height: 52, paddingHorizontal: THEME.space.xxl, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.brand }}
         >
-          <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>Volver</Text>
-        </TouchableOpacity>
+          <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Volver</Text>
+        </PressableScale>
       </View>
     )
   }
@@ -59,6 +65,7 @@ export default function AgendarScreen() {
       })
       const data = await res.json()
       if (data.success) {
+        haptics.success()
         setBooked(true)
       } else {
         Alert.alert('No se pudo agendar', data.error || 'Ese horario ya no está disponible. Elige otro e intenta de nuevo.')
@@ -71,74 +78,108 @@ export default function AgendarScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.light }}>
-      <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Agendar servicio</Text>
-        <Text style={{ fontSize: 13, color: COLORS.gray, marginBottom: 20 }}>Elige el mejor horario para ti</Text>
-
-        {/* Step 1: Select time */}
-        <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 20 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: selectedTime ? COLORS.acc : COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
-              {selectedTime ? <Ionicons name="checkmark" size={14} color={COLORS.white} /> : <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 12 }}>1</Text>}
-            </View>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark }}>Selecciona fecha y hora</Text>
+    <ScrollView style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} contentContainerStyle={{ paddingBottom: 40 }}>
+      <View style={{ padding: THEME.space.xl }}>
+        {/* Encabezado */}
+        <FadeInUp delay={0}>
+          <View style={{ marginBottom: THEME.space.xl }}>
+            <Text style={{ ...THEME.font.display, color: THEME.color.ink }}>Agendar servicio</Text>
+            <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.xs }}>Elige el mejor horario para ti</Text>
           </View>
-          <AvailabilityPicker tecnicoId={parseInt(id)} onSelect={handleTimeSelect} />
-        </View>
+        </FadeInUp>
 
-        {/* Step 2: Payment method (only after time selected) */}
-        {selectedTime && !booked && (
-          <View style={{ marginBottom: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.pri, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 12 }}>2</Text>
+        {/* Paso 1: seleccionar horario */}
+        <FadeInUp delay={60}>
+          <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, marginBottom: THEME.space.xl, ...THEME.shadow.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md }}>
+              <View style={{ width: 28, height: 28, borderRadius: THEME.radius.full, backgroundColor: selectedTime ? THEME.color.success : THEME.color.brand, alignItems: 'center', justifyContent: 'center' }}>
+                {selectedTime ? <Ionicons name="checkmark" size={16} color={THEME.color.white} /> : <Text style={{ ...THEME.font.label, fontWeight: '800', color: THEME.color.white }}>1</Text>}
               </View>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.dark }}>Método de pago</Text>
+              <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Selecciona fecha y hora</Text>
             </View>
-            <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' }}>
-              <Text style={{ fontSize: 28, marginBottom: 8 }}>💳</Text>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Pagas al técnico directo</Text>
-              <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginBottom: 16 }}>
-                Desde S/{precio} — le pagas con Yape, Plin, efectivo o tarjeta cuando llegue. SOLU no cobra comisión al cliente.
-              </Text>
-              <TouchableOpacity
-                onPress={confirmBooking}
-                disabled={booking}
-                accessibilityLabel="Confirmar cita"
-                style={{ backgroundColor: COLORS.pri, borderRadius: 14, padding: 16, minHeight: 52, alignItems: 'center', justifyContent: 'center', width: '100%', opacity: booking ? 0.7 : 1 }}
-              >
-                {booking ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <ActivityIndicator color={COLORS.white} />
-                    <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>Agendando...</Text>
-                  </View>
-                ) : (
-                  <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 15 }}>Confirmar cita</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            <AvailabilityPicker tecnicoId={parseInt(id)} onSelect={handleTimeSelect} />
           </View>
+        </FadeInUp>
+
+        {/* Paso 2: método de pago (tras elegir horario) */}
+        {selectedTime && !booked && (
+          <FadeInUp delay={0}>
+            <View style={{ marginBottom: THEME.space.xl }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md }}>
+                <View style={{ width: 28, height: 28, borderRadius: THEME.radius.full, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ ...THEME.font.label, fontWeight: '800', color: THEME.color.white }}>2</Text>
+                </View>
+                <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Confirma tu cita</Text>
+              </View>
+
+              {/* Resumen de la selección */}
+              <View style={{ backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
+                <View style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="calendar" size={22} color={THEME.color.white} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ ...THEME.font.label, color: THEME.color.inkSoft }}>Tu horario</Text>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginTop: 1 }}>{selectedTime.fecha}</Text>
+                  <Text style={{ ...THEME.font.bodySm, color: THEME.color.brandDark }}>{selectedTime.horaInicio} a {selectedTime.horaFin}</Text>
+                </View>
+              </View>
+
+              {/* Pago directo */}
+              <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.xl, alignItems: 'center', ...THEME.shadow.sm }}>
+                <View style={{ width: 56, height: 56, borderRadius: THEME.radius.full, backgroundColor: THEME.color.infoBg, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.md }}>
+                  <Ionicons name="wallet" size={26} color={THEME.color.info} />
+                </View>
+                <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.xs }}>Pagas al técnico directo</Text>
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, textAlign: 'center', lineHeight: 19, marginBottom: THEME.space.lg }}>
+                  Desde S/{precio} — le pagas con Yape, Plin, efectivo o tarjeta cuando llegue. No pagas comisión por agendar.
+                </Text>
+                <PressableScale
+                  onPress={confirmBooking}
+                  disabled={booking}
+                  accessibilityLabel="Confirmar cita"
+                  style={{ width: '100%', height: 52, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.brand }}
+                >
+                  {booking ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+                      <ActivityIndicator color={THEME.color.white} />
+                      <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Agendando...</Text>
+                    </View>
+                  ) : (
+                    <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Confirmar cita</Text>
+                  )}
+                </PressableScale>
+              </View>
+            </View>
+          </FadeInUp>
         )}
 
-        {/* Success state */}
+        {/* Estado de éxito */}
         {booked && (
-          <View style={{ backgroundColor: '#F0FDF4', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#BBF7D0', alignItems: 'center' }}>
-            <Ionicons name="checkmark-circle" size={48} color="#10B981" />
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>¡Cita confirmada!</Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray, textAlign: 'center', marginTop: 4 }}>
-              {selectedTime?.fecha} de {selectedTime?.horaInicio} a {selectedTime?.horaFin}
-            </Text>
-            <Text style={{ fontSize: 12, color: '#047857', textAlign: 'center', marginTop: 10, lineHeight: 18 }}>
-              Pagarás directo al técnico cuando llegue: Yape, Plin, efectivo o tarjeta.
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ marginTop: 16, backgroundColor: COLORS.white, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center', borderWidth: 1, borderColor: '#BBF7D0' }}
-            >
-              <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 14 }}>Volver</Text>
-            </TouchableOpacity>
-          </View>
+          <FadeInUp delay={0}>
+            <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.xxl, alignItems: 'center', ...THEME.shadow.md }}>
+              <View style={{ width: 80, height: 80, borderRadius: THEME.radius.full, backgroundColor: THEME.color.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.md }}>
+                <Ionicons name="checkmark-circle" size={52} color={THEME.color.success} />
+              </View>
+              <Text style={{ ...THEME.font.h1, color: THEME.color.ink }}>¡Cita confirmada!</Text>
+              <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, textAlign: 'center', marginTop: THEME.space.xs }}>
+                {selectedTime?.fecha} de {selectedTime?.horaInicio} a {selectedTime?.horaFin}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: THEME.space.sm, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg, padding: THEME.space.md, marginTop: THEME.space.lg }}>
+                <Ionicons name="wallet-outline" size={18} color={THEME.color.success} />
+                <Text style={{ ...THEME.font.bodySm, color: '#15803D', flex: 1, lineHeight: 19 }}>
+                  Pagarás directo al técnico cuando llegue: Yape, Plin, efectivo o tarjeta.
+                </Text>
+              </View>
+              <PressableScale
+                onPress={() => router.back()}
+                accessibilityLabel="Volver"
+                style={{ marginTop: THEME.space.xl, height: 52, paddingHorizontal: THEME.space.xxxl, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.xs }}
+              >
+                <Ionicons name="home" size={18} color={THEME.color.ink} />
+                <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Volver al inicio</Text>
+              </PressableScale>
+            </View>
+          </FadeInUp>
         )}
       </View>
     </ScrollView>

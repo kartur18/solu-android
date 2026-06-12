@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native'
+import { View, Text, ScrollView, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from '../../src/lib/constants'
+import { THEME } from '../../src/lib/theme'
+import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 
 export default function MiCuentaScreen() {
   const router = useRouter()
@@ -10,55 +11,61 @@ export default function MiCuentaScreen() {
 
   if (!selected) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', padding: 24 }}>
+      <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt, justifyContent: 'center', padding: THEME.space.xxl }}>
         {/* Header */}
-        <View style={{ alignItems: 'center', marginBottom: 32 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <Ionicons name="person-circle" size={36} color="#fff" />
+        <FadeInUp delay={0}>
+          <View style={{ alignItems: 'center', marginBottom: THEME.space.xxxl }}>
+            <View style={{ width: 80, height: 80, borderRadius: THEME.radius.xxl, backgroundColor: THEME.color.navy, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg, ...THEME.shadow.lg }}>
+              <Ionicons name="person-circle" size={40} color={THEME.color.white} />
+            </View>
+            <Text style={{ ...THEME.font.h1, color: THEME.color.ink }}>Mi cuenta</Text>
+            <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.xs }}>¿Cómo quieres ingresar?</Text>
           </View>
-          <Text style={{ fontSize: 24, fontWeight: '900', color: COLORS.dark }}>Mi Cuenta</Text>
-          <Text style={{ fontSize: 13, color: COLORS.gray, marginTop: 4 }}>¿Cómo quieres ingresar?</Text>
-        </View>
+        </FadeInUp>
 
         {/* Client option */}
-        <TouchableOpacity
-          onPress={() => setSelected('cliente')}
-          activeOpacity={0.85}
-          style={{
-            backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 12,
-            flexDirection: 'row', alignItems: 'center', gap: 16,
-            borderWidth: 2, borderColor: '#E2E8F0', elevation: 2,
-          }}
-        >
-          <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: COLORS.pri + '15', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="home" size={28} color={COLORS.pri} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.dark }}>Soy cliente</Text>
-            <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 2 }}>Necesito un técnico para mi hogar</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray2} />
-        </TouchableOpacity>
+        <FadeInUp delay={60}>
+          <PressableScale
+            onPress={() => setSelected('cliente')}
+            accessibilityLabel="Ingresar como cliente"
+            style={{
+              backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.xl, marginBottom: THEME.space.md,
+              flexDirection: 'row', alignItems: 'center', gap: THEME.space.lg,
+              ...THEME.shadow.md,
+            }}
+          >
+            <View style={{ width: 56, height: 56, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="home" size={28} color={THEME.color.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Soy cliente</Text>
+              <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 2 }}>Necesito un técnico para mi hogar</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={THEME.color.inkMuted} />
+          </PressableScale>
+        </FadeInUp>
 
         {/* Technician option */}
-        <TouchableOpacity
-          onPress={() => setSelected('tecnico')}
-          activeOpacity={0.85}
-          style={{
-            backgroundColor: '#1E3A5F', borderRadius: 16, padding: 20,
-            flexDirection: 'row', alignItems: 'center', gap: 16,
-            elevation: 4,
-          }}
-        >
-          <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="construct" size={28} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: '#fff' }}>Soy técnico</Text>
-            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Quiero recibir clientes y crecer</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
-        </TouchableOpacity>
+        <FadeInUp delay={120}>
+          <PressableScale
+            onPress={() => setSelected('tecnico')}
+            accessibilityLabel="Ingresar como técnico"
+            style={{
+              backgroundColor: THEME.color.navy, borderRadius: THEME.radius.xl, padding: THEME.space.xl,
+              flexDirection: 'row', alignItems: 'center', gap: THEME.space.lg,
+              ...THEME.shadow.lg,
+            }}
+          >
+            <View style={{ width: 56, height: 56, borderRadius: THEME.radius.lg, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="construct" size={28} color={THEME.color.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Soy técnico</Text>
+              <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Quiero recibir clientes y crecer</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+          </PressableScale>
+        </FadeInUp>
       </View>
     )
   }
@@ -75,13 +82,13 @@ function ClienteRedirect({ router, onBack }: { router: any; onBack: () => void }
   const ServiciosScreen = require('./servicios').default
   return (
     <View style={{ flex: 1 }}>
-      <TouchableOpacity
+      <PressableScale
         onPress={onBack}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
+        accessibilityLabel="Volver"
+        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: THEME.space.lg, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: THEME.radius.full, padding: THEME.space.sm, ...THEME.shadow.md }}
       >
-        <Ionicons name="arrow-back" size={20} color="#1E3A5F" />
-      </TouchableOpacity>
+        <Ionicons name="arrow-back" size={20} color={THEME.color.navy} />
+      </PressableScale>
       <ServiciosScreen />
     </View>
   )
@@ -91,13 +98,13 @@ function TecnicoRedirect({ router, onBack }: { router: any; onBack: () => void }
   const CuentaScreen = require('./cuenta').default
   return (
     <View style={{ flex: 1 }}>
-      <TouchableOpacity
+      <PressableScale
         onPress={onBack}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: 16, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8, elevation: 3 }}
+        accessibilityLabel="Volver"
+        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: THEME.space.lg, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: THEME.radius.full, padding: THEME.space.sm, ...THEME.shadow.md }}
       >
-        <Ionicons name="arrow-back" size={20} color="#1E3A5F" />
-      </TouchableOpacity>
+        <Ionicons name="arrow-back" size={20} color={THEME.color.navy} />
+      </PressableScale>
       <CuentaScreen />
     </View>
   )

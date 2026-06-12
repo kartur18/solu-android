@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Linking, RefreshControl, Alert, Share } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Linking, RefreshControl, Alert, Share } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS, waLink, SUPPORT_PHONE } from '../../src/lib/constants'
+import { waLink, SUPPORT_PHONE } from '../../src/lib/constants'
+import { THEME } from '../../src/lib/theme'
+import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/components/ui/Motion'
 import { supabase } from '../../src/lib/supabase'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
@@ -16,6 +18,12 @@ const STEPS = [
   { key: 'En proceso', label: 'Trabajo en proceso', icon: 'hammer' as const, desc: 'El técnico está trabajando' },
   { key: 'Completado', label: 'Servicio completado', icon: 'checkmark-circle' as const, desc: '¡Servicio finalizado!' },
 ]
+
+const URGENCIA_COLOR: Record<string, string> = {
+  emergencia: THEME.color.danger,
+  urgente: THEME.color.warning,
+  normal: THEME.color.success,
+}
 
 export default function TrackingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
@@ -112,41 +120,62 @@ export default function TrackingScreen() {
   }, [service?.id])
 
   if (loading) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.light }}>
-      <ActivityIndicator size="large" color={COLORS.pri} />
-      <Text style={{ color: COLORS.gray, marginTop: 12, fontSize: 13 }}>Cargando tu servicio...</Text>
+    <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
+      <View style={{ padding: THEME.space.xl, gap: THEME.space.lg }}>
+        <Shimmer style={{ height: 92, borderRadius: THEME.radius.xl }} />
+        <Shimmer style={{ height: 120, borderRadius: THEME.radius.xl }} />
+        <View style={{ gap: THEME.space.md, marginTop: THEME.space.sm }}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={{ flexDirection: 'row', gap: THEME.space.md, alignItems: 'center' }}>
+              <Shimmer style={{ width: 36, height: 36, borderRadius: THEME.radius.full }} />
+              <Shimmer style={{ flex: 1, height: 18, borderRadius: THEME.radius.sm }} />
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   )
   if (loadError && !service) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
-      <Ionicons name="cloud-offline-outline" size={48} color={COLORS.gray2} />
-      <Text style={{ color: COLORS.dark, marginTop: 12, fontSize: 16, fontWeight: '800' }}>No pudimos cargar tu servicio</Text>
-      <Text style={{ color: COLORS.gray, marginTop: 6, fontSize: 13, textAlign: 'center' }}>Revisa tu conexión a internet e intenta de nuevo.</Text>
-      <TouchableOpacity
-        onPress={() => { setLoading(true); loadData().finally(() => setLoading(false)) }}
-        style={{ marginTop: 20, backgroundColor: COLORS.pri, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center' }}
-      >
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Reintentar</Text>
-      </TouchableOpacity>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xxl, backgroundColor: THEME.color.surfaceAlt }}>
+      <FadeInUp style={{ alignItems: 'center' }}>
+        <View style={{ width: 80, height: 80, borderRadius: THEME.radius.full, backgroundColor: THEME.color.surfaceSunken, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+          <Ionicons name="cloud-offline-outline" size={40} color={THEME.color.inkMuted} />
+        </View>
+        <Text style={{ ...THEME.font.h2, color: THEME.color.ink, textAlign: 'center' }}>No pudimos cargar tu servicio</Text>
+        <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center' }}>Revisa tu conexión a internet e intenta de nuevo.</Text>
+        <PressableScale
+          onPress={() => { setLoading(true); loadData().finally(() => setLoading(false)) }}
+          accessibilityLabel="Reintentar"
+          style={{ marginTop: THEME.space.xl, height: 52, paddingHorizontal: THEME.space.xxxl, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.brand }}
+        >
+          <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Reintentar</Text>
+        </PressableScale>
+      </FadeInUp>
     </View>
   )
   if (!service) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: COLORS.light }}>
-      <Ionicons name="search-outline" size={48} color={COLORS.gray2} />
-      <Text style={{ color: COLORS.dark, marginTop: 12, fontSize: 16, fontWeight: '800' }}>No encontramos ese código</Text>
-      <Text style={{ color: COLORS.gray, marginTop: 6, fontSize: 13, textAlign: 'center' }}>Verifica que el código sea correcto, por ejemplo: SOLU-AB12CD</Text>
-      <TouchableOpacity
-        onPress={() => router.back()}
-        style={{ marginTop: 20, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14, minHeight: 48, justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border }}
-      >
-        <Text style={{ color: COLORS.dark, fontWeight: '700', fontSize: 14 }}>Volver</Text>
-      </TouchableOpacity>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xxl, backgroundColor: THEME.color.surfaceAlt }}>
+      <FadeInUp style={{ alignItems: 'center' }}>
+        <View style={{ width: 80, height: 80, borderRadius: THEME.radius.full, backgroundColor: THEME.color.surfaceSunken, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+          <Ionicons name="search-outline" size={40} color={THEME.color.inkMuted} />
+        </View>
+        <Text style={{ ...THEME.font.h2, color: THEME.color.ink, textAlign: 'center' }}>No encontramos ese código</Text>
+        <Text style={{ ...THEME.font.body, color: THEME.color.inkSoft, marginTop: THEME.space.sm, textAlign: 'center' }}>Verifica que el código sea correcto, por ejemplo: SOLU-AB12CD</Text>
+        <PressableScale
+          onPress={() => router.back()}
+          accessibilityLabel="Volver"
+          style={{ marginTop: THEME.space.xl, height: 52, paddingHorizontal: THEME.space.xxxl, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.sm }}
+        >
+          <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>Volver</Text>
+        </PressableScale>
+      </FadeInUp>
     </View>
   )
 
   const currentIdx = STEPS.findIndex(s => s.key === service.estado)
   const isCompleted = service.estado === 'Completado'
   const canCancel = service.estado === 'Nuevo' || service.estado === 'Asignado'
+  const enCamino = service.estado === 'En camino'
 
   async function handleCancel() {
     const snapshot = service
@@ -177,6 +206,7 @@ export default function TrackingScreen() {
                 leido: false,
               }).then(() => {})
             }
+            haptics.warning()
             setService({ ...snapshot, estado: 'Cancelado' })
           },
         },
@@ -194,203 +224,242 @@ export default function TrackingScreen() {
     } catch {}
   }
 
+  const urgenciaColor = service.urgencia ? (URGENCIA_COLOR[service.urgencia] ?? THEME.color.inkSoft) : THEME.color.inkMuted
+
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.light }}>
+    <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
     <OfflineBanner />
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.pri]} tintColor={COLORS.pri} />}>
-      {/* Header */}
-      <View style={{ backgroundColor: COLORS.white, padding: 20, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-        <Text style={{ fontSize: 12, color: COLORS.gray }}>Código de seguimiento</Text>
-        <Text style={{ fontSize: 24, fontWeight: '900', color: COLORS.pri }}>{service.codigo}</Text>
-        <View style={{ flexDirection: 'row', gap: 16, marginTop: 12 }}>
-          <View>
-            <Text style={{ fontSize: 11, color: COLORS.gray2 }}>Servicio</Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{service.servicio}</Text>
-          </View>
-          <View>
-            <Text style={{ fontSize: 11, color: COLORS.gray2 }}>Distrito</Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>{service.distrito}</Text>
-          </View>
-          <View>
-            <Text style={{ fontSize: 11, color: COLORS.gray2 }}>Urgencia</Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: service.urgencia === 'emergencia' ? '#EF4444' : service.urgencia === 'urgente' ? '#F59E0B' : '#10B981' }}>{service.urgencia ? service.urgencia.charAt(0).toUpperCase() + service.urgencia.slice(1) : '—'}</Text>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[THEME.color.brand]} tintColor={THEME.color.brand} />}>
+      {/* Header oscuro premium */}
+      <FadeInUp>
+        <View style={{ backgroundColor: THEME.color.navy, paddingHorizontal: THEME.space.xl, paddingTop: THEME.space.xxxl, paddingBottom: THEME.space.xxl, borderBottomLeftRadius: THEME.radius.xxl, borderBottomRightRadius: THEME.radius.xxl }}>
+          <Text style={{ ...THEME.font.label, color: THEME.color.inkMuted, textTransform: 'uppercase', letterSpacing: 0.8 }}>Código de seguimiento</Text>
+          <Text style={{ ...THEME.font.display, color: THEME.color.white, marginTop: 2 }}>{service.codigo}</Text>
+
+          {enCamino && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginTop: THEME.space.md, alignSelf: 'flex-start', backgroundColor: 'rgba(22,163,74,0.18)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: 6 }}>
+              <PulseDot color={THEME.color.success} size={9} />
+              <Text style={{ ...THEME.font.label, fontWeight: '700', color: '#86EFAC' }}>Técnico en camino</Text>
+            </View>
+          )}
+
+          <View style={{ flexDirection: 'row', gap: THEME.space.xxl, marginTop: THEME.space.lg }}>
+            <View>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>Servicio</Text>
+              <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: THEME.color.white, marginTop: 2 }}>{service.servicio}</Text>
+            </View>
+            <View>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>Distrito</Text>
+              <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: THEME.color.white, marginTop: 2 }}>{service.distrito}</Text>
+            </View>
+            <View>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>Urgencia</Text>
+              <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: urgenciaColor, marginTop: 2 }}>{service.urgencia ? service.urgencia.charAt(0).toUpperCase() + service.urgencia.slice(1) : '—'}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </FadeInUp>
 
       {/* Live GPS map (solo cuando tecnico en camino y tiene coords) */}
       {service.estado === 'En camino' && service.tecnico_lat != null && service.tecnico_lng != null ? (
-        <View style={{ marginTop: 16 }}>
-          <LiveTechMap
-            lat={service.tecnico_lat}
-            lng={service.tecnico_lng}
-            updatedAt={service.tecnico_gps_updated_at}
-            techNombre={tech?.nombre}
-          />
-        </View>
+        <FadeInUp delay={60}>
+          <View style={{ marginHorizontal: THEME.space.lg, marginTop: THEME.space.lg, borderRadius: THEME.radius.xl, overflow: 'hidden', ...THEME.shadow.md }}>
+            <LiveTechMap
+              lat={service.tecnico_lat}
+              lng={service.tecnico_lng}
+              updatedAt={service.tecnico_gps_updated_at}
+              techNombre={tech?.nombre}
+            />
+          </View>
+        </FadeInUp>
       ) : null}
 
       {/* Assigned technician card */}
       {tech && (
-        <View style={{ margin: 16, marginBottom: 0, backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray, marginBottom: 10 }}>Tu técnico asignado</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#1E3A5F', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="person" size={22} color="#fff" />
+        <FadeInUp delay={120}>
+          <View style={{ marginHorizontal: THEME.space.lg, marginTop: THEME.space.lg, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, ...THEME.shadow.md }}>
+            <Text style={{ ...THEME.font.label, color: THEME.color.inkMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: THEME.space.md }}>Tu técnico asignado</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
+              <View style={{ width: 52, height: 52, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.navy, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="person" size={24} color={THEME.color.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>{tech.nombre}</Text>
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 1 }}>{tech.oficio}</Text>
+                {tech.calificacion > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <Ionicons name="star" size={13} color={THEME.color.warning} />
+                    <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>{tech.calificacion.toFixed(1)}</Text>
+                  </View>
+                )}
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }}>{tech.nombre}</Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray }}>{tech.oficio}</Text>
-              {tech.calificacion > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                  <Ionicons name="star" size={12} color="#F59E0B" />
-                  <Text style={{ fontSize: 11, color: COLORS.gray }}>{tech.calificacion.toFixed(1)}</Text>
-                </View>
-              )}
+            <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.lg }}>
+              <PressableScale
+                onPress={() => router.push({ pathname: '/chat-pedido/[code]', params: { code: service.codigo, as: 'cliente' } })}
+                accessibilityLabel="Abrir chat interno con el técnico"
+                style={{
+                  flex: 1, height: 48, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.xs,
+                  ...THEME.shadow.brand,
+                }}
+              >
+                <Ionicons name="chatbubbles" size={17} color={THEME.color.white} />
+                <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Chat interno</Text>
+              </PressableScale>
+              <PressableScale
+                onPress={() => {
+                  const msg = `Hola ${tech.nombre}, soy ${service.nombre}. Tengo una solicitud de ${service.servicio} en SOLU (código: ${service.codigo}).`
+                  Linking.openURL(`https://wa.me/51${tech.whatsapp}?text=${encodeURIComponent(msg)}`)
+                }}
+                accessibilityLabel="Escribir al técnico por WhatsApp"
+                style={{
+                  width: 48, height: 48, backgroundColor: '#25D366', borderRadius: THEME.radius.lg,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="logo-whatsapp" size={22} color={THEME.color.white} />
+              </PressableScale>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-            <TouchableOpacity
-              onPress={() => router.push({ pathname: '/chat-pedido/[code]', params: { code: service.codigo, as: 'cliente' } })}
-              style={{
-                flex: 1, backgroundColor: COLORS.pri, borderRadius: 12, padding: 12,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-              }}
-            >
-              <Ionicons name="chatbubbles" size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Chat interno</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                const msg = `Hola ${tech.nombre}, soy ${service.nombre}. Tengo una solicitud de ${service.servicio} en SOLU (código: ${service.codigo}).`
-                Linking.openURL(`https://wa.me/51${tech.whatsapp}?text=${encodeURIComponent(msg)}`)
-              }}
-              style={{
-                flex: 1, backgroundColor: '#25D366', borderRadius: 12, padding: 12,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-              }}
-            >
-              <Ionicons name="logo-whatsapp" size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>WhatsApp</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        </FadeInUp>
       )}
 
       {/* Timeline */}
-      <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.dark, marginBottom: 20 }}>Estado del servicio</Text>
-        {STEPS.map((step, i) => {
-          const done = i <= currentIdx
-          const active = i === currentIdx
-          return (
-            <View key={step.key} style={{ flexDirection: 'row', gap: 14 }}>
-              <View style={{ alignItems: 'center' }}>
-                <View style={{
-                  width: 36, height: 36, borderRadius: 18,
-                  backgroundColor: done ? COLORS.pri : COLORS.border,
-                  alignItems: 'center', justifyContent: 'center',
-                  borderWidth: active ? 3 : 0, borderColor: COLORS.priLight,
-                }}>
-                  <Ionicons name={step.icon} size={16} color={done ? COLORS.white : COLORS.gray2} />
+      <FadeInUp delay={180}>
+        <View style={{ paddingHorizontal: THEME.space.xl, paddingTop: THEME.space.xxl }}>
+          <Text style={{ ...THEME.font.h2, color: THEME.color.ink, marginBottom: THEME.space.xl }}>Estado del servicio</Text>
+          {STEPS.map((step, i) => {
+            const done = i <= currentIdx
+            const active = i === currentIdx
+            return (
+              <View key={step.key} style={{ flexDirection: 'row', gap: THEME.space.md }}>
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{
+                    width: 36, height: 36, borderRadius: THEME.radius.full,
+                    backgroundColor: done ? THEME.color.brand : THEME.color.surfaceSunken,
+                    alignItems: 'center', justifyContent: 'center',
+                    borderWidth: active ? 4 : 0, borderColor: THEME.color.brandSoft,
+                    ...(active ? THEME.shadow.brand : {}),
+                  }}>
+                    {active ? (
+                      <PulseDot color={THEME.color.white} size={9} />
+                    ) : (
+                      <Ionicons name={step.icon} size={16} color={done ? THEME.color.white : THEME.color.inkMuted} />
+                    )}
+                  </View>
+                  {i < STEPS.length - 1 && (
+                    <View style={{ width: 3, height: 40, borderRadius: 2, backgroundColor: i < currentIdx ? THEME.color.brand : THEME.color.line }} />
+                  )}
                 </View>
-                {i < STEPS.length - 1 && (
-                  <View style={{ width: 2, height: 40, backgroundColor: i < currentIdx ? COLORS.pri : COLORS.border }} />
-                )}
+                <View style={{ flex: 1, paddingTop: 6, paddingBottom: THEME.space.md }}>
+                  <Text style={{ ...THEME.font.body, fontWeight: active ? '800' : '600', color: done ? THEME.color.ink : THEME.color.inkMuted }}>
+                    {step.label}
+                  </Text>
+                  <Text style={{ ...THEME.font.caption, color: active ? THEME.color.brand : (done ? THEME.color.inkSoft : THEME.color.inkMuted), marginTop: 3 }}>
+                    {active ? 'Estado actual' : step.desc}
+                  </Text>
+                </View>
               </View>
-              <View style={{ flex: 1, paddingTop: 4, paddingBottom: 12 }}>
-                <Text style={{ fontSize: 14, fontWeight: active ? '800' : '600', color: done ? COLORS.dark : COLORS.gray2 }}>
-                  {step.label}
-                </Text>
-                <Text style={{ fontSize: 11, color: done ? COLORS.gray : COLORS.gray2, marginTop: 2 }}>
-                  {active ? 'Estado actual' : step.desc}
-                </Text>
-              </View>
-            </View>
-          )
-        })}
-      </View>
+            )
+          })}
+        </View>
+      </FadeInUp>
 
       {service.descripcion && (
-        <View style={{ paddingHorizontal: 20 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 8 }}>Descripción</Text>
-          <View style={{ backgroundColor: COLORS.white, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: COLORS.border }}>
-            <Text style={{ fontSize: 13, color: COLORS.gray, lineHeight: 20 }}>{service.descripcion}</Text>
+        <FadeInUp delay={240}>
+          <View style={{ paddingHorizontal: THEME.space.xl, marginTop: THEME.space.sm }}>
+            <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.sm }}>Descripción</Text>
+            <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg, ...THEME.shadow.sm }}>
+              <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, lineHeight: 20 }}>{service.descripcion}</Text>
+            </View>
           </View>
-        </View>
+        </FadeInUp>
       )}
 
       {/* Rate service when completed */}
       {isCompleted && (
-        <View style={{ padding: 20, gap: 10 }}>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/calificar/[code]', params: { code: service.codigo } })}
-            style={{
-              backgroundColor: '#F59E0B', borderRadius: 14, padding: 16,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
-          >
-            <Ionicons name="star" size={20} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Calificar servicio</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={shareReferral}
-            style={{
-              backgroundColor: '#fff', borderRadius: 14, padding: 16,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              borderWidth: 1, borderColor: '#A7F3D0',
-            }}
-          >
-            <Ionicons name="share-social" size={20} color="#059669" />
-            <Text style={{ color: '#059669', fontWeight: '800', fontSize: 15 }}>Recomendar a un vecino</Text>
-          </TouchableOpacity>
-        </View>
+        <FadeInUp delay={120}>
+          <View style={{ padding: THEME.space.xl, gap: THEME.space.md }}>
+            <PressableScale
+              onPress={() => router.push({ pathname: '/calificar/[code]', params: { code: service.codigo } })}
+              accessibilityLabel="Calificar servicio"
+              style={{
+                height: 52, backgroundColor: THEME.color.warning, borderRadius: THEME.radius.lg,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
+                ...THEME.shadow.md,
+              }}
+            >
+              <Ionicons name="star" size={20} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Calificar servicio</Text>
+            </PressableScale>
+            <PressableScale
+              onPress={shareReferral}
+              accessibilityLabel="Recomendar a un vecino"
+              style={{
+                height: 52, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
+                ...THEME.shadow.sm,
+              }}
+            >
+              <Ionicons name="share-social" size={20} color={THEME.color.success} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.success }}>Recomendar a un vecino</Text>
+            </PressableScale>
+          </View>
+        </FadeInUp>
       )}
 
       {/* Cancel button (solo si aún no comenzó) */}
       {canCancel && (
-        <View style={{ padding: 20, paddingTop: 0 }}>
-          <TouchableOpacity
+        <View style={{ paddingHorizontal: THEME.space.xl, paddingTop: THEME.space.md }}>
+          <PressableScale
             onPress={handleCancel}
+            accessibilityLabel="Cancelar solicitud"
+            haptic={false}
             style={{
-              backgroundColor: '#fff', borderRadius: 14, padding: 14,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              borderWidth: 1, borderColor: '#FCA5A5',
+              height: 48, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
+              ...THEME.shadow.sm,
             }}
           >
-            <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
-            <Text style={{ color: '#DC2626', fontWeight: '700', fontSize: 13 }}>Cancelar solicitud</Text>
-          </TouchableOpacity>
+            <Ionicons name="close-circle-outline" size={18} color={THEME.color.danger} />
+            <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.danger }}>Cancelar solicitud</Text>
+          </PressableScale>
         </View>
       )}
 
       {/* Cancelado state */}
       {service.estado === 'Cancelado' && (
-        <View style={{ marginHorizontal: 20, marginTop: 10, backgroundColor: '#FEE2E2', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#FCA5A5' }}>
-          <Ionicons name="close-circle" size={22} color="#DC2626" />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#991B1B' }}>Solicitud cancelada</Text>
-            <Text style={{ fontSize: 11, color: '#991B1B', marginTop: 2 }}>Puedes solicitar un nuevo servicio cuando quieras.</Text>
+        <FadeInUp>
+          <View style={{ marginHorizontal: THEME.space.xl, marginTop: THEME.space.md, backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
+            <Ionicons name="close-circle" size={24} color={THEME.color.danger} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...THEME.font.label, fontWeight: '800', color: THEME.color.danger }}>Solicitud cancelada</Text>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>Puedes solicitar un nuevo servicio cuando quieras.</Text>
+            </View>
           </View>
-        </View>
+        </FadeInUp>
       )}
 
       {/* Help */}
-      <View style={{ padding: 20, paddingTop: 8 }}>
-        <TouchableOpacity
+      <View style={{ paddingHorizontal: THEME.space.xl, paddingTop: THEME.space.lg }}>
+        <PressableScale
           onPress={() => Linking.openURL(waLink(SUPPORT_PHONE, `Hola, necesito ayuda con mi servicio ${service.codigo}`))}
+          accessibilityLabel="Contactar a soporte por WhatsApp"
           style={{
-            backgroundColor: '#F8FAFC', borderRadius: 12, padding: 14,
-            flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#E2E8F0',
+            backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg,
+            flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, ...THEME.shadow.sm,
           }}
         >
-          <Ionicons name="help-circle" size={20} color={COLORS.gray} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.dark }}>¿Necesitas ayuda?</Text>
-            <Text style={{ fontSize: 10, color: COLORS.gray }}>Contacta a soporte por WhatsApp</Text>
+          <View style={{ width: 40, height: 40, borderRadius: THEME.radius.full, backgroundColor: THEME.color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="help-circle" size={22} color={THEME.color.inkSoft} />
           </View>
-          <Ionicons name="chevron-forward" size={14} color={COLORS.gray2} />
-        </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>¿Necesitas ayuda?</Text>
+            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 1 }}>Contacta a soporte por WhatsApp</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={THEME.color.inkMuted} />
+        </PressableScale>
       </View>
     </ScrollView>
     </View>
