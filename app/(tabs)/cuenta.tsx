@@ -8,7 +8,7 @@ import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, LEVELS, waLin
 import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
-import { fetchMyTechProfile } from '../../src/lib/tech-profile'
+import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import { sendPush } from '../../src/lib/integrations'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
@@ -139,7 +139,7 @@ export default function CuentaScreen() {
             registerForPushNotifications().then(token => {
               if (token) savePushToken(data.id, token)
             })
-            await loadData(data.id)
+            await loadData(data.id, session.token)
           } else {
             await AsyncStorage.removeItem('solu_tech_session')
           }
@@ -202,7 +202,7 @@ export default function CuentaScreen() {
       registerForPushNotifications().then(token => {
         if (token) savePushToken(data.id, token)
       })
-      await loadData(data.id)
+      await loadData(data.id, token)
     } catch {
       Alert.alert('Error', 'Error de conexión. Verifica tu internet.')
     } finally {
@@ -210,32 +210,21 @@ export default function CuentaScreen() {
     }
   }
 
-  async function loadData(techId: number) {
+  async function loadData(techId: number, token?: string | null) {
     try {
-      const [leadsRes, revRes, notifRes, cotRes, pagosRes] = await Promise.all([
-        supabase.from('clientes').select('*').eq('tecnico_asignado', techId).order('created_at', { ascending: false }).limit(30),
-        supabase.from('resenas').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(30),
-        supabase.from('notificaciones').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(50),
-        supabase.from('cotizaciones').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(30),
-        supabase.from('pagos').select('*').eq('tecnico_id', techId).order('created_at', { ascending: false }).limit(20),
-      ])
-      setLeads(leadsRes.data || [])
-      setReviews(revRes.data || [])
-      // Load open solicitudes for "Trabajos disponibles"
-      try {
-        const { data: openData } = await supabase
-          .from('solicitudes_servicio')
-          .select('id, codigo, servicio, cliente_nombre, distrito, urgencia, created_at')
-          .eq('estado', 'abierta')
-          .order('created_at', { ascending: false })
-          .limit(10)
-        setOpenRequests(openData || [])
-      } catch {}
-      const notifs = notifRes.data || []
-      setNotifications(notifs)
-      setUnreadCount(notifs.filter((n: Notificacion) => !n.leido).length)
-      setCotizaciones(cotRes.data || [])
-      setPagos(pagosRes.data || [])
+      // Todo el panel se lee server-side con el token (clientes estaba
+      // expuesta a anon; notificaciones/cotizaciones/pagos en deny-all
+      // daban vacío). Un solo endpoint autenticado: seguro + datos reales.
+      const dash = await fetchMyTechDashboard(token ?? authToken)
+      if (dash) {
+        setLeads(dash.leads)
+        setReviews(dash.resenas)
+        setOpenRequests(dash.openRequests)
+        setNotifications(dash.notificaciones)
+        setUnreadCount(dash.notificaciones.filter((n: Notificacion) => !n.leido).length)
+        setCotizaciones(dash.cotizaciones)
+        setPagos(dash.pagos)
+      }
       // Load profile views count
       try {
         const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
