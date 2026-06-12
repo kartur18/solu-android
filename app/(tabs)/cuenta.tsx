@@ -8,6 +8,7 @@ import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, LEVELS, waLin
 import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
+import { fetchMyTechProfile } from '../../src/lib/tech-profile'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import { sendPush } from '../../src/lib/integrations'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
@@ -111,6 +112,9 @@ export default function CuentaScreen() {
   const [cotDescripcion, setCotDescripcion] = useState('')
   const [cotServicio, setCotServicio] = useState('')
   const [savingCotizacion, setSavingCotizacion] = useState(false)
+  // Token de sesión del técnico (lo emite /api/login-tech). Se usa para
+  // leer el perfil propio vía /api/tecnico/me (post-lockdown).
+  const [authToken, setAuthToken] = useState<string | null>(null)
 
   // Auto-login from saved session
   useEffect(() => {
@@ -119,9 +123,12 @@ export default function CuentaScreen() {
         const saved = await AsyncStorage.getItem('solu_tech_session')
         if (!saved) return
         const session = JSON.parse(saved)
-        if (session?.id) {
+        // El perfil propio se lee server-side con el token (post-lockdown).
+        // Sesiones viejas sin token (o token vencido) -> pedir re-login.
+        if (session?.id && session?.token) {
           setLoading(true)
-          const { data } = await supabase.from('tecnicos').select('*').eq('id', session.id).single()
+          setAuthToken(session.token)
+          const data = await fetchMyTechProfile(session.token)
           if (data) {
             setTech(data)
             setLoggedIn(true)
@@ -137,6 +144,9 @@ export default function CuentaScreen() {
             await AsyncStorage.removeItem('solu_tech_session')
           }
           setLoading(false)
+        } else if (session?.id) {
+          // Sesión legacy sin token: limpiar para forzar login nuevo.
+          await AsyncStorage.removeItem('solu_tech_session')
         }
       } catch {
         setLoading(false)
@@ -174,8 +184,10 @@ export default function CuentaScreen() {
       }
 
       const data = result.technician
+      const token: string | null = result.auth_token ?? null
 
       setTech(data)
+      setAuthToken(token)
       setLoggedIn(true)
       setEditDesc(data.descripcion || '')
       setEditPrecio(data.precio_desde?.toString() || '')
@@ -184,8 +196,8 @@ export default function CuentaScreen() {
       setEditOficios(data.oficios || [data.oficio].filter(Boolean))
       setEditZonas(data.zonas || [data.distrito].filter(Boolean))
 
-      // Persist session
-      await AsyncStorage.setItem('solu_tech_session', JSON.stringify({ id: data.id, nombre: data.nombre }))
+      // Persist session CON el token (necesario para /api/tecnico/me)
+      await AsyncStorage.setItem('solu_tech_session', JSON.stringify({ id: data.id, nombre: data.nombre, token }))
 
       registerForPushNotifications().then(token => {
         if (token) savePushToken(data.id, token)
@@ -239,7 +251,7 @@ export default function CuentaScreen() {
     if (!tech) return
     setRefreshing(true)
     try {
-      const { data } = await supabase.from('tecnicos').select('*').eq('id', tech.id).single()
+      const data = await fetchMyTechProfile(authToken)
       if (data) {
         setTech(data)
         setEditDesc(data.descripcion || '')
@@ -1699,7 +1711,7 @@ export default function CuentaScreen() {
                                     const data = await res.json()
                                     if (data.success) {
                                       Alert.alert('Documento subido', 'Lo revisaremos pronto y te notificaremos.')
-                                      const { data: fresh } = await supabase.from('tecnicos').select('*').eq('id', tech.id).single()
+                                      const fresh = await fetchMyTechProfile(authToken)
                                       if (fresh) setTech(fresh)
                                     } else {
                                       Alert.alert('Error', data.error || 'No se pudo subir')
