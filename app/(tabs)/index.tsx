@@ -17,6 +17,7 @@ import { suggestServicios, detectServicio, detectUrgencia } from '../../src/lib/
 import { ENV } from '../../src/lib/env'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, PulseDot } from '../../src/components/ui/Motion'
+import { TECNICO_PUBLIC_SELECT } from '../../src/lib/tecnico-columns'
 
 const { width } = Dimensions.get('window')
 const CARD_SIZE = (width - THEME.space.lg * 2 - THEME.space.md * 3) / 4
@@ -148,12 +149,12 @@ export default function HomeScreen() {
     try {
       const { data, error } = await supabase
         .from('tecnicos')
-        .select('*')
+        .select(TECNICO_PUBLIC_SELECT)
         .eq('disponible', true)
         .order('calificacion', { ascending: false })
         .limit(5)
       if (error) throw error
-      setTopTechs(data || [])
+      setTopTechs((data as unknown as Tecnico[]) || [])
       if (offline) setOffline(false)
     } catch (err) {
       logger.error('Error loading techs:', err)

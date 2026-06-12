@@ -13,6 +13,7 @@ import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { getPrecioSugerido, formatPrecio } from '../src/lib/smartIntent'
 import { findBestTech } from '../src/lib/matching'
+import { fetchTechWhatsapp } from '../src/lib/contacto'
 import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
@@ -173,15 +174,16 @@ export default function SolicitarScreen() {
         }
       }
 
-      // If coming from tech profile, assign directly
-      let assignedTech: { id: number; nombre: string; whatsapp: string } | null = null
+      // If coming from tech profile, assign directly. El whatsapp NO se lee
+      // del listado (lockdown): se revela aparte vía endpoint server-side.
+      let assignedTech: { id: number; nombre: string; whatsapp: string | null } | null = null
       if (preselectedTechId) {
         const { data: preselected } = await supabase
           .from('tecnicos')
-          .select('id, nombre, whatsapp')
+          .select('id, nombre')
           .eq('id', preselectedTechId)
           .single()
-        if (preselected) assignedTech = preselected
+        if (preselected) assignedTech = { id: preselected.id, nombre: preselected.nombre, whatsapp: null }
       }
 
       // Otherwise find best available technician (smart scoring)
@@ -192,8 +194,13 @@ export default function SolicitarScreen() {
           clientCoords: locationDetection.coords,
         })
         if (best) {
-          assignedTech = { id: best.id, nombre: best.nombre, whatsapp: best.whatsapp }
+          assignedTech = { id: best.id, nombre: best.nombre, whatsapp: null }
         }
+      }
+
+      // Revelar el WhatsApp del técnico asignado (server-side, post-lockdown)
+      if (assignedTech) {
+        assignedTech.whatsapp = await fetchTechWhatsapp(assignedTech.id)
       }
 
       // Insert the solicitud (estado depende de si hay técnico disponible)
@@ -244,7 +251,7 @@ export default function SolicitarScreen() {
       setResult({
         codigo,
         techName: assignedTech?.nombre,
-        techWhatsapp: assignedTech?.whatsapp,
+        techWhatsapp: assignedTech?.whatsapp ?? undefined,
       })
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')

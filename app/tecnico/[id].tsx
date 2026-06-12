@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { waLink, getTechLevel } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
+import { TECNICO_PUBLIC_SELECT } from '../../src/lib/tecnico-columns'
 import type { Tecnico, Resena } from '../../src/lib/types'
 import { ProfileSkeleton } from '../../src/components/SkeletonLoader'
 import { RatingBreakdown } from '../../src/components/RatingBreakdown'
@@ -45,13 +46,13 @@ export default function TecnicoScreen() {
     setError(false)
     try {
       const [techRes, revRes] = await Promise.all([
-        supabase.from('tecnicos').select('*').eq('id', id).single(),
+        supabase.from('tecnicos').select(TECNICO_PUBLIC_SELECT).eq('id', id).single(),
         supabase.from('resenas').select('*').eq('tecnico_id', id).order('created_at', { ascending: false }).limit(20),
       ])
       if (techRes.error || !techRes.data) {
         setError(true)
       } else {
-        setTech(techRes.data)
+        setTech(techRes.data as unknown as Tecnico)
         setReviews(revRes.data || [])
       }
     } catch {

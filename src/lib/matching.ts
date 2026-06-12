@@ -3,7 +3,9 @@ import { supabase } from './supabase'
 export interface MatchableTech {
   id: number
   nombre: string
-  whatsapp: string
+  // whatsapp ya NO se lee en el listado (lockdown): se revela al contactar
+  // vía /api/tecnico/[id]/contacto. Queda opcional por compatibilidad.
+  whatsapp?: string | null
   oficio?: string | null
   distrito?: string | null
   calificacion?: number | null
@@ -72,7 +74,10 @@ export function scoreTech(tech: MatchableTech, input: MatchInput): number {
   return score
 }
 
-const SELECT_COLS = 'id, nombre, whatsapp, oficio, distrito, calificacion, servicios_completados, tier, lat, lng'
+// Solo columnas que el anon puede leer tras el lockdown. lat/lng/whatsapp/
+// tier quedaron bloqueadas: el ranking degrada sin bonus GPS y el WhatsApp
+// se revela aparte. Distancia/zona aproximada por `distrito`.
+const SELECT_COLS = 'id, nombre, oficio, distrito, calificacion, servicios_completados, zonas'
 
 export async function findBestTech(input: MatchInput): Promise<MatchableTech | null> {
   const { data } = await supabase

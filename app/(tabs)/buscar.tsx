@@ -11,6 +11,7 @@ import { useLocationDetection } from '../../src/lib/useLocation'
 import type { Tecnico } from '../../src/lib/types'
 import { supabase } from '../../src/lib/supabase'
 import { TechCard } from '../../src/components/TechCard'
+import { TECNICO_PUBLIC_SELECT } from '../../src/lib/tecnico-columns'
 import { TechMapView } from '../../src/components/TechMapView'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { useFavorites } from '../../src/lib/useFavorites'
@@ -182,7 +183,7 @@ export default function BuscarScreen() {
     try {
       let query = supabase
         .from('tecnicos')
-        .select('*')
+        .select(TECNICO_PUBLIC_SELECT)
         .eq('disponible', true)
         .order('plan', { ascending: false })
         .order('calificacion', { ascending: false })
@@ -204,8 +205,9 @@ export default function BuscarScreen() {
 
       const { data, error } = await query
       if (error) throw error
-      setTechs(data || [])
-      if (data && data.length > 0) cacheSearchResults(data)
+      const techs = (data as unknown as Tecnico[]) || []
+      setTechs(techs)
+      if (techs.length > 0) cacheSearchResults(techs)
       resultsKey.current += 1
     } catch (err) {
       logger.error('Error loading techs:', err)

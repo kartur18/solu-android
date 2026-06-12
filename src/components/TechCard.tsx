@@ -1,9 +1,9 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Linking, Image, Share } from 'react-native'
+import { View, Text, TouchableOpacity, Image, Share } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { waLink } from '../lib/constants'
+import { openTechWhatsapp } from '../lib/contacto'
 import { THEME } from '../lib/theme'
 import { PressableScale, PulseDot } from './ui/Motion'
 import { optimizeUrl } from '../lib/cloudinary'
@@ -242,7 +242,7 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
             <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Contactar</Text>
           </PressableScale>
           <PressableScale
-            onPress={() => Linking.openURL(waLink(tech.whatsapp, `Hola ${tech.nombre}, te encontré en SOLU.`))}
+            onPress={() => { openTechWhatsapp(tech.id, tech.nombre) }}
             accessibilityLabel={`Escribir por WhatsApp a ${tech.nombre}`}
             style={{
               width: 48,

@@ -19,6 +19,10 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated'
 
+// Pressable animado: permite que el transform de escala y los estilos de
+// layout (width %, flex, padding) vivan en el MISMO elemento táctil.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
+
 // ── FadeInUp: entra con fade + slide hacia arriba. delay para stagger. ──
 export function FadeInUp({
   children,
@@ -61,9 +65,16 @@ export function PressableScale({
   accessibilityLabel?: string
 }) {
   const s = useSharedValue(1)
-  const anim = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }))
+  // El transform + el style del caller van DIRECTO sobre el Pressable (vía
+  // AnimatedPressable). Antes el style iba a un Animated.View interno y el
+  // Pressable quedaba sin tamaño → los anchos en % (width:'47%') colapsaban
+  // contra un padre sin ancho y el texto se partía letra por letra.
+  const anim = useAnimatedStyle(() => ({
+    transform: [{ scale: s.value }],
+    opacity: disabled ? 0.5 : 1,
+  }))
   return (
-    <Pressable
+    <AnimatedPressable
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
       onPressIn={() => {
@@ -76,10 +87,10 @@ export function PressableScale({
         if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
         onPress?.()
       }}
-      style={{ opacity: disabled ? 0.5 : 1 }}
+      style={[style, anim]}
     >
-      <Animated.View style={[anim, style]}>{children}</Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   )
 }
 

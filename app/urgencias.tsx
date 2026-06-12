@@ -7,6 +7,7 @@ import { supabase } from '../src/lib/supabase'
 import { useLocationDetection } from '../src/lib/useLocation'
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { findBestTech, type MatchableTech } from '../src/lib/matching'
+import { fetchTechWhatsapp } from '../src/lib/contacto'
 import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, PulseDot, haptics } from '../src/components/ui/Motion'
@@ -84,8 +85,10 @@ export default function UrgenciasScreen() {
         if (token) upsertGuestClientPushToken(waClean, token, nombre || 'Cliente').catch(() => {})
       }).catch(() => {})
 
+      // Revelar el WhatsApp del técnico asignado (server-side, post-lockdown)
+      const wa = await fetchTechWhatsapp(bestTech.id)
       haptics.success()
-      setAssignedTech(bestTech)
+      setAssignedTech({ ...bestTech, whatsapp: wa })
     } catch (err) {
       setErrorMsg('Hubo un problema de conexión. Revisa tu internet e intenta de nuevo.')
     } finally {
@@ -122,7 +125,7 @@ export default function UrgenciasScreen() {
             </View>
 
             <PressableScale
-              onPress={() => Linking.openURL(`tel:+51${assignedTech.whatsapp}`)}
+              onPress={() => Linking.openURL(`tel:+51${assignedTech.whatsapp || ''}`)}
               accessibilityLabel="Llamar al técnico ahora"
               style={{ width: '100%', minHeight: 56, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md, ...THEME.shadow.brand }}
             >
@@ -131,7 +134,7 @@ export default function UrgenciasScreen() {
             </PressableScale>
 
             <PressableScale
-              onPress={() => Linking.openURL(waLink(assignedTech.whatsapp, `🚨 URGENCIA SOLU: Hola ${assignedTech.nombre}, necesito tu ayuda inmediata con: ${selected?.name}. Mi nombre es ${nombre}.`))}
+              onPress={() => Linking.openURL(waLink(assignedTech.whatsapp || '', `🚨 URGENCIA SOLU: Hola ${assignedTech.nombre}, necesito tu ayuda inmediata con: ${selected?.name}. Mi nombre es ${nombre}.`))}
               accessibilityLabel="Escribir por WhatsApp"
               style={{ width: '100%', minHeight: 56, backgroundColor: '#25D366', borderRadius: THEME.radius.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, ...THEME.shadow.md }}
             >
