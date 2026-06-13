@@ -29,6 +29,20 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'perfil', icon: 'person', label: 'Perfil' },
 ]
 
+// Lee el Bearer del técnico desde AsyncStorage (clave 'solu_tech_session', campo .token).
+// Igual que getTechToken de chat-api/notif-api: lo usan los componentes (ej. LeadRow)
+// que no reciben el authToken por props.
+async function leadAuthToken(): Promise<string | null> {
+  try {
+    const raw = await AsyncStorage.getItem('solu_tech_session')
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { token?: string }
+    return parsed?.token ?? null
+  } catch {
+    return null
+  }
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
@@ -245,6 +259,7 @@ export default function CuentaScreen() {
     if (!tech) return
     setSavingProfile(true)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- el body del endpoint acepta varios campos opcionales
       const updates: any = {
         descripcion: editDesc || null,
         precio_desde: editPrecio ? parseInt(editPrecio) : null,
@@ -258,9 +273,16 @@ export default function CuentaScreen() {
         updates.zonas = editZonas
         updates.distrito = editZonas[0]
       }
-      const { error } = await supabase.from('tecnicos').update(updates).eq('id', tech.id)
-
-      if (error) throw error
+      // El id sale del token (Bearer); el endpoint ignora cualquier id del body.
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/update-profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+        body: JSON.stringify(updates),
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(body.error || `update_profile_${res.status}`)
+      }
       setTech({ ...tech, ...updates } as Tecnico)
       setEditing(false)
       Alert.alert('Guardado', 'Tu perfil se actualizó correctamente')
@@ -314,7 +336,16 @@ export default function CuentaScreen() {
       const { error: uploadError } = await supabase.storage.from('fotos').upload(fileName, blob, { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`, upsert: true })
       if (uploadError) throw uploadError
       const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(fileName)
-      await supabase.from('tecnicos').update({ foto_url: urlData.publicUrl }).eq('id', tech.id)
+      // La subida al bucket la hace la app; el endpoint solo persiste la URL.
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/foto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+        body: JSON.stringify({ foto_url: urlData.publicUrl }),
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(body.error || `foto_${res.status}`)
+      }
       setTech({ ...tech, foto_url: urlData.publicUrl })
       Alert.alert('Listo', 'Foto de perfil actualizada')
     } catch (err) {
@@ -362,8 +393,16 @@ export default function CuentaScreen() {
       const publicUrl = urlData.publicUrl
 
       const newGaleria = [...galleryImages, publicUrl]
-      const { error: updateError } = await supabase.from('tecnicos').update({ galeria: newGaleria }).eq('id', tech.id)
-      if (updateError) throw updateError
+      // Se manda el array completo resultante; el endpoint lo persiste tal cual.
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/galeria`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+        body: JSON.stringify({ galeria: newGaleria }),
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(body.error || `galeria_${res.status}`)
+      }
 
       setGalleryImages(newGaleria)
       setTech({ ...tech, galeria: newGaleria })
@@ -388,7 +427,16 @@ export default function CuentaScreen() {
               await supabase.storage.from('fotos').remove([pathMatch[0]])
             }
             const newGaleria = galleryImages.filter(url => url !== imageUrl)
-            await supabase.from('tecnicos').update({ galeria: newGaleria }).eq('id', tech.id)
+            // El borrado del archivo en Storage ya se hizo arriba; acá se persiste el array resultante.
+            const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/galeria`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+              body: JSON.stringify({ galeria: newGaleria }),
+            })
+            if (!res.ok) {
+              const body = (await res.json().catch(() => ({}))) as { error?: string }
+              throw new Error(body.error || `galeria_${res.status}`)
+            }
             setGalleryImages(newGaleria)
             setTech({ ...tech, galeria: newGaleria })
           } catch (err: any) {
@@ -1935,8 +1983,20 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
   }
 
   async function updateStatus(newStatus: string) {
-    const { error } = await supabase.from('clientes').update({ estado: newStatus }).eq('id', lead.id)
-    if (error) {
+    // Bearer del técnico desde AsyncStorage (este componente no recibe authToken por props).
+    const token = await leadAuthToken()
+    let ok = false
+    try {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/lead/${lead.id}/estado`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ estado: newStatus }),
+      })
+      ok = res.ok
+    } catch {
+      ok = false
+    }
+    if (!ok) {
       Alert.alert('Error', 'No se pudo actualizar el estado')
     } else {
       try {
@@ -1966,7 +2026,14 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
       {
         text: 'Sí, cancelar', style: 'destructive',
         onPress: async () => {
-          await supabase.from('clientes').update({ estado: 'Cancelado' }).eq('id', lead.id)
+          const token = await leadAuthToken()
+          try {
+            await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/lead/${lead.id}/estado`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+              body: JSON.stringify({ estado: 'Cancelado' }),
+            })
+          } catch {}
           onStatusChange?.()
         },
       },
@@ -2052,7 +2119,15 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
               onPress={() => Alert.alert('Rechazar solicitud', '¿No puedes atender este servicio? Se reasignará a otro técnico.', [
                 { text: 'No', style: 'cancel' },
                 { text: 'Rechazar', style: 'destructive', onPress: async () => {
-                  await supabase.from('clientes').update({ estado: 'Nuevo', tecnico_asignado: null }).eq('id', lead.id)
+                  const token = await leadAuthToken()
+                  try {
+                    // reasignar:true devuelve el lead al pool (estado='Nuevo' + tecnico_asignado=null server-side).
+                    await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/lead/${lead.id}/estado`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                      body: JSON.stringify({ estado: 'Nuevo', reasignar: true }),
+                    })
+                  } catch {}
                   onStatusChange?.()
                 }},
               ])}

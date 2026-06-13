@@ -3,8 +3,10 @@ import { View, Text, ScrollView, TextInput, Linking, ActivityIndicator, StatusBa
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { waLink, ESTADOS } from '../src/lib/constants'
-import { supabase } from '../src/lib/supabase'
+import { ENV, fetchWithTimeout } from '../src/lib/env'
+import { getTechToken } from '../src/lib/chat-api'
 import { useLocationDetection } from '../src/lib/useLocation'
+// `supabase` (anon) removido: el insert a clientes ahora va por /api/cliente/crear-servicio.
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { findBestTech, type MatchableTech } from '../src/lib/matching'
 import { fetchTechWhatsapp } from '../src/lib/contacto'
@@ -70,19 +72,32 @@ export default function UrgenciasScreen() {
         return
       }
 
-      // Create service silently
+      // Crear la solicitud vía endpoint server-side (anon bloqueado por lockdown).
       const code = `URG-${Date.now().toString(36).toUpperCase()}`
-      await supabase.from('clientes').insert({
-        nombre,
-        whatsapp: waClean,
-        servicio: `🚨 URGENCIA: ${selected.name}`,
-        distrito,
-        urgencia: 'emergencia',
-        descripcion: `Emergencia urgente enviada desde la app.`,
-        estado: ESTADOS.ASIGNADO,
-        tecnico_asignado: bestTech.id,
-        codigo: code,
+      const techToken = await getTechToken()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (techToken) headers.Authorization = `Bearer ${techToken}`
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/cliente/crear-servicio`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          nombre,
+          whatsapp: waClean,
+          servicio: `🚨 URGENCIA: ${selected.name}`,
+          distrito,
+          urgencia: 'emergencia',
+          descripcion: `Emergencia urgente enviada desde la app.`,
+          estado: ESTADOS.ASIGNADO,
+          tecnico_asignado: bestTech.id,
+          codigo: code,
+          sos: true,
+        }),
       })
+      if (!res.ok) {
+        setErrorMsg('Hubo un problema de conexión. Revisa tu internet e intenta de nuevo.')
+        setLoading(false)
+        return
+      }
 
       // Save client profile for next time
       saveProfile({ nombre, whatsapp: waClean, distrito }).catch(() => {})

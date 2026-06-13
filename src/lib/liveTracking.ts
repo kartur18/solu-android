@@ -1,9 +1,22 @@
 import * as Location from 'expo-location'
-import { supabase } from './supabase'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { ENV, fetchWithTimeout } from './env'
 import { logger } from './logger'
 
 let watchId: Location.LocationSubscription | null = null
 let currentPedidoId: number | null = null
+
+// Lee el Bearer del técnico desde AsyncStorage (clave 'solu_tech_session', campo .token).
+async function getTechToken(): Promise<string | null> {
+  try {
+    const raw = await AsyncStorage.getItem('solu_tech_session')
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { token?: string }
+    return parsed?.token ?? null
+  } catch {
+    return null
+  }
+}
 
 /**
  * Start streaming técnico GPS to the pedido row every ~30s while estado = 'En camino'.
@@ -26,14 +39,14 @@ export async function startLiveTracking(pedidoId: number): Promise<boolean> {
         if (!currentPedidoId) return
         const { latitude, longitude } = pos.coords
         try {
-          await supabase
-            .from('clientes')
-            .update({
-              tecnico_lat: latitude,
-              tecnico_lng: longitude,
-              tecnico_gps_updated_at: new Date().toISOString(),
-            })
-            .eq('id', currentPedidoId)
+          // El endpoint persiste tecnico_lat/lng/gps_updated_at en la fila del lead;
+          // el id del técnico sale del Bearer y valida ownership por tecnico_asignado.
+          const token = await getTechToken()
+          await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/lead/${currentPedidoId}/gps`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            body: JSON.stringify({ lat: latitude, lng: longitude }),
+          })
         } catch (err) {
           logger.error('Live tracking update failed:', err)
         }

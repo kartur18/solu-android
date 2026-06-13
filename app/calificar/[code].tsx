@@ -7,6 +7,8 @@ import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, haptics } from '../../src/components/ui/Motion'
 import { supabase } from '../../src/lib/supabase'
 import { fetchServicioByCodigo } from '../../src/lib/servicios'
+import { ENV, fetchWithTimeout } from '../../src/lib/env'
+import { getTechToken } from '../../src/lib/notif-api'
 import type { Cliente } from '../../src/lib/types'
 
 const RATING_LABELS = ['', 'Muy malo', 'Malo', 'Regular', 'Bueno', '¡Excelente!']
@@ -69,39 +71,39 @@ export default function CalificarScreen() {
     if (submitting || !service) return
     setSubmitting(true)
 
-    // Upload photos first
+    // Upload photos first (sigue subiendo a storage; el endpoint aún no persiste fotos_url)
     const uploadedUrls: string[] = []
     for (const uri of fotos) {
       const url = await uploadFoto(uri)
       if (url) uploadedUrls.push(url)
     }
 
-    const { error } = await supabase.from('resenas').insert({
-      tecnico_id: service.tecnico_asignado,
-      nombre_cliente: service.nombre,
-      whatsapp_cliente: service.whatsapp,
-      calificacion: rating,
-      comentario: comment,
-      servicio: service.servicio,
-      codigo_servicio: service.codigo,
-      fotos_url: uploadedUrls.length > 0 ? uploadedUrls : undefined,
-    })
+    try {
+      // Bearer del técnico si está logueado (el endpoint es público; lo
+      // ignora salvo trazabilidad). El insert/recalc/update lo hace server-side.
+      const techToken = await getTechToken()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (techToken) headers.Authorization = `Bearer ${techToken}`
 
-    if (!error) {
-      await supabase.from('clientes').update({ estado: 'Calificado' }).eq('id', service.id)
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/calificar/${encodeURIComponent(service.codigo)}`, {
+        method: 'POST',
+        headers,
+        // El comentario es opcional en la app pero requerido por el endpoint:
+        // si va vacío, mandamos un placeholder mínimo no vacío.
+        body: JSON.stringify({
+          rating,
+          comentario: comment.trim() || 'Sin comentario',
+          clientName: service.nombre,
+        }),
+      })
 
-      // Update tech rating
-      if (service.tecnico_asignado) {
-        const { data: allReviews } = await supabase.from('resenas').select('calificacion').eq('tecnico_id', service.tecnico_asignado)
-        if (allReviews) {
-          const avg = allReviews.reduce((s: number, r: { calificacion: number }) => s + r.calificacion, 0) / allReviews.length
-          await supabase.from('tecnicos').update({ calificacion: Math.round(avg * 10) / 10, num_resenas: allReviews.length }).eq('id', service.tecnico_asignado)
-        }
+      if (res.ok) {
+        haptics.success()
+        setDone(true)
+      } else {
+        Alert.alert('No se pudo enviar', 'Revisa tu conexión e intenta de nuevo. Tu calificación no se perdió.')
       }
-
-      haptics.success()
-      setDone(true)
-    } else {
+    } catch {
       Alert.alert('No se pudo enviar', 'Revisa tu conexión e intenta de nuevo. Tu calificación no se perdió.')
     }
     setSubmitting(false)

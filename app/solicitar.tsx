@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { SERVICIOS, DISTRITOS, URGENCIAS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
+import { ENV, fetchWithTimeout } from '../src/lib/env'
+import { getTechToken } from '../src/lib/chat-api'
 import { sendPush } from '../src/lib/integrations'
 import { compressImage } from '../src/lib/imageCompress'
 import { useLocationDetection } from '../src/lib/useLocation'
@@ -203,18 +205,30 @@ export default function SolicitarScreen() {
         assignedTech.whatsapp = await fetchTechWhatsapp(assignedTech.id)
       }
 
-      // Insert the solicitud (estado depende de si hay técnico disponible)
-      const { error } = await supabase.from('clientes').insert({
-        nombre: nombreFinal, whatsapp: waClean, servicio, distrito, urgencia, descripcion: descripcionFinal, codigo,
-        estado: assignedTech ? 'Asignado' : 'En espera',
-        tecnico_asignado: assignedTech?.id || null,
+      // Crear la solicitud vía endpoint server-side (anon bloqueado por lockdown).
+      // El Bearer del técnico es opcional (clientes guest no lo tienen).
+      const techToken = await getTechToken()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (techToken) headers.Authorization = `Bearer ${techToken}`
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/cliente/crear-servicio`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          nombre: nombreFinal, whatsapp: waClean, servicio, distrito, urgencia, descripcion: descripcionFinal, codigo,
+          estado: assignedTech ? 'Asignado' : 'En espera',
+          tecnico_asignado: assignedTech?.id || null,
+        }),
       })
 
-      if (error) {
+      if (!res.ok) {
         Alert.alert('Error', 'No se pudo enviar la solicitud. Verifica tu conexión e intenta de nuevo.')
         setLoading(false)
         return
       }
+
+      // Usar el código autoritativo que devuelve el server para la pantalla de éxito.
+      const data = (await res.json()) as { solicitud?: { codigo?: string } }
+      const codigoFinal = data?.solicitud?.codigo || codigo
 
       // Notificación al técnico: el push server-side ya persiste la
       // notificación en BD. El insert anon a `notificaciones` quedó cerrado
@@ -240,7 +254,7 @@ export default function SolicitarScreen() {
       haptics.success()
       // Show success screen
       setResult({
-        codigo,
+        codigo: codigoFinal,
         techName: assignedTech?.nombre,
         techWhatsapp: assignedTech?.whatsapp ?? undefined,
       })
