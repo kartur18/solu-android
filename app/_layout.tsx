@@ -51,19 +51,21 @@ export default function RootLayout() {
       }
     })
 
-    // Listen for when user taps on a notification
+    // Listen for when user taps on a notification.
+    // El server (pushToTechs) manda type 'chat_mensaje'/'nuevo_contacto' con
+    // `codigo` -> abrimos el chat correcto como técnico. Antes el handler
+    // esperaba 'new_message'+chatId y estos taps caían al else (iban a cuenta).
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data
-      if (data?.type === 'new_request') {
-        // Navigate to solicitudes tab
-        router.push('/(tabs)/cuenta')
-      } else if (data?.type === 'new_message') {
-        // Navigate to chat
-        if (data.chatId) router.push(`/chat/${data.chatId}`)
-      } else if (data?.type === 'plan_expiring' || data?.type === 'plan_expired') {
-        router.push('/(tabs)/cuenta')
+      const data = response.notification.request.content.data as {
+        type?: string; codigo?: string; chatId?: string
+      }
+      const type = data?.type
+      if ((type === 'chat_mensaje' || type === 'nuevo_contacto') && data?.codigo) {
+        router.push(`/chat-pedido/${data.codigo}?as=tecnico`)
+      } else if (type === 'new_message' && data?.chatId) {
+        router.push(`/chat/${data.chatId}`)
       } else {
-        // Default: go to account
+        // new_request, cancelacion, plan_*, y cualquier otro → panel del técnico
         router.push('/(tabs)/cuenta')
       }
     })

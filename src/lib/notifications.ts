@@ -1,8 +1,8 @@
 import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
-import { supabase } from './supabase'
-import { ENV } from './env'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { ENV, fetchWithTimeout } from './env'
 import { logger } from './logger'
 
 // Configure notification behavior
@@ -57,57 +57,37 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 }
 
-export async function savePushToken(tecnicoId: number, token: string) {
+// Guarda el push token del técnico vía endpoint server-side (Bearer). La
+// escritura directa a `tecnicos` con la key anon quedó bloqueada por el
+// lockdown -> el token no se guardaba y los push nunca llegaban. El id sale
+// del token en el server, no del param (se mantiene por compat de llamadas).
+export async function savePushToken(_tecnicoId: number, token: string) {
   try {
-    await supabase
-      .from('tecnicos')
-      .update({ push_token: token })
-      .eq('id', tecnicoId)
+    const raw = await AsyncStorage.getItem('solu_tech_session')
+    const bearer = raw ? (JSON.parse(raw) as { token?: string })?.token : null
+    if (!bearer) return
+    await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/push-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+      body: JSON.stringify({ token }),
+    })
   } catch (err) {
     logger.error('Failed to save push token:', err)
   }
 }
 
-export async function saveClientPushToken(clienteUserId: number, token: string) {
-  try {
-    await supabase
-      .from('clientes_users')
-      .update({ push_token: token })
-      .eq('id', clienteUserId)
-  } catch (err) {
-    logger.error('Failed to save client push token:', err)
-  }
-}
-
 /**
- * Upsert push token for a guest client identified by whatsapp.
- * Creates a minimal clientes_users row if missing so state-change pushes work
- * even for clients that never formally registered.
+ * Guarda el push token del cliente (guest o logueado) vía endpoint server-side.
+ * El server crea una fila mínima en clientes_users si no existe, igual que
+ * antes, pero con service_role (anon estaba bloqueado por el lockdown).
  */
 export async function upsertGuestClientPushToken(whatsapp: string, token: string, nombre?: string) {
   try {
-    const { data: existing } = await supabase
-      .from('clientes_users')
-      .select('id')
-      .eq('whatsapp', whatsapp)
-      .maybeSingle()
-
-    if (existing?.id) {
-      await supabase
-        .from('clientes_users')
-        .update({ push_token: token })
-        .eq('id', existing.id)
-    } else {
-      await supabase
-        .from('clientes_users')
-        .insert({
-          whatsapp,
-          nombre: nombre || 'Cliente SOLU',
-          push_token: token,
-          password_hash: '',
-          created_at: new Date().toISOString(),
-        })
-    }
+    await fetchWithTimeout(`${ENV.API_BASE_URL}/cliente/push-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ whatsapp: whatsapp.replace(/\D/g, ''), token, nombre }),
+    })
   } catch (err) {
     logger.error('Failed to upsert guest client push token:', err)
   }
