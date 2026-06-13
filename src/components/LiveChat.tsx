@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { View, Text, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '../lib/supabase'
 import { COLORS } from '../lib/constants'
 import { logger } from '../lib/logger'
 import { AudioMessageBubble } from './AudioMessageBubble'
@@ -10,43 +9,39 @@ import {
   isAudioChatAvailable, startRecording, stopRecording, uploadChatAudio,
   type ExpoRecording,
 } from '../lib/audioChat'
+import {
+  fetchMensajes, sendMensaje, getTechToken, ChatApiError,
+  type ChatMensaje, type AttachmentMeta,
+} from '../lib/chat-api'
 
-interface AttachmentMeta {
-  mime?: string
-  size_bytes?: number
-  duration_ms?: number
-}
-
-interface Message {
-  id: number
-  codigo_solicitud: string
-  remitente: 'cliente' | 'tecnico'
-  mensaje: string
-  leido: boolean
-  created_at: string
-  tipo?: 'text' | 'audio' | 'image' | 'cotizacion'
-  attachment_url?: string | null
-  attachment_meta?: AttachmentMeta | null
+interface Message extends ChatMensaje {
   // Solo local: marca el mensaje optimista mientras sube el audio
   uploading?: boolean
 }
 
 const MIN_AUDIO_MS = 1000
+const POLL_MS = 3000
 
 interface Props {
   codigo: string
   as: 'cliente' | 'tecnico'
   techNombre?: string
+  // Token HMAC del cliente guest (tracking). El técnico autentica con Bearer.
+  chatToken?: string
 }
 
 /**
- * Internal chat between cliente and técnico for a specific pedido.
- * Uses Supabase Realtime on chat_mensajes (see migration 20260418_live_tracking_and_chat.sql).
+ * Chat interno cliente↔técnico de un pedido. Lee/escribe vía los endpoints
+ * server-side (/api/chat/...) con polling cada 3s (sin Realtime, igual que la
+ * web) tras el lockdown de seguridad que cerró el acceso anon a chat_mensajes.
  */
-export function LiveChat({ codigo, as, techNombre }: Props) {
+export function LiveChat({ codigo, as, techNombre, chatToken }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [coinsError, setCoinsError] = useState<{ costo?: number; saldo?: number } | null>(null)
   const [recording, setRecording] = useState(false)
   const [recordingMs, setRecordingMs] = useState(0)
   const [sendingAudio, setSendingAudio] = useState(false)
@@ -56,35 +51,51 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
   const recordStartRef = useRef(0)
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioAvailable = useMemo(() => isAudioChatAvailable(), [])
+  // Token del técnico cacheado (lo emite el login y vive en AsyncStorage).
+  const techTokenRef = useRef<string | null>(null)
 
-  const loadMessages = useCallback(async () => {
+  // Resuelve la auth según el rol: técnico → Bearer; cliente → chatToken.
+  const getAuth = useCallback(async (): Promise<{ token?: string | null; chatToken?: string | null }> => {
+    if (as === 'tecnico') {
+      if (!techTokenRef.current) techTokenRef.current = await getTechToken()
+      return { token: techTokenRef.current }
+    }
+    return { chatToken }
+  }, [as, chatToken])
+
+  // Fusiona los mensajes del server conservando los optimistas locales (id<0)
+  // que todavía no llegaron en la respuesta (evita parpadeo en el polling).
+  const mergeServer = useCallback((server: Message[]) => {
+    setMessages((prev) => {
+      const pending = prev.filter((m) => m.id < 0 && !server.some((s) => s.mensaje === m.mensaje && s.remitente === m.remitente))
+      return [...server, ...pending]
+    })
+  }, [])
+
+  const loadMessages = useCallback(async (showSpinner: boolean) => {
+    if (showSpinner) setLoading(true)
     try {
-      const { data } = await supabase
-        .from('chat_mensajes')
-        .select('*')
-        .eq('codigo_solicitud', codigo)
-        .order('created_at', { ascending: true })
-      if (data) setMessages(data as Message[])
+      const auth = await getAuth()
+      const data = await fetchMensajes({ codigo, ...auth })
+      mergeServer(data as Message[])
+      setLoadError(false)
     } catch (err) {
       logger.error('Chat load error:', err)
+      // Solo marcamos error si no hay nada cargado; en polling silencioso lo ignoramos.
+      if (showSpinner) setLoadError(true)
+    } finally {
+      if (showSpinner) setLoading(false)
     }
-  }, [codigo])
+  }, [codigo, getAuth, mergeServer])
 
-  useEffect(() => { loadMessages() }, [loadMessages])
+  // Carga inicial + refresco al montar.
+  useEffect(() => { loadMessages(true) }, [loadMessages])
 
+  // Polling cada 3s (sin Realtime). Cleanup al desmontar.
   useEffect(() => {
-    const channel = supabase
-      .channel(`chat-${codigo}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'chat_mensajes',
-        filter: `codigo_solicitud=eq.${codigo}`,
-      }, (payload) => {
-        const m = payload.new as Message
-        setMessages((prev) => prev.some((p) => p.id === m.id) ? prev : [...prev, m])
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [codigo])
+    const id = setInterval(() => { loadMessages(false) }, POLL_MS)
+    return () => clearInterval(id)
+  }, [loadMessages])
 
   useEffect(() => {
     if (messages.length) setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50)
@@ -95,6 +106,7 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
     if (!text || sending) return
     setSending(true)
     setInput('')
+    setCoinsError(null)
     const tempId = -Date.now()
     const optimistic: Message = {
       id: tempId, codigo_solicitud: codigo, remitente: as,
@@ -102,16 +114,21 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
     }
     setMessages((prev) => [...prev, optimistic])
     try {
-      const { data } = await supabase
-        .from('chat_mensajes')
-        .insert({ codigo_solicitud: codigo, remitente: as, mensaje: text, leido: false })
-        .select()
-        .single()
-      if (data) setMessages((prev) => prev.map((m) => m.id === tempId ? (data as Message) : m))
-    } catch {
+      const auth = await getAuth()
+      const saved = await sendMensaje({ codigo, mensaje: text, ...auth })
+      setMessages((prev) => prev.map((m) => m.id === tempId ? (saved as Message) : m))
+    } catch (err) {
       // Restaurar el texto para que el usuario no lo pierda
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
       setInput(text)
+      if (err instanceof ChatApiError && err.status === 402) {
+        setCoinsError({ costo: err.costo, saldo: err.saldoActual })
+      } else if (err instanceof ChatApiError && err.status === 403) {
+        setMicError('Tu cuenta está temporalmente restringida. Contacta a soporte.')
+      } else {
+        logger.error('Chat send error:', err)
+        setMicError('No pudimos enviar tu mensaje. Revisa tu conexión e intenta de nuevo.')
+      }
     } finally {
       setSending(false)
     }
@@ -188,21 +205,21 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
     try {
       const upload = await uploadChatAudio(codigo, as, uri)
       if (!upload) throw new Error('audio-upload-failed')
-      const { data, error } = await supabase
-        .from('chat_mensajes')
-        .insert({
-          codigo_solicitud: codigo, remitente: as, mensaje: '', leido: false,
-          tipo: 'audio', attachment_url: upload.url,
-          attachment_meta: { mime: upload.mime, size_bytes: upload.sizeBytes, duration_ms: durationMs },
-        })
-        .select()
-        .single()
-      if (error) throw error
-      if (data) setMessages((prev) => prev.map((m) => m.id === tempId ? (data as Message) : m))
+      const meta: AttachmentMeta = { mime: upload.mime, size_bytes: upload.sizeBytes, duration_ms: durationMs }
+      const auth = await getAuth()
+      const saved = await sendMensaje({
+        codigo, mensaje: '', ...auth,
+        tipo: 'audio', attachmentUrl: upload.url, attachmentMeta: meta,
+      })
+      setMessages((prev) => prev.map((m) => m.id === tempId ? (saved as Message) : m))
     } catch (err) {
       logger.error('Audio send error:', err)
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
-      setMicError('No pudimos enviar tu nota de voz. Revisa tu conexión e intenta de nuevo.')
+      if (err instanceof ChatApiError && err.status === 402) {
+        setCoinsError({ costo: err.costo, saldo: err.saldoActual })
+      } else {
+        setMicError('No pudimos enviar tu nota de voz. Revisa tu conexión e intenta de nuevo.')
+      }
     } finally {
       setSendingAudio(false)
     }
@@ -258,14 +275,51 @@ export function LiveChat({ codigo, as, techNombre }: Props) {
           )
         }}
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-            <Ionicons name="chatbubbles-outline" size={36} color={COLORS.gray2} />
-            <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 8, textAlign: 'center' }}>
-              No hay mensajes aún{'\n'}Empieza la conversación{techNombre ? ` con ${techNombre}` : ''}
-            </Text>
-          </View>
+          loading ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <ActivityIndicator size="small" color={COLORS.pri} />
+              <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 8 }}>Cargando mensajes…</Text>
+            </View>
+          ) : loadError ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <Ionicons name="cloud-offline-outline" size={36} color={COLORS.gray2} />
+              <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 8, textAlign: 'center' }}>
+                No pudimos cargar el chat
+              </Text>
+              <TouchableOpacity
+                onPress={() => loadMessages(true)}
+                accessibilityLabel="Reintentar carga del chat"
+                style={{ marginTop: 12, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, backgroundColor: COLORS.pri }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <Ionicons name="chatbubbles-outline" size={36} color={COLORS.gray2} />
+              <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 8, textAlign: 'center' }}>
+                No hay mensajes aún{'\n'}Empieza la conversación{techNombre ? ` con ${techNombre}` : ''}
+              </Text>
+            </View>
+          )
         }
       />
+      {coinsError && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: COLORS.priLight, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+          <Ionicons name="cash-outline" size={20} color={COLORS.pri} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark }}>Necesitas coins para responder</Text>
+            <Text style={{ fontSize: 11, color: COLORS.gray, marginTop: 1 }}>
+              {coinsError.costo != null
+                ? `Cuesta ${coinsError.costo} coins${coinsError.saldo != null ? ` · tienes ${coinsError.saldo}` : ''}. Compra coins en tu cuenta.`
+                : 'Compra coins en tu cuenta para iniciar este chat.'}
+            </Text>
+          </View>
+          <TouchableOpacity accessibilityLabel="Cerrar aviso de coins" onPress={() => setCoinsError(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close" size={18} color={COLORS.gray} />
+          </TouchableOpacity>
+        </View>
+      )}
       <ChatInputBar
         input={input}
         onChangeInput={setInput}

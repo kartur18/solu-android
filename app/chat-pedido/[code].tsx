@@ -4,14 +4,28 @@ import { useLocalSearchParams, Stack, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LiveChat } from '../../src/components/LiveChat'
 import { fetchServicioByCodigo } from '../../src/lib/servicios'
+import { fetchChatToken } from '../../src/lib/chat-api'
+import { useClientProfile } from '../../src/lib/useClientProfile'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 
 export default function ChatPedidoScreen() {
   const router = useRouter()
-  const { code, as } = useLocalSearchParams<{ code: string; as?: 'cliente' | 'tecnico' }>()
+  const { code, as, token } = useLocalSearchParams<{ code: string; as?: 'cliente' | 'tecnico'; token?: string }>()
   const role: 'cliente' | 'tecnico' = as === 'tecnico' ? 'tecnico' : 'cliente'
+  const { profile } = useClientProfile()
   const [techNombre, setTechNombre] = useState<string | undefined>()
+  // El cliente guest necesita un chatToken (HMAC). Si no vino por param, lo
+  // resolvemos con su WhatsApp del perfil contra /api/chat/[code]/token. El
+  // técnico no lo necesita (LiveChat usa su Bearer internamente).
+  const [resolvedToken, setResolvedToken] = useState<string | undefined>(token)
+
+  useEffect(() => {
+    if (token) { setResolvedToken(token); return }
+    if (role === 'cliente' && code && profile?.whatsapp) {
+      fetchChatToken(code, profile.whatsapp).then((t) => { if (t) setResolvedToken(t) })
+    }
+  }, [code, token, role, profile?.whatsapp])
 
   useEffect(() => {
     if (!code) return
@@ -50,7 +64,7 @@ export default function ChatPedidoScreen() {
   return (
     <>
       <Stack.Screen options={{ title: role === 'cliente' ? (techNombre ? `Chat con ${techNombre}` : 'Chat con técnico') : 'Chat con cliente' }} />
-      <LiveChat codigo={code} as={role} techNombre={techNombre} />
+      <LiveChat codigo={code} as={role} techNombre={techNombre} chatToken={resolvedToken} />
     </>
   )
 }

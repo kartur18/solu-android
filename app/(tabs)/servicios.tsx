@@ -538,11 +538,10 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
               pathname: '/chat/[id]',
               params: {
                 id: s.id.toString(),
-                techId: s.tecnico_asignado!.toString(),
+                codigo: s.codigo,
                 techName: 'Tecnico',
                 clientName: user.nombre,
                 senderType: 'cliente',
-                senderId: user.id.toString(),
               },
             })}
             accessibilityLabel="Abrir chat con el técnico"

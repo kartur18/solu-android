@@ -216,19 +216,10 @@ export default function SolicitarScreen() {
         return
       }
 
-      // Create notification for the technician
+      // Notificación al técnico: el push server-side ya persiste la
+      // notificación en BD. El insert anon a `notificaciones` quedó cerrado
+      // por el lockdown (fallaba silencioso), así que se eliminó.
       if (assignedTech) {
-        try {
-          await supabase.from('notificaciones').insert({
-            tecnico_id: assignedTech.id,
-            tipo: 'nueva_solicitud',
-            titulo: '¡Nueva solicitud!',
-            mensaje: `${nombreFinal} necesita ${servicio} en ${distrito}. Código: ${codigo}`,
-            leido: false,
-          })
-        } catch {}
-
-        // Send push notification via backend
         sendPush(
           'tecnico',
           String(assignedTech.id),

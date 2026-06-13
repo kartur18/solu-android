@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Linking, Image, Modal, FlatList, Dimensions, Share } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Linking, Image, Modal, FlatList, Dimensions, Share, Alert } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { waLink, getTechLevel } from '../../src/lib/constants'
+import { getTechLevel } from '../../src/lib/constants'
+import { openTechWhatsapp, fetchTechWhatsapp } from '../../src/lib/contacto'
 import { supabase } from '../../src/lib/supabase'
 import { TECNICO_PUBLIC_SELECT } from '../../src/lib/tecnico-columns'
 import type { Tecnico, Resena } from '../../src/lib/types'
@@ -304,7 +305,10 @@ export default function TecnicoScreen() {
             <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Solicitar servicio</Text>
           </PressableScale>
           <PressableScale
-            onPress={() => Linking.openURL(waLink(tech.whatsapp, `Hola ${tech.nombre}, te encontré en SOLU y necesito un servicio de ${tech.oficio}.`))}
+            onPress={async () => {
+              const ok = await openTechWhatsapp(tech.id, tech.nombre, `Hola ${tech.nombre}, te encontré en SOLU y necesito un servicio de ${tech.oficio}.`)
+              if (!ok) Alert.alert('No disponible', 'No pudimos abrir WhatsApp ahora. Intenta de nuevo o solicita el servicio para que te asignemos un técnico.')
+            }}
             accessibilityLabel="Contactar por WhatsApp"
             style={{ width: 52, height: 52, backgroundColor: '#25D366', borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center' }}
           >
@@ -313,7 +317,12 @@ export default function TecnicoScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.sm }}>
           <PressableScale
-            onPress={() => { const phone = tech.whatsapp?.length === 9 ? '+51' + tech.whatsapp : (tech.whatsapp || ''); Linking.openURL(`tel:${phone}`) }}
+            onPress={async () => {
+              const wa = await fetchTechWhatsapp(tech.id)
+              if (!wa) { Alert.alert('No disponible', 'No pudimos obtener el número del técnico ahora. Intenta de nuevo en un momento.'); return }
+              const phone = wa.length === 9 ? '+51' + wa : wa
+              Linking.openURL(`tel:${phone}`)
+            }}
             accessibilityLabel="Llamar al técnico"
             style={{ flex: 1, height: 44, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >

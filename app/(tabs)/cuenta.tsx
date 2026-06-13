@@ -9,6 +9,7 @@ import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
+import { markNotifRead as apiMarkNotifRead } from '../../src/lib/notif-api'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import { sendPush } from '../../src/lib/integrations'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
@@ -272,11 +273,15 @@ export default function CuentaScreen() {
 
   // --- Notification functions ---
   async function markNotifRead(notifId: number) {
-    try {
-      await supabase.from('notificaciones').update({ leido: true }).eq('id', notifId)
-      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n))
-      setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch {}
+    if (!tech) return
+    // Optimista: actualiza UI y revierte si el endpoint falla.
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n))
+    setUnreadCount(prev => Math.max(0, prev - 1))
+    const ok = await apiMarkNotifRead(authToken, tech.id, notifId)
+    if (!ok) {
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: false } : n))
+      setUnreadCount(prev => prev + 1)
+    }
   }
 
   // --- Gallery functions ---
@@ -1876,6 +1881,7 @@ export default function CuentaScreen() {
             if (tech) loadData(tech.id)
           }}
           techId={tech.id}
+          token={authToken}
         />
       )}
     </View>
@@ -2014,11 +2020,10 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
                 pathname: '/chat/[id]',
                 params: {
                   id: lead.id.toString(),
-                  techId: tech.id.toString(),
+                  codigo: lead.codigo,
                   techName: tech.nombre,
                   clientName: lead.nombre,
                   senderType: 'tecnico',
-                  senderId: tech.id.toString(),
                 },
               })}
               accessibilityLabel="Abrir chat"

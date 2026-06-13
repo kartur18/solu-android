@@ -1,123 +1,105 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, Text, TextInput, FlatList, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator, TouchableOpacity,
 } from 'react-native'
 import { useLocalSearchParams, Stack } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '../../src/lib/supabase'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer } from '../../src/components/ui/Motion'
+import {
+  fetchMensajes, sendMensaje, getTechToken, fetchChatToken, ChatApiError,
+  type ChatMensaje,
+} from '../../src/lib/chat-api'
+import { useClientProfile } from '../../src/lib/useClientProfile'
+import { logger } from '../../src/lib/logger'
 
-interface Mensaje {
-  id: number
-  solicitud_id: number
-  sender_type: string
-  sender_id: number
-  mensaje: string
-  leido: boolean
-  created_at: string
-}
+const POLL_MS = 3000
+
+// id<0 marca mensajes optimistas locales aún no confirmados por el server.
+type Mensaje = ChatMensaje
 
 export default function ChatScreen() {
   const params = useLocalSearchParams<{
     id: string
-    techId: string
+    codigo?: string
     techName: string
     clientName: string
     senderType: string
-    senderId: string
+    token?: string
   }>()
 
-  const solicitudId = Number(params.id)
+  // El chat ahora se identifica por código de pedido (endpoint /chat/{code}).
+  // Compat: si no llega `codigo`, usamos el `id` de la ruta como código.
+  const codigo = (params.codigo || params.id || '').trim()
   const techName = params.techName || 'Tecnico'
   const clientName = params.clientName || 'Cliente'
-  const senderType = params.senderType || 'cliente'
-  const senderId = Number(params.senderId) || 0
+  const senderType: 'cliente' | 'tecnico' = params.senderType === 'tecnico' ? 'tecnico' : 'cliente'
+  const { profile } = useClientProfile()
+  // El cliente guest necesita un chatToken HMAC. Si no vino por param, lo
+  // resolvemos con su WhatsApp del perfil. El técnico usa su Bearer.
+  const [chatToken, setChatToken] = useState<string | undefined>(params.token)
+  useEffect(() => {
+    if (params.token) { setChatToken(params.token); return }
+    if (senderType === 'cliente' && codigo && profile?.whatsapp) {
+      fetchChatToken(codigo, profile.whatsapp).then((t) => { if (t) setChatToken(t) })
+    }
+  }, [codigo, params.token, senderType, profile?.whatsapp])
 
   const [messages, setMessages] = useState<Mensaje[]>([])
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [sending, setSending] = useState(false)
-  const [otherTyping, setOtherTyping] = useState(false)
+  const [coinsError, setCoinsError] = useState<{ costo?: number; saldo?: number } | null>(null)
   const flatListRef = useRef<FlatList>(null)
-  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const techTokenRef = useRef<string | null>(null)
 
   const headerTitle = senderType === 'cliente'
     ? `Chat con ${techName}`
     : `Chat con ${clientName}`
 
-  // Load messages
-  const loadMessages = useCallback(async () => {
+  // Auth según rol: técnico → Bearer (AsyncStorage); cliente → chatToken.
+  const getAuth = useCallback(async (): Promise<{ token?: string | null; chatToken?: string | null }> => {
+    if (senderType === 'tecnico') {
+      if (!techTokenRef.current) techTokenRef.current = await getTechToken()
+      return { token: techTokenRef.current }
+    }
+    return { chatToken }
+  }, [senderType, chatToken])
+
+  // Fusiona server + optimistas locales no confirmados (evita parpadeo polling).
+  const mergeServer = useCallback((server: Mensaje[]) => {
+    setMessages((prev) => {
+      const pending = prev.filter((m) => m.id < 0 && !server.some((s) => s.mensaje === m.mensaje && s.remitente === m.remitente))
+      return [...server, ...pending]
+    })
+  }, [])
+
+  const loadMessages = useCallback(async (showSpinner: boolean) => {
+    if (!codigo) { setLoading(false); setLoadError(true); return }
+    if (showSpinner) setLoading(true)
     try {
-      const { data } = await supabase
-        .from('mensajes')
-        .select('*')
-        .eq('solicitud_id', solicitudId)
-        .order('created_at', { ascending: true })
-      setMessages(data || [])
+      const auth = await getAuth()
+      const data = await fetchMensajes({ codigo, ...auth })
+      mergeServer(data as Mensaje[])
+      setLoadError(false)
     } catch (err) {
-      console.warn('Error loading messages:', err)
+      logger.warn('Error loading messages:', err)
+      if (showSpinner) setLoadError(true)
     } finally {
-      setLoading(false)
+      if (showSpinner) setLoading(false)
     }
-  }, [solicitudId])
+  }, [codigo, getAuth, mergeServer])
 
+  useEffect(() => { loadMessages(true) }, [loadMessages])
+
+  // Polling cada 3s en vez de Realtime (cerrado por el lockdown).
   useEffect(() => {
-    loadMessages()
+    const intervalId = setInterval(() => { loadMessages(false) }, POLL_MS)
+    return () => clearInterval(intervalId)
   }, [loadMessages])
-
-  // Realtime subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel(`chat-${solicitudId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'mensajes',
-        filter: `solicitud_id=eq.${solicitudId}`,
-      }, (payload) => {
-        const newMsg = payload.new as Mensaje
-        setMessages((prev) => {
-          // Avoid duplicates (by real ID or matching optimistic messages)
-          if (prev.some((m) => m.id === newMsg.id)) return prev
-          // Replace optimistic message (negative ID, same text) with real one
-          const optimisticIdx = prev.findIndex(
-            (m) => m.id < 0 && m.mensaje === newMsg.mensaje && m.sender_type === newMsg.sender_type
-          )
-          if (optimisticIdx >= 0) {
-            const updated = [...prev]
-            updated[optimisticIdx] = newMsg
-            return updated
-          }
-          return [...prev, newMsg]
-        })
-      })
-      .on('broadcast', { event: 'typing' }, (payload) => {
-        if (payload.payload?.sender !== senderType) {
-          setOtherTyping(true)
-          if (typingTimeout.current) clearTimeout(typingTimeout.current)
-          typingTimeout.current = setTimeout(() => setOtherTyping(false), 3000)
-        }
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-      if (typingTimeout.current) clearTimeout(typingTimeout.current)
-    }
-  }, [solicitudId, senderType])
-
-  // Send typing indicator when user types
-  function handleTextChange(value: string) {
-    setText(value)
-    supabase.channel(`chat-${solicitudId}`).send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { sender: senderType },
-    }).catch(() => {})
-  }
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -128,24 +110,6 @@ export default function ChatScreen() {
     }
   }, [messages.length])
 
-  // Mark messages as read
-  useEffect(() => {
-    if (messages.length === 0) return
-    const otherType = senderType === 'cliente' ? 'tecnico' : 'cliente'
-    const unread = messages.filter((m) => m.sender_type === otherType && !m.leido)
-    if (unread.length > 0) {
-      supabase
-        .from('mensajes')
-        .update({ leido: true })
-        .eq('solicitud_id', solicitudId)
-        .eq('sender_type', otherType)
-        .eq('leido', false)
-        .then(({ error }) => {
-          if (error) console.warn('Error marking messages as read:', error)
-        })
-    }
-  }, [messages, senderType, solicitudId])
-
   async function sendMessage() {
     const trimmed = text.trim()
     if (!trimmed || sending) return
@@ -154,9 +118,8 @@ export default function ChatScreen() {
     const tempId = -(Date.now())
     const optimisticMsg: Mensaje = {
       id: tempId,
-      solicitud_id: solicitudId,
-      sender_type: senderType,
-      sender_id: senderId,
+      codigo_solicitud: codigo,
+      remitente: senderType,
       mensaje: trimmed,
       leido: false,
       created_at: new Date().toISOString(),
@@ -164,28 +127,21 @@ export default function ChatScreen() {
     setMessages((prev) => [...prev, optimisticMsg])
     setText('')
     setSending(true)
+    setCoinsError(null)
 
     try {
-      const { data, error } = await supabase.from('mensajes').insert({
-        solicitud_id: solicitudId,
-        sender_type: senderType,
-        sender_id: senderId,
-        mensaje: trimmed,
-      }).select('id').single()
-
-      if (error) {
-        // Remove optimistic message and restore text on failure
-        setMessages((prev) => prev.filter((m) => m.id !== tempId))
-        setText(trimmed)
-        console.warn('Error sending message:', error)
-      } else if (data) {
-        // Replace temp ID with real ID (realtime may also deliver it)
-        setMessages((prev) => prev.map((m) => m.id === tempId ? { ...m, id: data.id } : m))
-      }
+      const auth = await getAuth()
+      const saved = await sendMensaje({ codigo, mensaje: trimmed, ...auth })
+      setMessages((prev) => prev.map((m) => m.id === tempId ? (saved as Mensaje) : m))
     } catch (err) {
+      // Remove optimistic message and restore text on failure
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
       setText(trimmed)
-      console.warn('Error sending message:', err)
+      if (err instanceof ChatApiError && err.status === 402) {
+        setCoinsError({ costo: err.costo, saldo: err.saldoActual })
+      } else {
+        logger.warn('Error sending message:', err)
+      }
     } finally {
       setSending(false)
     }
@@ -214,7 +170,7 @@ export default function ChatScreen() {
     return current !== prev
   }
 
-  const isMine = (msg: Mensaje) => msg.sender_type === senderType
+  const isMine = (msg: Mensaje) => msg.remitente === senderType
 
   const renderMessage = ({ item, index }: { item: Mensaje; index: number }) => {
     const mine = isMine(item)
@@ -315,17 +271,35 @@ export default function ChatScreen() {
             renderItem={renderMessage}
             contentContainerStyle={{ paddingVertical: THEME.space.md, flexGrow: 1 }}
             ListEmptyComponent={
-              <FadeInUp delay={80} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xxxl }}>
-                <View style={{ width: 76, height: 76, borderRadius: THEME.radius.full, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
-                  <Ionicons name="chatbubbles-outline" size={38} color={THEME.color.brand} />
-                </View>
-                <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>
-                  Sin mensajes aún
-                </Text>
-                <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, textAlign: 'center', marginTop: THEME.space.xs, lineHeight: 19 }}>
-                  Envía el primer mensaje para iniciar la conversación
-                </Text>
-              </FadeInUp>
+              loadError ? (
+                <FadeInUp delay={80} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xxxl }}>
+                  <View style={{ width: 76, height: 76, borderRadius: THEME.radius.full, backgroundColor: THEME.color.surfaceSunken, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+                    <Ionicons name="cloud-offline-outline" size={38} color={THEME.color.inkMuted} />
+                  </View>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>
+                    No pudimos cargar el chat
+                  </Text>
+                  <PressableScale
+                    onPress={() => loadMessages(true)}
+                    accessibilityLabel="Reintentar carga del chat"
+                    style={{ marginTop: THEME.space.lg, minHeight: 44, paddingHorizontal: THEME.space.xl, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.brand }}
+                  >
+                    <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Reintentar</Text>
+                  </PressableScale>
+                </FadeInUp>
+              ) : (
+                <FadeInUp delay={80} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: THEME.space.xxxl }}>
+                  <View style={{ width: 76, height: 76, borderRadius: THEME.radius.full, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', marginBottom: THEME.space.lg }}>
+                    <Ionicons name="chatbubbles-outline" size={38} color={THEME.color.brand} />
+                  </View>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>
+                    Sin mensajes aún
+                  </Text>
+                  <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, textAlign: 'center', marginTop: THEME.space.xs, lineHeight: 19 }}>
+                    Envía el primer mensaje para iniciar la conversación
+                  </Text>
+                </FadeInUp>
+              )
             }
             onContentSizeChange={() => {
               if (messages.length > 0) {
@@ -335,18 +309,21 @@ export default function ChatScreen() {
           />
         )}
 
-        {/* Typing indicator */}
-        {otherTyping && (
-          <View style={{ paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.sm, flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
-            <View style={{ flexDirection: 'row', gap: 3 }}>
-              {[0, 1, 2].map((i) => (
-                <View key={i} style={{
-                  width: 6, height: 6, borderRadius: 3, backgroundColor: THEME.color.inkMuted,
-                  opacity: 0.6,
-                }} />
-              ))}
+        {/* Aviso sin coins (1er mensaje del técnico en un lead) */}
+        {coinsError && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, backgroundColor: THEME.color.brandLight, borderTopWidth: 1, borderTopColor: THEME.color.line }}>
+            <Ionicons name="cash-outline" size={20} color={THEME.color.brand} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>Necesitas coins para responder</Text>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 1 }}>
+                {coinsError.costo != null
+                  ? `Cuesta ${coinsError.costo} coins${coinsError.saldo != null ? ` · tienes ${coinsError.saldo}` : ''}. Compra coins en tu cuenta.`
+                  : 'Compra coins en tu cuenta para iniciar este chat.'}
+              </Text>
             </View>
-            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, fontStyle: 'italic' }}>escribiendo...</Text>
+            <TouchableOpacity accessibilityLabel="Cerrar aviso de coins" onPress={() => setCoinsError(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="close" size={18} color={THEME.color.inkMuted} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -373,7 +350,7 @@ export default function ChatScreen() {
         }}>
           <TextInput
             value={text}
-            onChangeText={handleTextChange}
+            onChangeText={setText}
             placeholder="Escribe un mensaje..."
             placeholderTextColor={THEME.color.inkMuted}
             multiline

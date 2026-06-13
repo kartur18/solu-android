@@ -5,7 +5,11 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../lib/constants'
-import { supabase } from '../lib/supabase'
+import {
+  fetchNotifications as apiFetchNotifications,
+  markNotifRead as apiMarkNotifRead,
+  markAllNotifRead as apiMarkAllNotifRead,
+} from '../lib/notif-api'
 import type { Notificacion } from '../lib/types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -40,9 +44,14 @@ interface Props {
   visible: boolean
   onClose: () => void
   techId: number
+  token: string | null
 }
 
-export default function NotificationCenter({ visible, onClose, techId }: Props) {
+// Polling cada ~3s mientras el panel está abierto (los endpoints no tienen
+// realtime, igual que la web).
+const POLL_MS = 3000
+
+export default function NotificationCenter({ visible, onClose, techId, token }: Props) {
   const [notifications, setNotifications] = useState<Notificacion[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -50,26 +59,22 @@ export default function NotificationCenter({ visible, onClose, techId }: Props) 
 
   const unreadCount = notifications.filter(n => !n.leido).length
 
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true)
-    setLoadError(false)
-    try {
-      const { data, error } = await supabase
-        .from('notificaciones')
-        .select('*')
-        .eq('tecnico_id', techId)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      if (error) {
-        setLoadError(true)
-      } else {
-        setNotifications(data || [])
-      }
-    } catch {
-      setLoadError(true)
+  // `silent` evita el spinner en los refrescos del polling (solo la carga
+  // inicial muestra "Cargando...").
+  const fetchNotifications = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true)
+      setLoadError(false)
     }
-    setLoading(false)
-  }, [techId])
+    try {
+      const data = await apiFetchNotifications(token, 20, techId)
+      setNotifications(data)
+      setLoadError(false)
+    } catch {
+      if (!silent) setLoadError(true)
+    }
+    if (!silent) setLoading(false)
+  }, [techId, token])
 
   useEffect(() => {
     if (visible) {
@@ -80,25 +85,30 @@ export default function NotificationCenter({ visible, onClose, techId }: Props) 
         tension: 65,
         friction: 11,
       }).start()
+      const id = setInterval(() => { fetchNotifications(true) }, POLL_MS)
+      return () => clearInterval(id)
     } else {
       slideAnim.setValue(SCREEN_WIDTH)
     }
-  }, [visible])
+  }, [visible, fetchNotifications])
 
   async function markAsRead(notifId: number) {
-    try {
-      await supabase.from('notificaciones').update({ leido: true }).eq('id', notifId)
-      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n))
-    } catch {}
+    // Optimista: marca en UI y revierte si el server falla.
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n))
+    const ok = await apiMarkNotifRead(token, techId, notifId)
+    if (!ok) {
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: false } : n))
+    }
   }
 
   async function markAllAsRead() {
-    try {
-      const unreadIds = notifications.filter(n => !n.leido).map(n => n.id)
-      if (unreadIds.length === 0) return
-      await supabase.from('notificaciones').update({ leido: true }).eq('tecnico_id', techId).eq('leido', false)
-      setNotifications(prev => prev.map(n => ({ ...n, leido: true })))
-    } catch {}
+    if (unreadCount === 0) return
+    const prevState = notifications
+    setNotifications(prev => prev.map(n => ({ ...n, leido: true })))
+    const ok = await apiMarkAllNotifRead(token, techId)
+    if (!ok) {
+      setNotifications(prevState)
+    }
   }
 
   function handleClose() {
@@ -186,7 +196,7 @@ export default function NotificationCenter({ visible, onClose, techId }: Props) 
                 Revisa tu conexión a internet e intenta de nuevo
               </Text>
               <TouchableOpacity
-                onPress={fetchNotifications}
+                onPress={() => fetchNotifications()}
                 style={{
                   backgroundColor: COLORS.pri, borderRadius: 12,
                   paddingHorizontal: 20, paddingVertical: 12, minHeight: 44, justifyContent: 'center',

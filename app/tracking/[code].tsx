@@ -6,6 +6,7 @@ import { waLink, SUPPORT_PHONE } from '../../src/lib/constants'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/components/ui/Motion'
 import { supabase } from '../../src/lib/supabase'
+import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { fetchServicioByCodigo } from '../../src/lib/servicios'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
@@ -29,7 +30,7 @@ const URGENCIA_COLOR: Record<string, string> = {
 export default function TrackingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
   const router = useRouter()
-  const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null }) | null>(null)
+  const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null; cancelToken?: string | null }) | null>(null)
   const [tech, setTech] = useState<Pick<Tecnico, 'id' | 'nombre' | 'whatsapp' | 'oficio' | 'foto_url' | 'calificacion'> | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -183,22 +184,22 @@ export default function TrackingScreen() {
           text: 'Sí, cancelar',
           style: 'destructive',
           onPress: async () => {
-            const { error } = await supabase
-              .from('clientes')
-              .update({ estado: 'Cancelado' })
-              .eq('id', snapshot.id)
-            if (error) {
-              Alert.alert('Error', 'No se pudo cancelar. Intenta de nuevo.')
+            // Cancelación server-side: el endpoint cambia el estado y notifica
+            // al técnico (push + BD). El insert/update anon quedó cerrado por
+            // el lockdown. cancelToken es opcional (lo trae /servicio/{code} si existe).
+            try {
+              const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/pedidos/${encodeURIComponent(snapshot.codigo)}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(snapshot.cancelToken ? { cancelToken: snapshot.cancelToken } : {}),
+              })
+              if (!res.ok) {
+                Alert.alert('Error', 'No se pudo cancelar. Intenta de nuevo.')
+                return
+              }
+            } catch {
+              Alert.alert('Error', 'No se pudo cancelar. Revisa tu conexión e intenta de nuevo.')
               return
-            }
-            if (tech) {
-              supabase.from('notificaciones').insert({
-                tecnico_id: tech.id,
-                tipo: 'cancelacion',
-                titulo: 'Solicitud cancelada',
-                mensaje: `El cliente canceló la solicitud ${snapshot.codigo}`,
-                leido: false,
-              }).then(() => {})
             }
             haptics.warning()
             setService({ ...snapshot, estado: 'Cancelado' })
