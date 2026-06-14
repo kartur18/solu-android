@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 23,
+      "versionCode": 24,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -94,7 +94,8 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -118,6 +119,12 @@
         {
           "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#F26B21"
+        }
       ]
     ],
     "owner": "kartur",
@@ -129,6 +136,7 @@
       "supabaseUrl": "https://umcisdghupovaaksbmix.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtY2lzZGdodXBvdmFha3NibWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMDc4NjksImV4cCI6MjA4OTY4Mzg2OX0.rMG0nimeeT15W22l9KltaFoj41qDxZS6BmnNwQVjz7o",
       "apiBaseUrl": "https://solu.pe/api",
+      "sentryDsn": "",
       "cloudinaryCloudName": "dcwwvvb1e",
       "yapeNumber": "983835904"
     }

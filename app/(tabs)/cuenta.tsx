@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, LEVELS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS, OFICIOS_LIST } from '../../src/lib/constants'
 import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
+import { getTechAuthToken } from '../../src/lib/tech-auth'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
 import { markNotifRead as apiMarkNotifRead } from '../../src/lib/notif-api'
@@ -480,16 +481,15 @@ export default function CuentaScreen() {
       formData.append('tipo', tipo)
       formData.append('tecnicoId', String(tech.id))
       // El endpoint exige auth_token en el FormData (verifica ownership) o devuelve 401.
-      const docToken = authToken ?? (await leadAuthToken())
+      const docToken = authToken ?? (await getTechAuthToken())
       if (!docToken) throw new Error('Sesión expirada. Vuelve a iniciar sesión.')
       formData.append('auth_token', docToken)
 
+      // Sin header Content-Type manual: fetch arma el boundary multipart solo
+      // (forzarlo en React Native rompe el parseo del FormData en el server).
       const uploadRes = await fetch(`${ENV.API_BASE_URL}/upload-doc`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
       })
 
       if (!uploadRes.ok) {
@@ -1736,10 +1736,14 @@ export default function CuentaScreen() {
                                   if (result.canceled || !result.assets?.[0]) return
                                   try {
                                     const asset = result.assets[0]
+                                    // El endpoint exige auth_token en el FormData (verifica ownership) o devuelve 401.
+                                    const docToken = authToken ?? (await getTechAuthToken())
+                                    if (!docToken) return Alert.alert('Sesión expirada', 'Iniciá sesión de nuevo para subir documentos.')
                                     const formData = new FormData()
                                     formData.append('file', { uri: asset.uri, name: `${doc.key}_${tech.id}.jpg`, type: 'image/jpeg' } as any)
                                     formData.append('tipo', doc.key)
                                     formData.append('tecnicoId', String(tech.id))
+                                    formData.append('auth_token', docToken)
                                     const res = await fetch(`${ENV.API_BASE_URL}/upload-doc`, { method: 'POST', body: formData })
                                     const data = await res.json()
                                     if (data.success) {

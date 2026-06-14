@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { tierFromServicios } from './tecnico-columns'
 
 export interface MatchableTech {
   id: number
@@ -54,8 +55,11 @@ export function scoreTech(tech: MatchableTech, input: MatchInput): number {
   const done = tech.servicios_completados ?? 0
   score += Math.min((done / 50) * 20, 20)
 
-  // Tier boost (0-30 pts) — basado en tier loyalty real, no plan mensual
-  score += TIER_BOOST[(tech.tier ?? '').toLowerCase()] ?? 0
+  // Tier boost (0-30 pts) — el tier NO es columna de `tecnicos`: se DERIVA de
+  // servicios_completados (igual que TechCard). Antes leía tech.tier, que nunca
+  // venía en el SELECT, así que el boost era SIEMPRE 0 y el tier loyalty no
+  // pesaba en el ranking. Ahora sí.
+  score += TIER_BOOST[tierFromServicios(tech.servicios_completados)] ?? 0
 
   // Same district bonus (0-25 pts)
   if (tech.distrito && input.distrito && tech.distrito.toLowerCase() === input.distrito.toLowerCase()) {

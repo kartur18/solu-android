@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
-import { Tabs, useRouter } from 'expo-router'
+import { useState, useCallback } from 'react'
+import { Tabs, useRouter, useFocusEffect } from 'expo-router'
 import { View, Text } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { supabase } from '../../src/lib/supabase'
+import { getTechToken, fetchNotifications } from '../../src/lib/notif-api'
+import { logger } from '../../src/lib/logger'
 import { THEME } from '../../src/lib/theme'
 
 const ACTIVE_COLOR = THEME.color.brand
@@ -39,21 +41,38 @@ export default function TabLayout() {
   const bottomPad = Math.max(insets.bottom, 16)
   const [unreadCount, setUnreadCount] = useState(0)
 
-  useEffect(() => {
-    async function fetchUnread() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const { count } = await supabase
-          .from('notificaciones')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('leida', false)
-        setUnreadCount(count || 0)
-      } catch {}
-    }
-    fetchUnread()
-  }, [])
+  // Los técnicos se autentican con Bearer (no Supabase Auth) y la tabla
+  // `notificaciones` está en deny-all para anon tras el lockdown RLS: por eso
+  // el contador va contra el endpoint server-side autenticado, no a Supabase.
+  // Se refresca al volver al foco para reflejar lo leído en Mi Cuenta.
+  useFocusEffect(
+    useCallback(() => {
+      let activo = true
+      async function fetchUnread() {
+        try {
+          const raw = await AsyncStorage.getItem('solu_tech_session')
+          if (!raw) {
+            if (activo) setUnreadCount(0)
+            return
+          }
+          const session = JSON.parse(raw) as { id?: number; token?: string }
+          const token = await getTechToken()
+          if (!session?.id || !token) {
+            if (activo) setUnreadCount(0)
+            return
+          }
+          const notifs = await fetchNotifications(token, 50, session.id)
+          if (activo) setUnreadCount(notifs.filter((n) => !n.leido).length)
+        } catch (err) {
+          logger.error('No se pudo cargar el contador de notificaciones:', err)
+        }
+      }
+      fetchUnread()
+      return () => {
+        activo = false
+      }
+    }, []),
+  )
 
   return (
     <Tabs

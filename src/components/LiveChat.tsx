@@ -50,7 +50,13 @@ export function LiveChat({ codigo, as, techNombre, chatToken }: Props) {
   const recordingRef = useRef<ExpoRecording | null>(null)
   const recordStartRef = useRef(0)
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const audioAvailable = useMemo(() => isAudioChatAvailable(), [])
+  // El mic solo aplica a chats de contacto (CONT-): el upload server-side
+  // únicamente existe para esos códigos. En pedidos (SOLU-) ocultamos el botón
+  // para no dejar al usuario grabar y recibir un error genérico.
+  const audioAvailable = useMemo(
+    () => isAudioChatAvailable() && /^CONT-[A-F0-9]{6}$/i.test(codigo.trim()),
+    [codigo],
+  )
   // Token del técnico cacheado (lo emite el login y vive en AsyncStorage).
   const techTokenRef = useRef<string | null>(null)
 
