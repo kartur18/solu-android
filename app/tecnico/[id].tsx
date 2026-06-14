@@ -130,7 +130,7 @@ export default function TecnicoScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => Share.share({
-                  message: `Mira a ${tech.nombre}, ${tech.oficio} verificado en SOLU. https://solu.pe/tecnico/${tech.id}`,
+                  message: `Mira a ${tech.nombre}, ${tech.oficio} verificado en SOLU. https://www.solu.pe/tecnico/${tech.id}`,
                   title: `${tech.nombre} - SOLU`,
                 })}
                 accessibilityLabel="Compartir técnico"

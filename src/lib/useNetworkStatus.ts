@@ -16,7 +16,8 @@ export function useNetworkStatus(checkIntervalMs = 15000): boolean {
       try {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 5000)
-        await fetch('https://solu.pe/api/health', {
+        // www.solu.pe sirve directo; el host sin-www hace un 301 extra.
+        await fetch('https://www.solu.pe/api/health', {
           method: 'GET',
           signal: controller.signal,
         })
@@ -27,15 +28,26 @@ export function useNetworkStatus(checkIntervalMs = 15000): boolean {
       }
     }
 
+    // Re-arma el chequeo periódico (idempotente: limpia el anterior).
+    function startInterval() {
+      clearInterval(intervalId)
+      intervalId = setInterval(checkConnection, checkIntervalMs)
+    }
+
     // Check immediately
     checkConnection()
 
     // Check periodically when app is active
-    intervalId = setInterval(checkConnection, checkIntervalMs)
+    startInterval()
 
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (appState.current.match(/inactive|background/) && nextState === 'active') {
+        // Al volver a foreground: chequeo inmediato + re-arma el intervalo.
         checkConnection()
+        startInterval()
+      } else if (nextState.match(/inactive|background/)) {
+        // En background pausamos el polling para no drenar datos/batería.
+        clearInterval(intervalId)
       }
       appState.current = nextState
     })

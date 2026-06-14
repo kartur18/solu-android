@@ -1,6 +1,6 @@
 // Comprar SoluCoins — V3.1.
 //
-// La compra real se hace en la web (https://solu.pe/planes) porque ahí
+// La compra real se hace en la web (https://www.solu.pe/planes) porque ahí
 // vive el SDK de Culqi con PCI-DSS, 3DS y Apple Pay/Google Pay. Reimplementar
 // el checkout dentro del app móvil duplicaría la integración y obligaría a
 // pasar Apple Review por usar pagos no-IAP para servicios no-digitales
@@ -31,7 +31,7 @@ export default function ComprarCoinsScreen() {
     // Al cerrar el browser vuelve a esta pantalla; el saldo se actualiza
     // la próxima vez que entre a Mi cuenta.
     haptics.success()
-    await WebBrowser.openBrowserAsync(`https://solu.pe/planes?paquete=${slug}`)
+    await WebBrowser.openBrowserAsync(`https://www.solu.pe/planes?paquete=${slug}`)
   }
 
   return (

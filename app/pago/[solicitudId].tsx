@@ -32,7 +32,7 @@ export default function CoordinarPagoScreen() {
     // El cliente coordina con el técnico por WhatsApp (canal donde ya
     // están hablando). El número del técnico lo tiene en /tracking.
     haptics.success()
-    Linking.openURL('https://solu.pe/tracking/' + (solicitudId ?? ''))
+    Linking.openURL('https://www.solu.pe/tracking/' + (solicitudId ?? ''))
   }
 
   return (

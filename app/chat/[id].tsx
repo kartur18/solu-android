@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, Text, TextInput, FlatList, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator, TouchableOpacity,
+  AppState,
 } from 'react-native'
 import { useLocalSearchParams, Stack } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -16,6 +17,10 @@ import { useClientProfile } from '../../src/lib/useClientProfile'
 import { logger } from '../../src/lib/logger'
 
 const POLL_MS = 3000
+// Backoff: tras MAX_QUIET_POLLS polls sin mensajes nuevos subimos a POLL_MS_MAX
+// para ahorrar datos/batería; se resetea a POLL_MS al enviar o recibir algo.
+const POLL_MS_MAX = 8000
+const MAX_QUIET_POLLS = 4
 
 // id<0 marca mensajes optimistas locales aún no confirmados por el server.
 type Mensaje = ChatMensaje
@@ -55,6 +60,17 @@ export default function ChatScreen() {
   const [coinsError, setCoinsError] = useState<{ costo?: number; saldo?: number } | null>(null)
   const flatListRef = useRef<FlatList>(null)
   const techTokenRef = useRef<string | null>(null)
+  // Scheduling del poll: delay actual + nro de polls "tranquilos" (sin novedad).
+  // Refs (no state) para no recrear el efecto de polling en cada cambio.
+  const pollDelayRef = useRef(POLL_MS)
+  const quietPollsRef = useRef(0)
+  // Bump para forzar reprogramación del intervalo (reset de backoff).
+  const [pollResetTick, setPollResetTick] = useState(0)
+  const resetPollBackoff = useCallback(() => {
+    pollDelayRef.current = POLL_MS
+    quietPollsRef.current = 0
+    setPollResetTick((t) => t + 1)
+  }, [])
 
   const headerTitle = senderType === 'cliente'
     ? `Chat con ${techName}`
@@ -69,13 +85,23 @@ export default function ChatScreen() {
     return { chatToken }
   }, [senderType, chatToken])
 
+  // IDs de mensajes confirmados ya vistos (para detectar novedad sin meter
+  // efectos dentro del updater de setState, que StrictMode corre 2 veces).
+  const seenServerIdsRef = useRef<Set<number>>(new Set())
+
   // Fusiona server + optimistas locales no confirmados (evita parpadeo polling).
+  // Si el server trae algún mensaje confirmado nuevo, reseteamos el backoff.
   const mergeServer = useCallback((server: Mensaje[]) => {
+    const hayNuevos = server.some((s) => !seenServerIdsRef.current.has(s.id))
+    if (hayNuevos) {
+      seenServerIdsRef.current = new Set(server.map((s) => s.id))
+      resetPollBackoff()
+    }
     setMessages((prev) => {
       const pending = prev.filter((m) => m.id < 0 && !server.some((s) => s.mensaje === m.mensaje && s.remitente === m.remitente))
       return [...server, ...pending]
     })
-  }, [])
+  }, [resetPollBackoff])
 
   const loadMessages = useCallback(async (showSpinner: boolean) => {
     if (!codigo) { setLoading(false); setLoadError(true); return }
@@ -95,11 +121,54 @@ export default function ChatScreen() {
 
   useEffect(() => { loadMessages(true) }, [loadMessages])
 
-  // Polling cada 3s en vez de Realtime (cerrado por el lockdown).
+  // Polling adaptativo (3s→8s con backoff) en vez de Realtime (cerrado por el
+  // lockdown). Se pausa en background/inactive para no drenar datos/batería y
+  // re-arma con fetch inmediato al volver a 'active'.
   useEffect(() => {
-    const intervalId = setInterval(() => { loadMessages(false) }, POLL_MS)
-    return () => clearInterval(intervalId)
-  }, [loadMessages])
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    let cancelled = false
+
+    const schedule = () => {
+      timeoutId = setTimeout(async () => {
+        if (cancelled) return
+        await loadMessages(false)
+        if (cancelled) return
+        // Subimos el delay tras varios polls sin novedad (mergeServer resetea al
+        // recibir; sendMessage resetea al enviar; ambos bumpean pollResetTick).
+        quietPollsRef.current += 1
+        if (quietPollsRef.current >= MAX_QUIET_POLLS) pollDelayRef.current = POLL_MS_MAX
+        schedule()
+      }, pollDelayRef.current)
+    }
+
+    const startPolling = () => {
+      if (timeoutId !== undefined) return
+      schedule()
+    }
+    const stopPolling = () => {
+      if (timeoutId !== undefined) { clearTimeout(timeoutId); timeoutId = undefined }
+    }
+
+    // Arranca solo si estamos en foreground.
+    if (AppState.currentState === 'active') startPolling()
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        // Al volver: 1 fetch inmediato + re-arma el ciclo.
+        if (!cancelled) loadMessages(false)
+        startPolling()
+      } else {
+        // background/inactive: pausa total del poll.
+        stopPolling()
+      }
+    })
+
+    return () => {
+      cancelled = true
+      stopPolling()
+      subscription.remove()
+    }
+  }, [loadMessages, pollResetTick])
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -128,6 +197,8 @@ export default function ChatScreen() {
     setText('')
     setSending(true)
     setCoinsError(null)
+    // Enviar reactiva el polling rápido (esperamos respuesta del otro lado).
+    resetPollBackoff()
 
     try {
       const auth = await getAuth()

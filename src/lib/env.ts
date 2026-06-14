@@ -14,7 +14,7 @@ function required(name: string, value: unknown): string {
 export const ENV = {
   SUPABASE_URL: required('supabaseUrl', extra.supabaseUrl),
   SUPABASE_ANON_KEY: required('supabaseAnonKey', extra.supabaseAnonKey),
-  API_BASE_URL: extra.apiBaseUrl || 'https://solu.pe/api',
+  API_BASE_URL: extra.apiBaseUrl || 'https://www.solu.pe/api',
   CLOUDINARY_CLOUD_NAME: extra.cloudinaryCloudName || 'dcwwvvb1e',
   YAPE_NUMBER: extra.yapeNumber || '983835904',
   EXPO_PROJECT_ID: extra.eas?.projectId || 'e5c70e83-de40-40e4-8e2f-fb8d79c5d62b',

@@ -704,7 +704,7 @@ export default function CuentaScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: THEME.space.sm }}>
               <PressableScale
-                onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}`, title: `${tech.nombre} - SOLU` })}
+                onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}`, title: `${tech.nombre} - SOLU` })}
                 accessibilityLabel="Compartir mi perfil"
                 style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
               >
@@ -838,7 +838,7 @@ export default function CuentaScreen() {
                   <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.dark }}>{profileViews}</Text>
                   <Text style={{ fontSize: 11, color: COLORS.gray }}>Vistas a tu perfil esta semana</Text>
                 </View>
-                <TouchableOpacity onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}` })} style={{ backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                <TouchableOpacity onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}` })} style={{ backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
                   <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>Compartir</Text>
                 </TouchableOpacity>
               </View>
@@ -898,7 +898,7 @@ export default function CuentaScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <Ionicons name="calendar" size={18} color="#2563EB" />
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Agenda de hoy</Text>
-                  <TouchableOpacity onPress={() => Linking.openURL(`https://solu.pe/api/calendar-sync?tecnicoId=${tech.id}`)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <TouchableOpacity onPress={() => Linking.openURL(`https://www.solu.pe/api/calendar-sync?tecnicoId=${tech.id}`)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Ionicons name="calendar-outline" size={14} color="#2563EB" />
                     <Text style={{ fontSize: 10, fontWeight: '700', color: '#2563EB' }}>Sincronizar</Text>
                   </TouchableOpacity>
@@ -1020,7 +1020,7 @@ export default function CuentaScreen() {
               </View>
               <PressableScale
                 onPress={() => Share.share({
-                  message: `🔧 ${tech.nombre}\n${tech.oficio} verificado en SOLU\n\n📍 ${tech.distrito}\n💰 Desde S/${tech.precio_desde || '—'}\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} estrellas\n📱 ${tech.whatsapp}\n\n👉 Ver perfil: https://solu.pe/tecnico/${tech.id}`,
+                  message: `🔧 ${tech.nombre}\n${tech.oficio} verificado en SOLU\n\n📍 ${tech.distrito}\n💰 Desde S/${tech.precio_desde || '—'}\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} estrellas\n📱 ${tech.whatsapp}\n\n👉 Ver perfil: https://www.solu.pe/tecnico/${tech.id}`,
                 })}
                 accessibilityLabel="Compartir mi tarjeta digital"
                 style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...THEME.shadow.brand }}
@@ -1114,7 +1114,7 @@ export default function CuentaScreen() {
                     Te avisaremos apenas llegue una solicitud en tu zona. Mientras tanto, comparte tu perfil para conseguir clientes.
                   </Text>
                   <TouchableOpacity
-                    onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://solu.pe/tecnico/${tech.id}` })}
+                    onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}` })}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EFF6FF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, marginTop: 12 }}
                   >
                     <Ionicons name="share-social-outline" size={16} color="#2563EB" />
@@ -1809,7 +1809,7 @@ export default function CuentaScreen() {
                             ))}
                           </ScrollView>
                           <TouchableOpacity
-                            onPress={() => Share.share({ message: `Mira mis trabajos en SOLU: https://solu.pe/tecnico/${tech.id}` })}
+                            onPress={() => Share.share({ message: `Mira mis trabajos en SOLU: https://www.solu.pe/tecnico/${tech.id}` })}
                             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, backgroundColor: '#EFF6FF', borderRadius: 10, padding: 10 }}
                           >
                             <Ionicons name="share-social-outline" size={14} color="#2563EB" />

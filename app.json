@@ -35,42 +35,24 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 25,
+      "versionCode": 26,
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/tracking"
-            },
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/tecnico"
-            },
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/calificar"
-            },
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/chat"
-            },
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/solicitar"
-            },
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/fidelidad"
-            }
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tracking" },
+            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/tracking" },
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tecnico" },
+            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/tecnico" },
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/calificar" },
+            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/calificar" },
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/chat" },
+            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/chat" },
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/solicitar" },
+            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/solicitar" },
+            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/fidelidad" },
+            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/fidelidad" }
           ],
           "category": [
             "BROWSABLE",
@@ -134,7 +116,7 @@
       "router": {},
       "supabaseUrl": "https://umcisdghupovaaksbmix.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtY2lzZGdodXBvdmFha3NibWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMDc4NjksImV4cCI6MjA4OTY4Mzg2OX0.rMG0nimeeT15W22l9KltaFoj41qDxZS6BmnNwQVjz7o",
-      "apiBaseUrl": "https://solu.pe/api",
+      "apiBaseUrl": "https://www.solu.pe/api",
       "sentryDsn": "",
       "cloudinaryCloudName": "dcwwvvb1e",
       "yapeNumber": "983835904"

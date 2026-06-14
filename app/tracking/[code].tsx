@@ -233,7 +233,7 @@ export default function TrackingScreen() {
     if (!snapshot) return
     try {
       await Share.share({
-        message: `Acabo de usar SOLU y me resolvieron un problema de ${snapshot.servicio} rapidísimo 🔧\n\nDescarga la app y pide tu servicio: https://solu.pe`,
+        message: `Acabo de usar SOLU y me resolvieron un problema de ${snapshot.servicio} rapidísimo 🔧\n\nDescarga la app y pide tu servicio: https://www.solu.pe`,
       })
     } catch {}
   }

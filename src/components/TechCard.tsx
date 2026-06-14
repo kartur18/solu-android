@@ -59,7 +59,7 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
   async function handleShare() {
     try {
       await Share.share({
-        message: `👷 ${tech.nombre} - ${tech.oficio} en SOLU\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} · ${tech.distrito}\n\nEncuéntralo en: https://solu.pe/buscar?tech=${tech.id}`,
+        message: `👷 ${tech.nombre} - ${tech.oficio} en SOLU\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} · ${tech.distrito}\n\nEncuéntralo en: https://www.solu.pe/buscar?tech=${tech.id}`,
         title: `Técnico SOLU: ${tech.nombre}`,
       })
     } catch {}
