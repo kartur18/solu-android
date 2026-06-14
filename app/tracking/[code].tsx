@@ -30,7 +30,7 @@ const URGENCIA_COLOR: Record<string, string> = {
 export default function TrackingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
   const router = useRouter()
-  const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null; cancelToken?: string | null }) | null>(null)
+  const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null }) | null>(null)
   const [tech, setTech] = useState<Pick<Tecnico, 'id' | 'nombre' | 'whatsapp' | 'oficio' | 'foto_url' | 'calificacion'> | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -186,12 +186,26 @@ export default function TrackingScreen() {
           onPress: async () => {
             // Cancelación server-side: el endpoint cambia el estado y notifica
             // al técnico (push + BD). El insert/update anon quedó cerrado por
-            // el lockdown. cancelToken es opcional (lo trae /servicio/{code} si existe).
+            // el lockdown. La app no tiene cookie de sesión, así que probamos
+            // ownership con el whatsapp del servicio: pedimos un cancelToken
+            // (HMAC del código) y con él cancelamos.
+            const whatsapp = (snapshot.whatsapp || '').replace(/\D/g, '')
             try {
+              const tokRes = await fetchWithTimeout(`${ENV.API_BASE_URL}/pedidos/${encodeURIComponent(snapshot.codigo)}/cancel-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ whatsapp }),
+              })
+              if (!tokRes.ok) {
+                Alert.alert('Error', 'No pudimos verificar tu identidad. Contacta a soporte.')
+                return
+              }
+              const { cancelToken } = await tokRes.json() as { cancelToken?: string }
+
               const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/pedidos/${encodeURIComponent(snapshot.codigo)}/cancel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(snapshot.cancelToken ? { cancelToken: snapshot.cancelToken } : {}),
+                body: JSON.stringify(cancelToken ? { cancelToken } : {}),
               })
               if (!res.ok) {
                 Alert.alert('Error', 'No se pudo cancelar. Intenta de nuevo.')

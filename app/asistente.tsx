@@ -299,9 +299,10 @@ export default function AsistenteScreen() {
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/solicitudes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Nombres alineados con SolicitudSchema del endpoint (clienteNombre/clienteWhatsapp)
         body: JSON.stringify({
-          nombre: data.nombre,
-          whatsapp: data.whatsapp,
+          clienteNombre: data.nombre,
+          clienteWhatsapp: data.whatsapp,
           distrito: data.distrito,
           servicio: data.servicio,
           urgencia: data.urgencia,
@@ -318,7 +319,8 @@ export default function AsistenteScreen() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- respuesta externa sin contrato tipado en la app
         const body: any = await res.json()
         codigo = body?.codigo || body?.codigo_solicitud || body?.solicitud?.codigo || null
-        if (Array.isArray(body?.tecnicos)) techs = body.tecnicos as TechSuggestion[]
+        // El endpoint devuelve los técnicos sugeridos en `matchedTechs`
+        if (Array.isArray(body?.matchedTechs)) techs = body.matchedTechs as TechSuggestion[]
       } catch {}
 
       saveProfile({ nombre: data.nombre, whatsapp: data.whatsapp, distrito: data.distrito, lastServicio: data.servicio })

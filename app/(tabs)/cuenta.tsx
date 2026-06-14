@@ -479,6 +479,10 @@ export default function CuentaScreen() {
       } as any)
       formData.append('tipo', tipo)
       formData.append('tecnicoId', String(tech.id))
+      // El endpoint exige auth_token en el FormData (verifica ownership) o devuelve 401.
+      const docToken = authToken ?? (await leadAuthToken())
+      if (!docToken) throw new Error('Sesión expirada. Vuelve a iniciar sesión.')
+      formData.append('auth_token', docToken)
 
       const uploadRes = await fetch(`${ENV.API_BASE_URL}/upload-doc`, {
         method: 'POST',
