@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { openTechWhatsapp } from '../lib/contacto'
+import { useContactLead } from '../lib/useContactLead'
+import { ContactLeadModal } from './ContactLeadModal'
 import { THEME } from '../lib/theme'
 import { PressableScale, PulseDot } from './ui/Motion'
 import { optimizeUrl } from '../lib/cloudinary'
@@ -45,6 +47,8 @@ function capitalizar(nombre: string): string {
 
 export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, isFavorite }: Props) {
   const router = useRouter()
+  // Flujo de contacto primario in-app (crea lead + abre chat).
+  const lead = useContactLead()
   // V3.1: tech.plan ahora es opcional. Mapeamos string vacío al fallback.
   const planStyle = PLAN_COLORS[tech.plan ?? ''] ?? null
   const avatarGradient = AVATAR_GRADIENTS[(tech.id || 0) % AVATAR_GRADIENTS.length]
@@ -227,7 +231,8 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
         {/* Acciones: Contactar (primaria brand) + WhatsApp */}
         <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.lg }}>
           <PressableScale
-            onPress={() => router.push(`/tecnico/${tech.id}`)}
+            onPress={() => lead.contactar(tech)}
+            disabled={lead.enviando}
             accessibilityLabel={`Contactar a ${tech.nombre}`}
             style={{
               flex: 1,
@@ -260,6 +265,16 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
           </PressableScale>
         </View>
       </View>
+
+      {/* Modal de datos del cliente (solo si falta nombre/WhatsApp) */}
+      <ContactLeadModal
+        visible={lead.modalVisible}
+        initialNombre={lead.initialNombre}
+        initialWhatsapp={lead.initialWhatsapp}
+        enviando={lead.enviando}
+        onConfirm={lead.confirmarModal}
+        onClose={lead.cerrarModal}
+      />
     </PressableScale>
   )
 })

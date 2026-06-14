@@ -5,6 +5,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { getTechLevel } from '../../src/lib/constants'
 import { openTechWhatsapp, fetchTechWhatsapp } from '../../src/lib/contacto'
+import { useContactLead } from '../../src/lib/useContactLead'
+import { ContactLeadModal } from '../../src/components/ContactLeadModal'
 import { supabase } from '../../src/lib/supabase'
 import { TECNICO_PUBLIC_SELECT, tierFromServicios } from '../../src/lib/tecnico-columns'
 import type { Tecnico, Resena } from '../../src/lib/types'
@@ -36,6 +38,8 @@ function capitalizar(nombre?: string): string {
 export default function TecnicoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
+  // Flujo de contacto primario in-app (crea lead + abre chat).
+  const lead = useContactLead()
   const [tech, setTech] = useState<Tecnico | null>(null)
   const [reviews, setReviews] = useState<Resena[]>([])
   const [loading, setLoading] = useState(true)
@@ -297,19 +301,21 @@ export default function TecnicoScreen() {
 
       {/* ── Barra de acción fija abajo ── */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: THEME.color.surface, paddingHorizontal: THEME.space.xl, paddingTop: THEME.space.md, paddingBottom: 28, borderTopWidth: 1, borderTopColor: THEME.color.line, ...THEME.shadow.lg }}>
+        {/* Acción primaria: Contactar (chat in-app, crea lead) + WhatsApp respaldo */}
         <View style={{ flexDirection: 'row', gap: THEME.space.sm }}>
           <PressableScale
-            onPress={() => router.push({ pathname: '/solicitar', params: { tecnicoId: String(tech.id), tecnicoNombre: tech.nombre, tecnicoOficio: tech.oficio } })}
-            accessibilityLabel="Solicitar servicio"
+            onPress={() => lead.contactar(tech)}
+            disabled={lead.enviando}
+            accessibilityLabel={`Contactar a ${tech.nombre}`}
             style={{ flex: 1, height: 52, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.xs, ...THEME.shadow.brand }}
           >
-            <Ionicons name="construct" size={20} color={THEME.color.white} />
-            <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Solicitar servicio</Text>
+            <Ionicons name="chatbubble-ellipses" size={20} color={THEME.color.white} />
+            <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Contactar</Text>
           </PressableScale>
           <PressableScale
             onPress={async () => {
               const ok = await openTechWhatsapp(tech.id, tech.nombre, `Hola ${tech.nombre}, te encontré en SOLU y necesito un servicio de ${tech.oficio}.`)
-              if (!ok) Alert.alert('No disponible', 'No pudimos abrir WhatsApp ahora. Intenta de nuevo o solicita el servicio para que te asignemos un técnico.')
+              if (!ok) Alert.alert('No disponible', 'No pudimos abrir WhatsApp ahora. Intenta de nuevo o usa "Contactar" para chatear dentro de SOLU.')
             }}
             accessibilityLabel="Contactar por WhatsApp"
             style={{ width: 52, height: 52, backgroundColor: '#25D366', borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center' }}
@@ -317,7 +323,16 @@ export default function TecnicoScreen() {
             <Ionicons name="logo-whatsapp" size={24} color={THEME.color.white} />
           </PressableScale>
         </View>
+        {/* Acciones secundarias: solicitar servicio, llamar, agendar */}
         <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.sm }}>
+          <PressableScale
+            onPress={() => router.push({ pathname: '/solicitar', params: { tecnicoId: String(tech.id), tecnicoNombre: tech.nombre, tecnicoOficio: tech.oficio } })}
+            accessibilityLabel="Solicitar servicio"
+            style={{ flex: 1, height: 44, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <Ionicons name="construct" size={17} color={THEME.color.brand} />
+            <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>Solicitar</Text>
+          </PressableScale>
           <PressableScale
             onPress={async () => {
               const wa = await fetchTechWhatsapp(tech.id)
@@ -341,6 +356,16 @@ export default function TecnicoScreen() {
           </PressableScale>
         </View>
       </View>
+
+      {/* ── Modal de datos del cliente (solo si falta nombre/WhatsApp) ── */}
+      <ContactLeadModal
+        visible={lead.modalVisible}
+        initialNombre={lead.initialNombre}
+        initialWhatsapp={lead.initialWhatsapp}
+        enviando={lead.enviando}
+        onConfirm={lead.confirmarModal}
+        onClose={lead.cerrarModal}
+      />
 
       {/* ── Modal foto pantalla completa ── */}
       <Modal visible={!!selectedPhoto} transparent animationType="fade" onRequestClose={() => setSelectedPhoto(null)}>
