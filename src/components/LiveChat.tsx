@@ -203,10 +203,12 @@ export function LiveChat({ codigo, as, techNombre, chatToken }: Props) {
     }
     setMessages((prev) => [...prev, optimistic])
     try {
-      const upload = await uploadChatAudio(codigo, as, uri)
+      // Subida server-side: necesita la auth (chatToken del cliente o Bearer
+      // del técnico), igual que sendMensaje. Anon a Storage quedó cerrado.
+      const auth = await getAuth()
+      const upload = await uploadChatAudio(codigo, as, uri, auth)
       if (!upload) throw new Error('audio-upload-failed')
       const meta: AttachmentMeta = { mime: upload.mime, size_bytes: upload.sizeBytes, duration_ms: durationMs }
-      const auth = await getAuth()
       const saved = await sendMensaje({
         codigo, mensaje: '', ...auth,
         tipo: 'audio', attachmentUrl: upload.url, attachmentMeta: meta,

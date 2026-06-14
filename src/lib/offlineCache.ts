@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { supabase } from './supabase'
 
 const CACHE_KEYS = {
   TECH_PROFILE: 'solu_cache_tech_profile',
@@ -7,7 +6,6 @@ const CACHE_KEYS = {
   REVIEWS: 'solu_cache_reviews',
   NOTIFICATIONS: 'solu_cache_notifications',
   SEARCH_RESULTS: 'solu_cache_search',
-  PENDING_ACTIONS: 'solu_cache_pending_actions',
 }
 
 const CACHE_TTL = 30 * 60 * 1000 // 30 minutes
@@ -15,13 +13,6 @@ const CACHE_TTL = 30 * 60 * 1000 // 30 minutes
 interface CachedData<T> {
   data: T
   timestamp: number
-}
-
-interface PendingAction {
-  id: string
-  type: 'update_status' | 'send_message' | 'create_request'
-  payload: any
-  createdAt: number
 }
 
 // Save data to cache
@@ -72,75 +63,12 @@ export async function getCachedSearchResults(): Promise<any[] | null> {
   return getCachedData(CACHE_KEYS.SEARCH_RESULTS, 15 * 60 * 1000) // 15 minutes
 }
 
-// Queue offline actions for later sync
-export async function queueOfflineAction(action: Omit<PendingAction, 'id' | 'createdAt'>): Promise<void> {
-  try {
-    const raw = await AsyncStorage.getItem(CACHE_KEYS.PENDING_ACTIONS)
-    const pending: PendingAction[] = raw ? JSON.parse(raw) : []
-    pending.push({
-      ...action,
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-      createdAt: Date.now(),
-    })
-    await AsyncStorage.setItem(CACHE_KEYS.PENDING_ACTIONS, JSON.stringify(pending))
-  } catch {}
-}
-
-// Sync pending offline actions when back online
-export async function syncPendingActions(): Promise<{ synced: number; failed: number }> {
-  let synced = 0
-  let failed = 0
-
-  try {
-    const raw = await AsyncStorage.getItem(CACHE_KEYS.PENDING_ACTIONS)
-    if (!raw) return { synced: 0, failed: 0 }
-
-    const pending: PendingAction[] = JSON.parse(raw)
-    const remaining: PendingAction[] = []
-
-    for (const action of pending) {
-      try {
-        switch (action.type) {
-          case 'update_status':
-            await supabase.from('clientes').update({ estado: action.payload.estado }).eq('id', action.payload.id)
-            synced++
-            break
-          case 'send_message':
-            await supabase.from('mensajes').insert(action.payload)
-            synced++
-            break
-          case 'create_request':
-            await supabase.from('clientes').insert(action.payload)
-            synced++
-            break
-          default:
-            remaining.push(action)
-        }
-      } catch {
-        failed++
-        // Keep failed actions for retry (max 24 hours old)
-        if (Date.now() - action.createdAt < 24 * 60 * 60 * 1000) {
-          remaining.push(action)
-        }
-      }
-    }
-
-    await AsyncStorage.setItem(CACHE_KEYS.PENDING_ACTIONS, JSON.stringify(remaining))
-  } catch {}
-
-  return { synced, failed }
-}
-
-// Get count of pending actions
-export async function getPendingActionsCount(): Promise<number> {
-  try {
-    const raw = await AsyncStorage.getItem(CACHE_KEYS.PENDING_ACTIONS)
-    if (!raw) return 0
-    return JSON.parse(raw).length
-  } catch {
-    return 0
-  }
-}
+// NOTA (lockdown seguridad, 2026-06): se eliminó la cola de acciones offline
+// (queueOfflineAction / syncPendingActions / getPendingActionsCount). Eran
+// código muerto (sin un solo caller en la app) y `syncPendingActions` escribía
+// directo a `clientes`/`mensajes` con la key anon — escritura que el lockdown
+// de RLS ya bloquea. Si se reintroduce sync offline, debe ir por los endpoints
+// server-side (igual que chat-api.ts / contacto.ts), nunca anon directo.
 
 // Clear all cache
 export async function clearAllCache(): Promise<void> {

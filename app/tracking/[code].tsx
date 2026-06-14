@@ -8,6 +8,7 @@ import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/
 import { supabase } from '../../src/lib/supabase'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { fetchServicioByCodigo } from '../../src/lib/servicios'
+import { openTechWhatsapp } from '../../src/lib/contacto'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
 import type { Cliente, Tecnico } from '../../src/lib/types'
@@ -31,7 +32,9 @@ export default function TrackingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
   const router = useRouter()
   const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null }) | null>(null)
-  const [tech, setTech] = useState<Pick<Tecnico, 'id' | 'nombre' | 'whatsapp' | 'oficio' | 'foto_url' | 'calificacion'> | null>(null)
+  // whatsapp ya NO se lee desde anon (PII cerrada por el lockdown): se pide
+  // de a uno al endpoint server-side cuando el usuario toca "WhatsApp".
+  const [tech, setTech] = useState<Pick<Tecnico, 'id' | 'nombre' | 'oficio' | 'foto_url' | 'calificacion'> | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -44,9 +47,11 @@ export default function TrackingScreen() {
     setService(data)
 
     if (data?.tecnico_asignado) {
+      // Solo campos de display (no PII): el whatsapp se resuelve aparte vía
+      // endpoint server-side al contactar (ver botón de WhatsApp más abajo).
       const { data: techData } = await supabase
         .from('tecnicos')
-        .select('id, nombre, whatsapp, oficio, foto_url, calificacion')
+        .select('id, nombre, oficio, foto_url, calificacion')
         .eq('id', data.tecnico_asignado)
         .single()
       setTech(techData)
@@ -317,9 +322,13 @@ export default function TrackingScreen() {
                 <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Chat interno</Text>
               </PressableScale>
               <PressableScale
-                onPress={() => {
+                onPress={async () => {
+                  // El whatsapp se revela de a uno vía endpoint server-side
+                  // (anon ya no lo lee). Si falla, avisamos sin romper la UX.
+                  if (!service.tecnico_asignado) return
                   const msg = `Hola ${tech.nombre}, soy ${service.nombre}. Tengo una solicitud de ${service.servicio} en SOLU (código: ${service.codigo}).`
-                  Linking.openURL(`https://wa.me/51${tech.whatsapp}?text=${encodeURIComponent(msg)}`)
+                  const ok = await openTechWhatsapp(service.tecnico_asignado, tech.nombre, msg)
+                  if (!ok) Alert.alert('Error', 'No pudimos abrir el WhatsApp del técnico. Intenta de nuevo o usa el chat interno.')
                 }}
                 accessibilityLabel="Escribir al técnico por WhatsApp"
                 style={{

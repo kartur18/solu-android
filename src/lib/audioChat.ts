@@ -15,6 +15,7 @@
  */
 import { supabase } from './supabase'
 import { logger } from './logger'
+import { ENV, fetchWithTimeout } from './env'
 
 // Metro inyecta require en runtime; lo declaramos porque no hay @types/node
 declare const require: (id: string) => unknown
@@ -61,6 +62,13 @@ const BUCKET = 'chat-attachments'
 const SIGNED_URL_TTL_S = 7 * 24 * 60 * 60
 const MAX_AUDIO_BYTES = 15 * 1024 * 1024
 const MIN_AUDIO_BYTES = 1024
+
+// Auth para la subida server-side: el cliente guest firma con su chatToken
+// HMAC; el técnico va con su Bearer. Espejo de ChatAuth en chat-api.ts.
+export interface AudioUploadAuth {
+  token?: string | null
+  chatToken?: string | null
+}
 
 let cachedAudioApi: ExpoAudioApi | null | undefined
 
@@ -113,29 +121,63 @@ export interface AudioUploadResult {
 }
 
 /**
- * Sube el audio al bucket privado 'chat-attachments' (mismo flujo que la web)
- * y devuelve la signed URL de 7 días para guardarla en attachment_url.
+ * Sube el audio al endpoint server-side de adjuntos de chat
+ * (POST /api/chat/contacto/[codigo]/upload), que escribe en el bucket privado
+ * 'chat-attachments' con service role y devuelve una signed URL de 7 días.
+ * La subida directa con key anon quedó cerrada por el lockdown de Storage.
+ *
+ * Nota: ese endpoint solo existe para leads de contacto (códigos CONT-XXXXXX);
+ * el backend no expone upload para chats de pedido. Para cualquier otro código
+ * devolvemos null (la UI ya degrada sin crash mostrando "no pudimos enviar").
  */
 export async function uploadChatAudio(
   codigo: string,
   remitente: 'cliente' | 'tecnico',
   uri: string,
+  auth: AudioUploadAuth,
 ): Promise<AudioUploadResult | null> {
+  // El upload server-side solo está montado en /chat/contacto/[codigo] (CONT-).
+  if (!/^CONT-[A-F0-9]{6}$/i.test(codigo.trim())) {
+    logger.warn('uploadChatAudio: código no-contacto sin endpoint de upload', codigo)
+    return null
+  }
   try {
     const response = await fetch(uri)
     const blob = await response.blob()
     // Igual que la web: descarta blobs fantasma y respeta el máx de 15 MB
     if (blob.size < MIN_AUDIO_BYTES || blob.size > MAX_AUDIO_BYTES) return null
-    const random = Math.random().toString(36).slice(2, 8)
-    const path = `${codigo}/${remitente}-${Date.now()}-${random}.m4a`
-    const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'audio/mp4' })
-    if (error) {
-      logger.error('Audio upload error:', error)
+
+    const seg = encodeURIComponent(codigo.trim())
+    const form = new FormData()
+    // En React Native el adjunto se manda como { uri, name, type }; expo-av
+    // graba .m4a (AAC) → mime audio/mp4, permitido por el endpoint.
+    form.append('file', { uri, name: `${remitente}-${Date.now()}.m4a`, type: 'audio/mp4' } as unknown as Blob)
+    form.append('tipo', 'audio')
+    if (auth.chatToken) form.append('chatToken', auth.chatToken)
+
+    const headers: Record<string, string> = {}
+    if (auth.token) headers.Authorization = `Bearer ${auth.token}`
+
+    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/chat/contacto/${seg}/upload`, {
+      method: 'POST',
+      headers,
+      body: form,
+      timeout: 30000, // subida de archivo: damos más margen que el default
+    })
+    if (!res.ok) {
+      logger.error('Audio upload error: HTTP', res.status)
       return null
     }
-    const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL_S)
-    if (!data?.signedUrl) return null
-    return { url: data.signedUrl, sizeBytes: blob.size, mime: 'audio/mp4' }
+    const data = (await res.json()) as {
+      attachment_url?: string
+      meta?: { mime?: string; size_bytes?: number }
+    }
+    if (!data?.attachment_url) return null
+    return {
+      url: data.attachment_url,
+      sizeBytes: data.meta?.size_bytes ?? blob.size,
+      mime: data.meta?.mime ?? 'audio/mp4',
+    }
   } catch (err) {
     logger.error('Audio upload error:', err)
     return null
