@@ -185,6 +185,7 @@ export default function BuscarScreen() {
         .from('tecnicos')
         .select(TECNICO_PUBLIC_SELECT)
         .eq('disponible', true)
+        .eq('verificado', true)
         .order('plan', { ascending: false })
         .order('calificacion', { ascending: false })
         .limit(30)

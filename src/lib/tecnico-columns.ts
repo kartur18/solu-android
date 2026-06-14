@@ -22,6 +22,8 @@ export const TECNICO_PUBLIC_COLUMNS = [
   'calificacion',
   'num_resenas',
   'servicios_completados',
+  // 'tier' NO es columna de `tecnicos` (se calcula desde servicios_completados,
+  // igual que la web). Seleccionarla rompía el query (column does not exist).
   'disponible',
   'estado_disponibilidad',
   'ocupado_hasta',
@@ -37,3 +39,16 @@ export const TECNICO_PUBLIC_COLUMNS = [
 ] as const
 
 export const TECNICO_PUBLIC_SELECT = TECNICO_PUBLIC_COLUMNS.join(', ')
+
+export type TierTecnico = 'bronce' | 'plata' | 'oro' | 'platino'
+
+// El tier de fidelidad NO es una columna de `tecnicos` (seleccionarla rompe el
+// query): se DERIVA de servicios_completados, igual que la web. Umbrales de
+// fidelidad: Plata 10+, Oro 50+, Platino 200+ (Bronce es la base, sin badge).
+export function tierFromServicios(servicios?: number | null): TierTecnico {
+  const n = servicios ?? 0
+  if (n >= 200) return 'platino'
+  if (n >= 50) return 'oro'
+  if (n >= 10) return 'plata'
+  return 'bronce'
+}

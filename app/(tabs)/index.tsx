@@ -146,6 +146,7 @@ export default function HomeScreen() {
       .from('tecnicos')
       .select('id', { count: 'exact', head: true })
       .eq('disponible', true)
+      .eq('verificado', true)
       .then(({ count }) => {
         setStats((prev) => ({ ...prev, techs: count || 0 }))
       })
@@ -157,6 +158,7 @@ export default function HomeScreen() {
         .from('tecnicos')
         .select(TECNICO_PUBLIC_SELECT)
         .eq('disponible', true)
+        .eq('verificado', true)
         .order('calificacion', { ascending: false })
         .limit(5)
       if (error) throw error

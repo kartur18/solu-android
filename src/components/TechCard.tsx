@@ -7,6 +7,7 @@ import { openTechWhatsapp } from '../lib/contacto'
 import { THEME } from '../lib/theme'
 import { PressableScale, PulseDot } from './ui/Motion'
 import { optimizeUrl } from '../lib/cloudinary'
+import { tierFromServicios } from '../lib/tecnico-columns'
 import type { Tecnico } from '../lib/types'
 
 type Props = {
@@ -47,7 +48,9 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
   // V3.1: tech.plan ahora es opcional. Mapeamos string vacío al fallback.
   const planStyle = PLAN_COLORS[tech.plan ?? ''] ?? null
   const avatarGradient = AVATAR_GRADIENTS[(tech.id || 0) % AVATAR_GRADIENTS.length]
-  const tierColor = tech.tier ? THEME.color[tech.tier] : null
+  // Tier derivado de servicios_completados (no es columna). Bronce = base, sin badge.
+  const tier = tierFromServicios(tech.servicios_completados)
+  const tierColor = tier !== 'bronce' ? THEME.color[tier] : null
 
   async function handleShare() {
     try {
@@ -201,10 +204,10 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
               <Text style={{ ...THEME.font.caption, fontWeight: '800', color: THEME.color.white }}>{planStyle.label}</Text>
             </LinearGradient>
           )}
-          {tierColor && tech.tier && (
+          {tierColor && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: tierColor + '1A', borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4 }}>
               <Ionicons name="medal" size={12} color={tierColor} />
-              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: tierColor }}>{TIER_LABEL[tech.tier]}</Text>
+              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: tierColor }}>{TIER_LABEL[tier]}</Text>
             </View>
           )}
           {(tech.servicios_completados || 0) > 0 && (

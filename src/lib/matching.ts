@@ -84,6 +84,7 @@ export async function findBestTech(input: MatchInput): Promise<MatchableTech | n
     .from('tecnicos')
     .select(SELECT_COLS)
     .eq('disponible', true)
+    .eq('verificado', true)
     .ilike('oficio', `%${input.servicio}%`)
     .limit(20)
 
@@ -94,6 +95,7 @@ export async function findBestTech(input: MatchInput): Promise<MatchableTech | n
       .from('tecnicos')
       .select(SELECT_COLS)
       .eq('disponible', true)
+      .eq('verificado', true)
       .limit(20)
     candidates = (fallback as MatchableTech[] | null) ?? []
   }

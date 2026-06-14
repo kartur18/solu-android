@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { getTechLevel } from '../../src/lib/constants'
 import { openTechWhatsapp, fetchTechWhatsapp } from '../../src/lib/contacto'
 import { supabase } from '../../src/lib/supabase'
-import { TECNICO_PUBLIC_SELECT } from '../../src/lib/tecnico-columns'
+import { TECNICO_PUBLIC_SELECT, tierFromServicios } from '../../src/lib/tecnico-columns'
 import type { Tecnico, Resena } from '../../src/lib/types'
 import { ProfileSkeleton } from '../../src/components/SkeletonLoader'
 import { RatingBreakdown } from '../../src/components/RatingBreakdown'
@@ -100,7 +100,9 @@ export default function TecnicoScreen() {
   }
 
   const avatarGradient = AVATAR_GRADIENTS[(tech.id || 0) % AVATAR_GRADIENTS.length]
-  const tierColor = tech.tier ? THEME.color[tech.tier] : null
+  // Tier derivado de servicios_completados (no es columna). Bronce = base, sin badge.
+  const tier = tierFromServicios(tech.servicios_completados)
+  const tierColor = tier !== 'bronce' ? THEME.color[tier] : null
   const level = getTechLevel(tech.servicios_completados || 0)
 
   return (
@@ -182,10 +184,10 @@ export default function TecnicoScreen() {
                   <Text style={{ ...THEME.font.caption, fontWeight: '700', color: '#4ADE80' }}>DNI verificado</Text>
                 </View>
               )}
-              {tierColor && tech.tier && (
+              {tierColor && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: tierColor + '2E', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: 5 }}>
                   <Ionicons name="medal" size={13} color={tierColor} />
-                  <Text style={{ ...THEME.font.caption, fontWeight: '700', color: tierColor }}>{TIER_LABEL[tech.tier]}</Text>
+                  <Text style={{ ...THEME.font.caption, fontWeight: '700', color: tierColor }}>{TIER_LABEL[tier]}</Text>
                 </View>
               )}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(242,107,33,0.2)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: 5 }}>

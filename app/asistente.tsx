@@ -204,6 +204,7 @@ export default function AsistenteScreen() {
         .from('tecnicos')
         .select(cols)
         .eq('disponible', true)
+        .eq('verificado', true)
         .ilike('oficio', `%${term}%`)
         .order('calificacion', { ascending: false })
         .limit(3)
@@ -213,6 +214,7 @@ export default function AsistenteScreen() {
           .from('tecnicos')
           .select(cols)
           .eq('disponible', true)
+          .eq('verificado', true)
           .order('calificacion', { ascending: false })
           .limit(3)
         techs = (fallback as TechSuggestion[] | null) ?? []
