@@ -35,24 +35,73 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 26,
+      "versionCode": 27,
+      "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tracking" },
-            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/tracking" },
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/tecnico" },
-            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/tecnico" },
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/calificar" },
-            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/calificar" },
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/chat" },
-            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/chat" },
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/solicitar" },
-            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/solicitar" },
-            { "scheme": "https", "host": "solu.pe", "pathPrefix": "/fidelidad" },
-            { "scheme": "https", "host": "www.solu.pe", "pathPrefix": "/fidelidad" }
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/tracking"
+            },
+            {
+              "scheme": "https",
+              "host": "www.solu.pe",
+              "pathPrefix": "/tracking"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/tecnico"
+            },
+            {
+              "scheme": "https",
+              "host": "www.solu.pe",
+              "pathPrefix": "/tecnico"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/calificar"
+            },
+            {
+              "scheme": "https",
+              "host": "www.solu.pe",
+              "pathPrefix": "/calificar"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "www.solu.pe",
+              "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/solicitar"
+            },
+            {
+              "scheme": "https",
+              "host": "www.solu.pe",
+              "pathPrefix": "/solicitar"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/fidelidad"
+            },
+            {
+              "scheme": "https",
+              "host": "www.solu.pe",
+              "pathPrefix": "/fidelidad"
+            }
           ],
           "category": [
             "BROWSABLE",

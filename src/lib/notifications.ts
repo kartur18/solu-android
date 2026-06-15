@@ -34,13 +34,40 @@ export async function registerForPushNotifications(): Promise<string | null> {
     return null
   }
 
-  // Android notification channel
+  // Android notification channels. El server (push.ts) manda los push de
+  // leads con channelId 'requests', los de chat con 'messages' y los de
+  // coins con 'billing'. Si el canal no existe en el device, el push pierde
+  // la importancia/sonido configurado, así que los creamos todos acá.
   if (Platform.OS === 'android') {
+    const HIGH = Notifications.AndroidImportance.HIGH
+    const vibrationPattern = [0, 250, 250, 250]
+    const lightColor = '#F26B21'
     await Notifications.setNotificationChannelAsync('default', {
       name: 'SOLU Notificaciones',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#F26B21',
+      importance: HIGH,
+      vibrationPattern,
+      lightColor,
+      sound: 'default',
+    })
+    // Leads nuevos — el canal más importante para el técnico.
+    await Notifications.setNotificationChannelAsync('requests', {
+      name: 'Nuevos pedidos',
+      importance: HIGH,
+      vibrationPattern,
+      lightColor,
+      sound: 'default',
+    })
+    await Notifications.setNotificationChannelAsync('messages', {
+      name: 'Mensajes de chat',
+      importance: HIGH,
+      vibrationPattern,
+      lightColor,
+      sound: 'default',
+    })
+    await Notifications.setNotificationChannelAsync('billing', {
+      name: 'Coins y pagos',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      lightColor,
       sound: 'default',
     })
   }
