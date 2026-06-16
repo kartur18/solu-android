@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Image, Share } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { openTechWhatsapp } from '../lib/contacto'
 import { useContactLead } from '../lib/useContactLead'
 import { ContactLeadModal } from './ContactLeadModal'
 import { THEME } from '../lib/theme'
@@ -228,7 +227,10 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
           )}
         </View>
 
-        {/* Acciones: Contactar (primaria brand) + WhatsApp */}
+        {/* Acción única: "Contactar" → crea el lead in-app y cobra el coin al
+            técnico (modelo SoluCoins por lead). El botón de WhatsApp directo se
+            RETIRÓ: revelaba el número del técnico sin cobrar, salteando la
+            monetización (el cliente se iba a WhatsApp y SOLU nunca cobraba). */}
         <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.lg }}>
           <PressableScale
             onPress={() => lead.contactar(tech)}
@@ -248,20 +250,6 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
           >
             <Ionicons name="chatbubble-ellipses" size={17} color={THEME.color.white} />
             <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Contactar</Text>
-          </PressableScale>
-          <PressableScale
-            onPress={() => { openTechWhatsapp(tech.id, tech.nombre) }}
-            accessibilityLabel={`Escribir por WhatsApp a ${tech.nombre}`}
-            style={{
-              width: 48,
-              height: 48,
-              backgroundColor: '#25D366',
-              borderRadius: THEME.radius.lg,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="logo-whatsapp" size={22} color={THEME.color.white} />
           </PressableScale>
         </View>
       </View>

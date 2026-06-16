@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Alert } from 'react-native'
 import { useRouter } from 'expo-router'
-import { iniciarChatLead, openTechWhatsapp } from './contacto'
+import { iniciarChatLead } from './contacto'
 import { useClientProfile } from './useClientProfile'
 import { haptics } from '../components/ui/Motion'
 import type { Tecnico } from './types'
@@ -27,13 +27,14 @@ export function useContactLead() {
       try {
         const lead = await iniciarChatLead(tech, { nombre, whatsapp, distrito })
         if (!lead) {
+          // NO ofrecer WhatsApp directo de respaldo: revelaba el número del
+          // técnico sin cobrar el coin (saltaba la monetización). Si el lead
+          // no se pudo crear, el cliente reintenta — el contacto SIEMPRE pasa
+          // por el lead in-app que cobra.
           Alert.alert(
             'No pudimos abrir el chat',
-            'Hubo un problema al contactar al técnico. ¿Quieres intentarlo por WhatsApp?',
-            [
-              { text: 'Cancelar', style: 'cancel' },
-              { text: 'WhatsApp', onPress: () => { openTechWhatsapp(tech.id, tech.nombre) } },
-            ],
+            'Hubo un problema al contactar al técnico. Por favor intenta de nuevo en unos segundos.',
+            [{ text: 'Entendido', style: 'default' }],
           )
           return
         }

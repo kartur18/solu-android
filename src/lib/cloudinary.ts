@@ -15,12 +15,14 @@ export function optimizeUrl(url: string | null | undefined, opts?: { width?: num
       return `${parts[0]}/upload/${transforms.join(',')}/${parts[1]}`
     }
   }
-  // For Supabase URLs, proxy through Cloudinary fetch
-  if (url.includes('supabase.co') && CLOUD_NAME) {
-    const transforms = ['f_auto', 'q_auto']
-    if (opts?.width) transforms.push(`w_${opts.width}`)
-    if (opts?.height) transforms.push(`h_${opts.height}`)
-    return `https://res.cloudinary.com/${CLOUD_NAME}/image/fetch/${transforms.join(',')}/${url}`
+  // Las URLs de Supabase Storage son FIRMADAS (/object/sign/...?token=...) y
+  // el bucket es privado. El proxy Cloudinary /image/fetch devolvía 401 (su
+  // fetch remoto está restringido y, además, el ?token firmado se perdía al
+  // concatenarlo), así que las fotos NO cargaban. La URL firmada de Supabase
+  // ya sirve la imagen directo (200), así que la devolvemos tal cual.
+  // (Optimización de tamaño pendiente: usar render/image de Supabase.)
+  if (url.includes('supabase.co')) {
+    return url
   }
   return url
 }
