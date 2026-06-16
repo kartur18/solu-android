@@ -301,7 +301,10 @@ export default function TecnicoScreen() {
 
       {/* ── Barra de acción fija abajo ── */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: THEME.color.surface, paddingHorizontal: THEME.space.xl, paddingTop: THEME.space.md, paddingBottom: 28, borderTopWidth: 1, borderTopColor: THEME.color.line, ...THEME.shadow.lg }}>
-        {/* Acción primaria: Contactar (chat in-app, crea lead) + WhatsApp respaldo */}
+        {/* Acción primaria ÚNICA: "Contactar" = chat in-app que crea el lead y
+            cobra el coin (modelo SoluCoins por lead). Se RETIRÓ el botón de
+            WhatsApp directo: revelaba el número del técnico sin cobrar coin
+            (salteaba la monetización). Mismo criterio que TechCard. */}
         <View style={{ flexDirection: 'row', gap: THEME.space.sm }}>
           <PressableScale
             onPress={() => lead.contactar(tech)}
@@ -311,16 +314,6 @@ export default function TecnicoScreen() {
           >
             <Ionicons name="chatbubble-ellipses" size={20} color={THEME.color.white} />
             <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Contactar</Text>
-          </PressableScale>
-          <PressableScale
-            onPress={async () => {
-              const ok = await openTechWhatsapp(tech.id, tech.nombre, `Hola ${tech.nombre}, te encontré en SOLU y necesito un servicio de ${tech.oficio}.`)
-              if (!ok) Alert.alert('No disponible', 'No pudimos abrir WhatsApp ahora. Intenta de nuevo o usa "Contactar" para chatear dentro de SOLU.')
-            }}
-            accessibilityLabel="Contactar por WhatsApp"
-            style={{ width: 52, height: 52, backgroundColor: '#25D366', borderRadius: THEME.radius.lg, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Ionicons name="logo-whatsapp" size={24} color={THEME.color.white} />
           </PressableScale>
         </View>
         {/* Acciones secundarias: solicitar servicio, llamar, agendar */}
@@ -333,19 +326,9 @@ export default function TecnicoScreen() {
             <Ionicons name="construct" size={17} color={THEME.color.brand} />
             <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>Solicitar</Text>
           </PressableScale>
-          <PressableScale
-            onPress={async () => {
-              const wa = await fetchTechWhatsapp(tech.id)
-              if (!wa) { Alert.alert('No disponible', 'No pudimos obtener el número del técnico ahora. Intenta de nuevo en un momento.'); return }
-              const phone = wa.length === 9 ? '+51' + wa : wa
-              Linking.openURL(`tel:${phone}`)
-            }}
-            accessibilityLabel="Llamar al técnico"
-            style={{ flex: 1, height: 44, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-          >
-            <Ionicons name="call" size={17} color={THEME.color.brand} />
-            <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>Llamar</Text>
-          </PressableScale>
+          {/* Botón "Llamar" RETIRADO: revelaba el teléfono del técnico (vía
+              fetchTechWhatsapp → GET /api/tecnico/[id]/contacto) sin crear lead
+              ni cobrar coin. El contacto pasa solo por "Contactar" (chat in-app). */}
           <PressableScale
             onPress={() => router.push(`/agendar/${tech.id}`)}
             accessibilityLabel="Agendar cita"

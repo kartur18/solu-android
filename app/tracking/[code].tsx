@@ -321,23 +321,9 @@ export default function TrackingScreen() {
                 <Ionicons name="chatbubbles" size={17} color={THEME.color.white} />
                 <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Chat interno</Text>
               </PressableScale>
-              <PressableScale
-                onPress={async () => {
-                  // El whatsapp se revela de a uno vía endpoint server-side
-                  // (anon ya no lo lee). Si falla, avisamos sin romper la UX.
-                  if (!service.tecnico_asignado) return
-                  const msg = `Hola ${tech.nombre}, soy ${service.nombre}. Tengo una solicitud de ${service.servicio} en SOLU (código: ${service.codigo}).`
-                  const ok = await openTechWhatsapp(service.tecnico_asignado, tech.nombre, msg)
-                  if (!ok) Alert.alert('Error', 'No pudimos abrir el WhatsApp del técnico. Intenta de nuevo o usa el chat interno.')
-                }}
-                accessibilityLabel="Escribir al técnico por WhatsApp"
-                style={{
-                  width: 48, height: 48, backgroundColor: '#25D366', borderRadius: THEME.radius.lg,
-                  alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="logo-whatsapp" size={22} color={THEME.color.white} />
-              </PressableScale>
+              {/* Botón de WhatsApp directo RETIRADO: revelaba el número del
+                  técnico (openTechWhatsapp → GET /api/tecnico/[id]/contacto) sin
+                  cobrar coin. El cliente coordina por el chat interno in-app. */}
             </View>
           </View>
         </FadeInUp>

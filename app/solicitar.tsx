@@ -200,10 +200,9 @@ export default function SolicitarScreen() {
         }
       }
 
-      // Revelar el WhatsApp del técnico asignado (server-side, post-lockdown)
-      if (assignedTech) {
-        assignedTech.whatsapp = await fetchTechWhatsapp(assignedTech.id)
-      }
+      // Contacto in-app: NO se revela el WhatsApp del técnico. Revelarlo sin
+      // crear el lead salteaba el cobro del coin (modelo SoluCoins por lead).
+      // El cliente coordina por el chat interno desde /tracking/[code].
 
       // Crear la solicitud vía endpoint server-side (anon bloqueado por lockdown).
       // El Bearer del técnico es opcional (clientes guest no lo tienen).
@@ -661,20 +660,19 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
               </View>
             </View>
 
-            {/* WhatsApp direct contact */}
+            {/* Contacto IN-APP: se retiró "Contactar por WhatsApp" (revelaba el
+                número del técnico sin cobrar el coin). El cliente chatea con el
+                técnico por el chat interno desde el seguimiento del servicio. */}
             <PressableScale
-              onPress={() => {
-                const msg = `Hola ${result.techName}, soy ${nombre}. Solicité un servicio de ${servicio} en ${distrito} por SOLU (código: ${result.codigo}).`
-                Linking.openURL(`https://wa.me/51${result.techWhatsapp}?text=${encodeURIComponent(msg)}`)
-              }}
-              accessibilityLabel="Contactar por WhatsApp"
+              onPress={() => router.replace({ pathname: '/tracking/[code]', params: { code: result.codigo } })}
+              accessibilityLabel="Chatear con el técnico"
               style={{
-                height: 48, backgroundColor: '#25D366', borderRadius: THEME.radius.lg,
+                height: 48, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg,
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
               }}
             >
-              <Ionicons name="logo-whatsapp" size={20} color={THEME.color.white} />
-              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Contactar por WhatsApp</Text>
+              <Ionicons name="chatbubble-ellipses" size={20} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Chatear con el técnico</Text>
             </PressableScale>
           </View>
         )}

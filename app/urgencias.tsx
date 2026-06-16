@@ -39,6 +39,7 @@ export default function UrgenciasScreen() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [assignedTech, setAssignedTech] = useState<MatchableTech | null>(null)
+  const [serviceCode, setServiceCode] = useState('')
 
   useEffect(() => { location.detectLocation() }, [])
 
@@ -106,10 +107,12 @@ export default function UrgenciasScreen() {
         if (token) upsertGuestClientPushToken(waClean, token, nombre || 'Cliente').catch(() => {})
       }).catch(() => {})
 
-      // Revelar el WhatsApp del técnico asignado (server-side, post-lockdown)
-      const wa = await fetchTechWhatsapp(bestTech.id)
+      // Contacto IN-APP: NO se revela el WhatsApp del técnico. Revelarlo sin
+      // crear el lead salteaba el cobro del coin (modelo SoluCoins por lead).
+      // El cliente coordina por el chat interno desde /tracking/[code].
+      setServiceCode(code)
       haptics.success()
-      setAssignedTech({ ...bestTech, whatsapp: wa })
+      setAssignedTech({ ...bestTech })
     } catch (err) {
       setErrorMsg('Hubo un problema de conexión. Revisa tu internet e intenta de nuevo.')
     } finally {
@@ -145,22 +148,18 @@ export default function UrgenciasScreen() {
               </View>
             </View>
 
+            {/* Contacto IN-APP: se retiraron "Llamar" y "WhatsApp" directos (que
+                revelaban el teléfono del técnico sin cobrar el coin — y eran un
+                incentivo perverso para entrar por urgencias y saltar el cobro).
+                El cliente coordina por el chat interno desde el seguimiento; el
+                técnico ya recibió el push de la emergencia. */}
             <PressableScale
-              onPress={() => Linking.openURL(`tel:+51${assignedTech.whatsapp || ''}`)}
-              accessibilityLabel="Llamar al técnico ahora"
-              style={{ width: '100%', minHeight: 56, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md, ...THEME.shadow.brand }}
+              onPress={() => router.push({ pathname: '/tracking/[code]', params: { code: serviceCode } })}
+              accessibilityLabel="Ver seguimiento y chatear con el técnico"
+              style={{ width: '100%', minHeight: 56, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, ...THEME.shadow.brand }}
             >
-              <Ionicons name="call" size={22} color={THEME.color.white} />
-              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Llamar al técnico ahora</Text>
-            </PressableScale>
-
-            <PressableScale
-              onPress={() => Linking.openURL(waLink(assignedTech.whatsapp || '', `🚨 URGENCIA SOLU: Hola ${assignedTech.nombre}, necesito tu ayuda inmediata con: ${selected?.name}. Mi nombre es ${nombre}.`))}
-              accessibilityLabel="Escribir por WhatsApp"
-              style={{ width: '100%', minHeight: 56, backgroundColor: '#25D366', borderRadius: THEME.radius.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, ...THEME.shadow.md }}
-            >
-              <Ionicons name="logo-whatsapp" size={24} color={THEME.color.white} />
-              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Escribir por WhatsApp</Text>
+              <Ionicons name="chatbubble-ellipses" size={22} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Ver seguimiento y chatear</Text>
             </PressableScale>
           </View>
         </FadeInUp>
