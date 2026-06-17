@@ -10,6 +10,14 @@ export interface AttachmentMeta {
   mime?: string
   size_bytes?: number
   duration_ms?: number
+  // Imagen
+  width?: number
+  height?: number
+  // Cotización (la web manda tipo='cotizacion' con estos campos)
+  monto_pen?: number
+  descripcion?: string
+  tiempo_estimado_min?: number
+  estado?: string
 }
 
 export interface ChatMensaje {

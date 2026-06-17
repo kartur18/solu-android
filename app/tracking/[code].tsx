@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { View, Text, ScrollView, Linking, RefreshControl, Alert, Share } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -68,56 +68,25 @@ export default function TrackingScreen() {
     setRefreshing(false)
   }, [loadData])
 
-  // Supabase Realtime: live status updates with reconnection logic
-  const retryDelayRef = useRef(1000)
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
+  // Sin Realtime: el lockdown RLS cerró el acceso anon a postgres_changes,
+  // así que el estado se refresca por polling cada 15s (igual que la web).
+  // Se detiene en estados terminales para no gastar batería/datos de balde.
+  const estadoActual = service?.estado
   useEffect(() => {
     if (!service?.id) return
+    if (estadoActual === 'Completado' || estadoActual === 'Cancelado') return
 
     let cancelled = false
-    let currentChannel: ReturnType<typeof supabase.channel> | null = null
-
-    function subscribe() {
+    const intervalId = setInterval(() => {
       if (cancelled) return
-
-      const channel = supabase
-        .channel(`tracking-${service!.id}-${Date.now()}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'clientes',
-          filter: `id=eq.${service!.id}`,
-        }, (payload) => {
-          setService((prev) => prev ? { ...prev, ...payload.new as Partial<Cliente> } : prev)
-        })
-        .subscribe((status: string) => {
-          if (cancelled) return
-          if (status === 'SUBSCRIBED') {
-            retryDelayRef.current = 1000 // reset backoff on success
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            if (__DEV__) console.warn('Realtime channel disconnected, retrying in', retryDelayRef.current, 'ms')
-            // Remove the failed channel and retry with exponential backoff
-            supabase.removeChannel(channel)
-            currentChannel = null
-            retryTimerRef.current = setTimeout(() => {
-              retryDelayRef.current = Math.min(retryDelayRef.current * 2, 30000)
-              subscribe()
-            }, retryDelayRef.current)
-          }
-        })
-
-      currentChannel = channel
-    }
-
-    subscribe()
+      loadData().catch(() => {})
+    }, 15000)
 
     return () => {
       cancelled = true
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-      if (currentChannel) supabase.removeChannel(currentChannel)
+      clearInterval(intervalId)
     }
-  }, [service?.id])
+  }, [service?.id, estadoActual, loadData])
 
   if (loading) return (
     <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>

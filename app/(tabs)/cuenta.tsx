@@ -1073,7 +1073,12 @@ export default function CuentaScreen() {
                           try {
                             const res = await fetch(`${ENV.API_BASE_URL}/solicitudes/${s.id}/accept`, {
                               method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: {
+                                'Content-Type': 'application/json',
+                                // Bearer firmado: el endpoint deriva el tecnicoId del token
+                                // (no del body). Sin esto el endpoint devolvía 401.
+                                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                              },
                               body: JSON.stringify({ tecnicoId: tech?.id }),
                             })
                             const data = await res.json()

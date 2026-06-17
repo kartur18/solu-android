@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { View, Text, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, TouchableOpacity, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../lib/constants'
 import { logger } from '../lib/logger'
@@ -247,8 +247,11 @@ export function LiveChat({ codigo, as, techNombre, chatToken }: Props) {
         renderItem={({ item }) => {
           const mine = item.remitente === as
           const isAudio = item.tipo === 'audio' && !!item.attachment_url
+          const isImage = item.tipo === 'image' && !!item.attachment_url
+          const isCotizacion = item.tipo === 'cotizacion'
+          const meta = item.attachment_meta
           return (
-            <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', minWidth: isAudio ? 200 : undefined }}>
+            <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', minWidth: isAudio || isCotizacion ? 200 : undefined }}>
               <View style={{
                 backgroundColor: mine ? COLORS.pri : COLORS.white,
                 borderRadius: 14,
@@ -269,10 +272,27 @@ export function LiveChat({ codigo, as, techNombre, chatToken }: Props) {
                     durationMs={item.attachment_meta?.duration_ms}
                     mine={mine}
                   />
+                ) : isImage ? (
+                  <Image
+                    source={{ uri: item.attachment_url as string }}
+                    style={{ width: 200, height: 200, borderRadius: 10, backgroundColor: COLORS.border }}
+                    resizeMode="cover"
+                  />
+                ) : isCotizacion ? (
+                  <View style={{ minWidth: 200, gap: 3 }}>
+                    <Text style={{ color: mine ? 'rgba(255,255,255,0.85)' : COLORS.gray, fontSize: 11, fontWeight: '700' }}>💰 Cotización</Text>
+                    <Text style={{ color: mine ? '#fff' : COLORS.dark, fontSize: 22, fontWeight: '800' }}>S/ {(meta?.monto_pen ?? 0).toLocaleString('es-PE')}</Text>
+                    {!!meta?.descripcion && (
+                      <Text style={{ color: mine ? 'rgba(255,255,255,0.9)' : COLORS.dark, fontSize: 12, lineHeight: 16 }}>{meta.descripcion}</Text>
+                    )}
+                    {!!meta?.tiempo_estimado_min && (
+                      <Text style={{ color: mine ? 'rgba(255,255,255,0.8)' : COLORS.gray2, fontSize: 11 }}>⏱ ~{meta.tiempo_estimado_min} min</Text>
+                    )}
+                  </View>
                 ) : (
                   <Text style={{ color: mine ? '#fff' : COLORS.dark, fontSize: 13, lineHeight: 18 }}>{item.mensaje}</Text>
                 )}
-                {isAudio && !!item.mensaje && (
+                {(isAudio || isImage) && !!item.mensaje && (
                   <Text style={{ color: mine ? '#fff' : COLORS.dark, fontSize: 12, lineHeight: 16, marginTop: 4 }}>{item.mensaje}</Text>
                 )}
               </View>

@@ -186,6 +186,10 @@ export default function BuscarScreen() {
         .select(TECNICO_PUBLIC_SELECT)
         .eq('disponible', true)
         .eq('verificado', true)
+        // Paridad con la web: no mostrar técnicos borrados (soft-delete) ni
+        // cuentas de prueba e2e. Antes la app exponía técnicos que la web oculta.
+        .is('deleted_at', null)
+        .not('nombre', 'ilike', 'e2e-test%')
         .order('plan', { ascending: false })
         .order('calificacion', { ascending: false })
         .limit(30)
