@@ -487,7 +487,7 @@ export default function CuentaScreen() {
 
       // Sin header Content-Type manual: fetch arma el boundary multipart solo
       // (forzarlo en React Native rompe el parseo del FormData en el server).
-      const uploadRes = await fetch(`${ENV.API_BASE_URL}/upload-doc`, {
+      const uploadRes = await fetchWithTimeout(`${ENV.API_BASE_URL}/upload-doc`, {
         method: 'POST',
         body: formData,
       })
@@ -961,19 +961,21 @@ export default function CuentaScreen() {
                   onPress={() => {
                     Alert.prompt ? Alert.prompt('Nueva promoción', 'Describe tu descuento (ej: 20% en gasfitería)', async (text) => {
                       if (text) {
-                        await supabase.from('promociones').insert({
+                        const { error } = await supabase.from('promociones').insert({
                           tecnico_id: tech.id, descripcion: text, activa: true,
                           descuento: 10, tecnico_nombre: tech.nombre,
                         })
+                        if (error) { Alert.alert('No se pudo crear', 'Inténtalo de nuevo en un momento.'); return }
                         Alert.alert('Promoción creada', 'Tu promoción ya está visible para los clientes')
                       }
                     }) : Alert.alert('Crear promoción', 'Para crear una promoción, describe tu descuento y se publicará a los clientes.\n\nEjemplo: "20% de descuento en gasfitería esta semana"', [
                       { text: 'Cancelar' },
                       { text: 'Crear', onPress: async () => {
-                        await supabase.from('promociones').insert({
+                        const { error } = await supabase.from('promociones').insert({
                           tecnico_id: tech.id, descripcion: `Descuento especial de ${tech.nombre}`,
                           activa: true, descuento: 10, tecnico_nombre: tech.nombre,
                         })
+                        if (error) { Alert.alert('No se pudo crear', 'Inténtalo de nuevo en un momento.'); return }
                         Alert.alert('Promoción creada', 'Tu promoción ya está visible')
                       }},
                     ])
@@ -1071,7 +1073,7 @@ export default function CuentaScreen() {
                         onPress={async () => {
                           setAcceptingId(s.id)
                           try {
-                            const res = await fetch(`${ENV.API_BASE_URL}/solicitudes/${s.id}/accept`, {
+                            const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/solicitudes/${s.id}/accept`, {
                               method: 'POST',
                               headers: {
                                 'Content-Type': 'application/json',
@@ -1749,7 +1751,7 @@ export default function CuentaScreen() {
                                     formData.append('tipo', doc.key)
                                     formData.append('tecnicoId', String(tech.id))
                                     formData.append('auth_token', docToken)
-                                    const res = await fetch(`${ENV.API_BASE_URL}/upload-doc`, { method: 'POST', body: formData })
+                                    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/upload-doc`, { method: 'POST', body: formData })
                                     const data = await res.json()
                                     if (data.success) {
                                       Alert.alert('Documento subido', 'Lo revisaremos pronto y te notificaremos.')

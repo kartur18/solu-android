@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text } from 'react-native'
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LiveChat } from '../../src/components/LiveChat'
 import { fetchServicioByCodigo } from '../../src/lib/servicios'
 import { fetchChatToken } from '../../src/lib/chat-api'
@@ -22,9 +23,22 @@ export default function ChatPedidoScreen() {
 
   useEffect(() => {
     if (token) { setResolvedToken(token); return }
-    if (role === 'cliente' && code && profile?.whatsapp) {
-      fetchChatToken(code, profile.whatsapp).then((t) => { if (t) setResolvedToken(t) })
-    }
+    if (role !== 'cliente' || !code) return
+    let cancelled = false
+    ;(async () => {
+      // Para leads CONT- el token se persiste en AsyncStorage al crear el lead
+      // (no se puede reemitir: fetchChatToken rechaza CONT-). Para pedidos
+      // normales se reemite con el WhatsApp del perfil. Así el chat se recupera
+      // aunque el cliente haya cerrado la app o navegado atrás.
+      const stored = await AsyncStorage.getItem(`chatToken:${code}`).catch(() => null)
+      if (cancelled) return
+      if (stored) { setResolvedToken(stored); return }
+      if (profile?.whatsapp) {
+        const t = await fetchChatToken(code, profile.whatsapp)
+        if (!cancelled && t) setResolvedToken(t)
+      }
+    })()
+    return () => { cancelled = true }
   }, [code, token, role, profile?.whatsapp])
 
   useEffect(() => {

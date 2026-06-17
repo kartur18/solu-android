@@ -18,7 +18,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { DISTRITOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { logger } from '../src/lib/logger'
-import { ENV } from '../src/lib/env'
+import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { verifyDNI } from '../src/lib/integrations'
 import { compressDNIPhoto } from '../src/lib/imageCompress'
 import { THEME } from '../src/lib/theme'
@@ -157,7 +157,7 @@ export default function RegistroScreen() {
 
       // V3.1: no enviamos `plan` al backend (eliminado). El backend acredita
       // los 5,000 SoluCoins de bienvenida automáticamente al crear el técnico.
-      const res = await fetch(`${ENV.API_BASE_URL}/register-tech`, {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/register-tech`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

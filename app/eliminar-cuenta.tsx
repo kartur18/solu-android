@@ -3,7 +3,6 @@ import { ScrollView, View, Text, Linking, Alert, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '../src/lib/supabase'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale } from '../src/components/ui/Motion'
@@ -35,16 +34,19 @@ export default function EliminarCuentaScreen() {
                 })
                 await AsyncStorage.removeItem('solu_tech_session')
               }
-              // Check for client session
+              // Cliente: cerramos la sesión local. El borrado de datos NO se
+              // puede hacer desde la app con la key anon (RLS deny-all): antes
+              // se hacía un update anon que NO aplicaba (no-op) pero igual se
+              // decía "Cuenta desactivada" = éxito falso en una acción de
+              // privacidad. El mecanismo real es la solicitud por correo, que
+              // soporte procesa (Ley 29733).
               const clientSession = await AsyncStorage.getItem('solu_client_session')
               if (clientSession) {
-                const { id } = JSON.parse(clientSession)
-                await supabase.from('clientes_users').update({ nombre: 'ELIMINADO', whatsapp: '' }).eq('id', id)
                 await AsyncStorage.removeItem('solu_client_session')
               }
-              // Also send email for full deletion
-              Linking.openURL('mailto:contacto@solu.pe?subject=Confirmación eliminación de cuenta&body=Mi cuenta ha sido desactivada desde la app. Por favor completar la eliminación total de mis datos.')
-              Alert.alert('Cuenta desactivada', 'Tu cuenta ha sido desactivada. Recibirás confirmación de la eliminación total en máximo 15 días hábiles.', [
+              // Solicitud de eliminación total por correo (mecanismo real).
+              Linking.openURL('mailto:contacto@solu.pe?subject=Solicitud de eliminación de cuenta y datos&body=Solicito la eliminación total de mi cuenta y mis datos personales en SOLU.')
+              Alert.alert('Solicitud enviada', 'Cerramos tu sesión y se abrió tu correo para confirmar la solicitud. Procesaremos la eliminación total de tus datos en máximo 15 días hábiles.', [
                 { text: 'OK', onPress: () => router.dismiss() }
               ])
             } catch {

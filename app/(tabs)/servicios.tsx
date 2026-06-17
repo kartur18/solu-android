@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { SUPPORT_PHONE, waLink } from '../../src/lib/constants'
 import { supabase } from '../../src/lib/supabase'
 import { fetchClienteServicios } from '../../src/lib/servicios'
-import { ENV } from '../../src/lib/env'
+import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { registerForPushNotifications, sendLocalNotification, getStatusNotification } from '../../src/lib/notifications'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, haptics } from '../../src/components/ui/Motion'
@@ -101,7 +101,7 @@ export default function MisServiciosScreen() {
 
     setLoading(true)
     try {
-      const res = await fetch(`${ENV.API_BASE_URL}/login-client`, {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/login-client`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ whatsapp: waClean, password: loginPassword }),

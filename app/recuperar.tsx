@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { ENV } from '../src/lib/env'
+import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
@@ -34,7 +34,7 @@ export default function RecuperarScreen() {
       let successResult: any = null
 
       // Try as tecnico first
-      const res = await fetch(`${ENV.API_BASE_URL}/password-reset`, {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/password-reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ whatsapp: waClean, tipo: 'tecnico' }),
@@ -46,7 +46,7 @@ export default function RecuperarScreen() {
         successResult = result
       } else if (res.status === 404) {
         // Try as client
-        const res2 = await fetch(`${ENV.API_BASE_URL}/password-reset`, {
+        const res2 = await fetchWithTimeout(`${ENV.API_BASE_URL}/password-reset`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ whatsapp: waClean, tipo: 'cliente' }),
@@ -109,7 +109,7 @@ export default function RecuperarScreen() {
     setLoading(true)
     try {
       const waClean = whatsapp.replace(/\D/g, '')
-      const res = await fetch(`${ENV.API_BASE_URL}/password-reset`, {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/password-reset`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Alert } from 'react-native'
 import { useRouter } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { iniciarChatLead } from './contacto'
 import { useClientProfile } from './useClientProfile'
 import { haptics } from '../components/ui/Motion'
@@ -39,6 +40,11 @@ export function useContactLead() {
           return
         }
         haptics.success()
+        // Persistir el chatToken del lead: el token solo viaja por query param
+        // y, al ser CONT-, no se puede reemitir (chat-api rechaza CONT-). Si el
+        // cliente mata la app o navega atrás, sin esto el chat queda inaccesible
+        // para siempre. chat-pedido lo lee de aquí si no viene por param.
+        await AsyncStorage.setItem(`chatToken:${lead.codigo}`, lead.chatToken).catch(() => {})
         router.push(`/chat-pedido/${lead.codigo}?as=cliente&token=${encodeURIComponent(lead.chatToken)}`)
       } finally {
         setEnviando(false)

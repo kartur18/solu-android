@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'reac
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { DISTRITOS } from '../src/lib/constants'
-import { ENV } from '../src/lib/env'
+import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
@@ -33,7 +33,7 @@ export default function RegistroClienteScreen() {
 
     setLoading(true)
     try {
-      const res = await fetch(`${ENV.API_BASE_URL}/register-client`, {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/register-client`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
