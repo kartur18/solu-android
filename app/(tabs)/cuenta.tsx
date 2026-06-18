@@ -2082,7 +2082,11 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
       {/* Action buttons Premium */}
       {isActive && (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-          {/* WhatsApp */}
+          {/* WhatsApp — solo si el lead ya está pagado: el backend manda
+              whatsapp=null en los leads asignados que el técnico aún no pagó.
+              Para contactarlos usa el Chat (que cobra el lead); al pagar, el
+              número se desbloquea y este botón reaparece. */}
+          {lead.whatsapp ? (
           <PressableScale
             onPress={() => {
               const msg = `Hola ${lead.nombre}, soy tu técnico de SOLU. Sobre tu solicitud de ${lead.servicio} (${lead.codigo}).`
@@ -2094,8 +2098,10 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
             <Ionicons name="logo-whatsapp" size={16} color="#fff" />
             <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>WhatsApp</Text>
           </PressableScale>
+          ) : null}
 
-          {/* Chat */}
+          {/* Chat — vía in-app (cobra el lead al 1er mensaje). Cuando el número
+              está bloqueado, este es el único camino de contacto. */}
           {router && tech && (
             <PressableScale
               onPress={() => router.push({
