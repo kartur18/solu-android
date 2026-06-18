@@ -8,7 +8,6 @@ import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/
 import { supabase } from '../../src/lib/supabase'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { fetchServicioByCodigo } from '../../src/lib/servicios'
-import { openTechWhatsapp } from '../../src/lib/contacto'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
 import type { Cliente, Tecnico } from '../../src/lib/types'

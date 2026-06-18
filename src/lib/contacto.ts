@@ -1,31 +1,11 @@
-import { Linking } from 'react-native'
 import { ENV, fetchWithTimeout } from './env'
-import { waLink } from './constants'
 import type { Tecnico } from './types'
 import type { ClientProfile } from './useClientProfile'
 
-// Revela el WhatsApp de un técnico (server-side, post-lockdown) y abre el
-// chat de WhatsApp. La app ya NO puede leer whatsapp en bloque desde anon;
-// se pide de a uno al endpoint /api/tecnico/[id]/contacto al momento de
-// contactar. Devuelve false si no se pudo (sin red / técnico sin whatsapp).
-export async function openTechWhatsapp(
-  techId: number,
-  nombre: string,
-  mensaje?: string,
-): Promise<boolean> {
-  try {
-    const res = await fetch(`${ENV.API_BASE_URL}/tecnico/${techId}/contacto`)
-    if (!res.ok) return false
-    const data = (await res.json()) as { whatsapp?: string | null }
-    if (!data?.whatsapp) return false
-    await Linking.openURL(
-      waLink(data.whatsapp, mensaje || `Hola ${nombre}, te encontré en SOLU.`),
-    )
-    return true
-  } catch {
-    return false
-  }
-}
+// NOTA: openTechWhatsapp/fetchTechWhatsapp fueron eliminados: apuntaban a
+// /api/tecnico/[id]/contacto (endpoint borrado por ser un bypass de cobro —
+// revelaba el whatsapp del técnico sin crear lead). El único camino de
+// contacto es iniciarChatLead, que cobra el lead al técnico.
 
 // Resultado del lead in-app: el código CONT- y su token HMAC para abrir
 // el chat del cliente sin sesión.
@@ -59,19 +39,6 @@ export async function iniciarChatLead(
     const data = (await res.json()) as { codigo?: string; chat_token?: string }
     if (!data?.codigo || !data?.chat_token) return null
     return { codigo: data.codigo, chatToken: data.chat_token }
-  } catch {
-    return null
-  }
-}
-
-// Solo trae el número (sin abrir WhatsApp) — para flujos que arman su
-// propio link o necesitan el dato.
-export async function fetchTechWhatsapp(techId: number): Promise<string | null> {
-  try {
-    const res = await fetch(`${ENV.API_BASE_URL}/tecnico/${techId}/contacto`)
-    if (!res.ok) return null
-    const data = (await res.json()) as { whatsapp?: string | null }
-    return data?.whatsapp ?? null
   } catch {
     return null
   }

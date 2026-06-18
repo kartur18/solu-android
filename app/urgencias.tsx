@@ -9,7 +9,6 @@ import { useLocationDetection } from '../src/lib/useLocation'
 // `supabase` (anon) removido: el insert a clientes ahora va por /api/cliente/crear-servicio.
 import { useClientProfile } from '../src/lib/useClientProfile'
 import { findBestTech, type MatchableTech } from '../src/lib/matching'
-import { fetchTechWhatsapp } from '../src/lib/contacto'
 import { registerForPushNotifications, upsertGuestClientPushToken } from '../src/lib/notifications'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, PulseDot, haptics } from '../src/components/ui/Motion'
