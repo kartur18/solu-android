@@ -1,21 +1,14 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ENV, fetchWithTimeout } from './env'
+import { getTechToken as readTechToken } from './tech-session'
 import type { Notificacion } from './types'
 
 // Cliente de las notificaciones del técnico contra los endpoints server-side
 // (/api/notifications). Reemplaza el acceso directo a Supabase con key anon,
 // que tras el lockdown ya no puede leer/escribir la tabla `notificaciones`.
 
-// Lee el token de sesión del técnico guardado en AsyncStorage por el login.
+// Lee el token de sesión del técnico desde SecureStore (vía tech-session).
 export async function getTechToken(): Promise<string | null> {
-  try {
-    const raw = await AsyncStorage.getItem('solu_tech_session')
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as { token?: string }
-    return parsed?.token ?? null
-  } catch {
-    return null
-  }
+  return readTechToken()
 }
 
 // Trae las últimas notificaciones del técnico logueado (Bearer).

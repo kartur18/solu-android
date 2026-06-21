@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ENV, fetchWithTimeout } from './env'
+import { getTechToken as readTechToken } from './tech-session'
 
 // Cliente del chat cliente↔técnico contra los endpoints server-side
 // (/api/chat/...). Reemplaza el acceso directo a Supabase con key anon
@@ -56,16 +56,9 @@ interface ChatAuth {
   chatToken?: string | null
 }
 
-// Lee el token de sesión del técnico guardado en AsyncStorage por el login.
+// Lee el token de sesión del técnico desde SecureStore (vía tech-session).
 export async function getTechToken(): Promise<string | null> {
-  try {
-    const raw = await AsyncStorage.getItem('solu_tech_session')
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as { token?: string }
-    return parsed?.token ?? null
-  } catch {
-    return null
-  }
+  return readTechToken()
 }
 
 // Obtiene un chatToken HMAC para el cliente guest de un PEDIDO, autenticando

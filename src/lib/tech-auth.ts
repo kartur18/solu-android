@@ -1,15 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { getTechToken } from './tech-session'
 
-// Lee el Bearer del técnico desde AsyncStorage (clave 'solu_tech_session', campo .token).
-// Misma convención que getTechToken de notif-api/chat-api: el login persiste
-// { id, nombre, token } y los endpoints (appointments, upload-doc) exigen ese token.
+// Lee el Bearer del técnico desde el almacenamiento seguro (SecureStore).
+// Reexporta getTechToken de tech-session para los call sites que ya usaban
+// getTechAuthToken (appointments, upload-doc, LeadRow, etc.).
 export async function getTechAuthToken(): Promise<string | null> {
-  try {
-    const raw = await AsyncStorage.getItem('solu_tech_session')
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as { token?: string }
-    return parsed?.token ?? null
-  } catch {
-    return null
-  }
+  return getTechToken()
 }

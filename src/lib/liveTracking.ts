@@ -1,25 +1,13 @@
 import * as Location from 'expo-location'
 import { AppState, type AppStateStatus, type NativeEventSubscription } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ENV, fetchWithTimeout } from './env'
+import { getTechToken } from './tech-session'
 import { logger } from './logger'
 
 let watchId: Location.LocationSubscription | null = null
 let currentPedidoId: number | null = null
 // Suscripción a AppState para pausar/reanudar el watch según foreground.
 let appStateSub: NativeEventSubscription | null = null
-
-// Lee el Bearer del técnico desde AsyncStorage (clave 'solu_tech_session', campo .token).
-async function getTechToken(): Promise<string | null> {
-  try {
-    const raw = await AsyncStorage.getItem('solu_tech_session')
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as { token?: string }
-    return parsed?.token ?? null
-  } catch {
-    return null
-  }
-}
 
 // Crea el watch de GPS para el pedido en curso. Se reutiliza al arrancar y al
 // reanudar desde background (no toca currentPedidoId ni permisos).

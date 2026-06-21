@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator, Share } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
@@ -8,6 +7,7 @@ import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, LEVELS, waLin
 import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { getTechAuthToken } from '../../src/lib/tech-auth'
+import { saveTechSession, getTechToken, getTechSessionMeta, clearTechSession } from '../../src/lib/tech-session'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
 import { markNotifRead as apiMarkNotifRead } from '../../src/lib/notif-api'
@@ -30,18 +30,10 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'perfil', icon: 'person', label: 'Perfil' },
 ]
 
-// Lee el Bearer del técnico desde AsyncStorage (clave 'solu_tech_session', campo .token).
-// Igual que getTechToken de chat-api/notif-api: lo usan los componentes (ej. LeadRow)
-// que no reciben el authToken por props.
+// Lee el Bearer del técnico desde SecureStore (vía tech-session). Lo usan los
+// componentes (ej. LeadRow) que no reciben el authToken por props.
 async function leadAuthToken(): Promise<string | null> {
-  try {
-    const raw = await AsyncStorage.getItem('solu_tech_session')
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as { token?: string }
-    return parsed?.token ?? null
-  } catch {
-    return null
-  }
+  return getTechToken()
 }
 
 function timeAgo(dateStr: string): string {
@@ -122,15 +114,17 @@ export default function CuentaScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const saved = await AsyncStorage.getItem('solu_tech_session')
-        if (!saved) return
-        const session = JSON.parse(saved)
+        const session = await getTechSessionMeta()
+        if (!session) return
+        // El token vive en SecureStore (getTechToken hace fallback/migración
+        // desde sesiones viejas que lo guardaban en AsyncStorage).
+        const savedToken = await getTechToken()
         // El perfil propio se lee server-side con el token (post-lockdown).
         // Sesiones viejas sin token (o token vencido) -> pedir re-login.
-        if (session?.id && session?.token) {
+        if (session?.id && savedToken) {
           setLoading(true)
-          setAuthToken(session.token)
-          const data = await fetchMyTechProfile(session.token)
+          setAuthToken(savedToken)
+          const data = await fetchMyTechProfile(savedToken)
           if (data) {
             setTech(data)
             setLoggedIn(true)
@@ -141,14 +135,14 @@ export default function CuentaScreen() {
             registerForPushNotifications().then(token => {
               if (token) savePushToken(data.id, token)
             })
-            await loadData(data.id, session.token)
+            await loadData(data.id, savedToken)
           } else {
-            await AsyncStorage.removeItem('solu_tech_session')
+            await clearTechSession()
           }
           setLoading(false)
         } else if (session?.id) {
           // Sesión legacy sin token: limpiar para forzar login nuevo.
-          await AsyncStorage.removeItem('solu_tech_session')
+          await clearTechSession()
         }
       } catch {
         setLoading(false)
@@ -198,8 +192,9 @@ export default function CuentaScreen() {
       setEditOficios(data.oficios || [data.oficio].filter(Boolean))
       setEditZonas(data.zonas || [data.distrito].filter(Boolean))
 
-      // Persist session CON el token (necesario para /api/tecnico/me)
-      await AsyncStorage.setItem('solu_tech_session', JSON.stringify({ id: data.id, nombre: data.nombre, token }))
+      // Persist session: {id, nombre} en AsyncStorage y el token en SecureStore
+      // (necesario para /api/tecnico/me).
+      await saveTechSession({ id: data.id, nombre: data.nombre }, token)
 
       registerForPushNotifications().then(token => {
         if (token) savePushToken(data.id, token)
@@ -725,7 +720,7 @@ export default function CuentaScreen() {
               <PressableScale
                 onPress={() => Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
                   { text: 'Cancelar', style: 'cancel' },
-                  { text: 'Salir', style: 'destructive', onPress: () => { AsyncStorage.removeItem('solu_tech_session'); setLoggedIn(false); setTech(null); setTab('dashboard') } },
+                  { text: 'Salir', style: 'destructive', onPress: () => { void clearTechSession(); setLoggedIn(false); setTech(null); setTab('dashboard') } },
                 ])}
                 accessibilityLabel="Cerrar sesión"
                 style={{ width: 44, height: 44, borderRadius: THEME.radius.md, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
@@ -1919,7 +1914,7 @@ export default function CuentaScreen() {
                 <PressableScale
                   onPress={() => Alert.alert('Cerrar sesión', '¿Seguro?', [
                     { text: 'Cancelar', style: 'cancel' },
-                    { text: 'Salir', style: 'destructive', onPress: () => { AsyncStorage.removeItem('solu_tech_session'); setLoggedIn(false); setTech(null); setTab('dashboard') } },
+                    { text: 'Salir', style: 'destructive', onPress: () => { void clearTechSession(); setLoggedIn(false); setTech(null); setTab('dashboard') } },
                   ])}
                   accessibilityLabel="Cerrar sesión"
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm, minHeight: 48, borderRadius: THEME.radius.md, backgroundColor: THEME.color.dangerBg }}

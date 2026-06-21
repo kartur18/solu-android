@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react'
 import { Tabs, useRouter, useFocusEffect } from 'expo-router'
 import { View, Text } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTechToken, fetchNotifications } from '../../src/lib/notif-api'
+import { getTechSessionMeta } from '../../src/lib/tech-session'
 import { logger } from '../../src/lib/logger'
 import { THEME } from '../../src/lib/theme'
 
@@ -50,12 +50,11 @@ export default function TabLayout() {
       let activo = true
       async function fetchUnread() {
         try {
-          const raw = await AsyncStorage.getItem('solu_tech_session')
-          if (!raw) {
+          const session = await getTechSessionMeta()
+          if (!session) {
             if (activo) setUnreadCount(0)
             return
           }
-          const session = JSON.parse(raw) as { id?: number; token?: string }
           const token = await getTechToken()
           if (!session?.id || !token) {
             if (activo) setUnreadCount(0)

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
+import { getTechToken, clearTechSession } from '../src/lib/tech-session'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale } from '../src/components/ui/Motion'
 
@@ -23,16 +24,15 @@ export default function EliminarCuentaScreen() {
           onPress: async () => {
             setDeleting(true)
             try {
-              // Check for tech session
-              const techSession = await AsyncStorage.getItem('solu_tech_session')
-              if (techSession) {
-                const { token } = JSON.parse(techSession) as { token?: string }
+              // Check for tech session. El token vive en SecureStore.
+              const token = await getTechToken()
+              if (token) {
                 // Soft-delete del técnico server-side (Bearer); el id sale del token.
                 await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/eliminar-cuenta`, {
                   method: 'POST',
                   headers: { Authorization: `Bearer ${token}` },
                 })
-                await AsyncStorage.removeItem('solu_tech_session')
+                await clearTechSession()
               }
               // Cliente: cerramos la sesión local. El borrado de datos NO se
               // puede hacer desde la app con la key anon (RLS deny-all): antes

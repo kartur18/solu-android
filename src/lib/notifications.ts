@@ -1,8 +1,8 @@
 import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ENV, fetchWithTimeout } from './env'
+import { getTechToken } from './tech-session'
 import { logger } from './logger'
 
 // Configure notification behavior
@@ -90,8 +90,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
 // del token en el server, no del param (se mantiene por compat de llamadas).
 export async function savePushToken(_tecnicoId: number, token: string) {
   try {
-    const raw = await AsyncStorage.getItem('solu_tech_session')
-    const bearer = raw ? (JSON.parse(raw) as { token?: string })?.token : null
+    const bearer = await getTechToken()
     if (!bearer) return
     await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/push-token`, {
       method: 'POST',
