@@ -10,12 +10,16 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary'
 import { useAppUpdate } from '../src/lib/useAppUpdate'
 import { OnboardingModal } from '../src/components/OnboardingModal'
 
-// Initialize Sentry for crash reporting
-Sentry.init({
-  dsn: ENV.SENTRY_DSN,
-  tracesSampleRate: 0.2,
-  enabled: !__DEV__,
-})
+// Initialize Sentry for crash reporting. Sin DSN no inicializamos: evita peso
+// muerto y ruido (un init con dsn vacío no reporta nada igual).
+// TODO(carlos): setear SENTRY_DSN en EAS secrets para activar.
+if (ENV.SENTRY_DSN) {
+  Sentry.init({
+    dsn: ENV.SENTRY_DSN,
+    tracesSampleRate: 0.2,
+    enabled: !__DEV__,
+  })
+}
 
 // Configure how notifications are shown when app is in foreground (SDK 55+ fields)
 Notifications.setNotificationHandler({

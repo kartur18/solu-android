@@ -39,38 +39,6 @@ export async function verifyDNI(dni: string, nombreRegistrado?: string): Promise
 }
 
 /**
- * Enviar email via API de la web (Resend)
- */
-export async function sendEmail(to: string, subject: string, body: string): Promise<boolean> {
-  try {
-    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to, subject, body }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-/**
- * Notificar al técnico via API (push + email + WhatsApp)
- */
-export async function notifyTech(tecnicoId: number, title: string, message: string): Promise<boolean> {
-  try {
-    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/notify-tech`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tecnicoId, title, message }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-/**
  * Enviar push notification via backend. El backend resuelve el push_token
  * buscando en `tecnicos` o `clientes_users` según targetType. Para clientes,
  * targetId es el whatsapp normalizado (solo dígitos).
@@ -91,63 +59,5 @@ export async function sendPush(
     return res.ok
   } catch {
     return false
-  }
-}
-
-/**
- * Generar factura/boleta via NubeFact
- */
-export async function emitBoleta(data: {
-  tecnicoId: number
-  monto: number
-  concepto: string
-}): Promise<{ success: boolean; url?: string }> {
-  try {
-    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/emit-boleta`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    const result = await res.json()
-    return { success: result.success || false, url: result.url }
-  } catch {
-    return { success: false }
-  }
-}
-
-/**
- * Enviar mensaje WhatsApp via Cloud API
- */
-export async function sendWhatsApp(phone: string, message: string): Promise<boolean> {
-  try {
-    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/notifications`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'whatsapp', phone, message }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-/**
- * Procesar pago via Flow (para renovaciones)
- */
-export async function processPayment(data: {
-  tecnicoId: number
-  plan: string
-  amount: number
-}): Promise<{ success: boolean }> {
-  try {
-    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/process-payment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    const result = await res.json()
-    return { success: result.success || false }
-  } catch {
-    return { success: false }
   }
 }

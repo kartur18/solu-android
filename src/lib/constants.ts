@@ -390,30 +390,6 @@ export const COINS_PACKAGES = {
   empresarial_v31:  { name: 'Empresarial',  price: 1200, coins: 360_000, leads: '≈ 600 leads' },
 } as const
 
-/**
- * @deprecated PLAN_FEATURES era el catálogo de planes mensuales pre-V3.1
- * (profesional / premium / elite). Eliminado en 2026-05 cuando SOLU pasó a
- * SoluCoins prepagos.
- *
- * Mantenemos stubs con name="Legacy" para no romper typecheck en pantallas
- * que aún lo importan (`app/(tabs)/cuenta.tsx`, `app/registro.tsx`). Esas
- * pantallas muestran "Legacy" visiblemente, lo cual fuerza el refactor a
- * COINS_PACKAGES en la siguiente iteración (ver TODO_V3.md).
- *
- * NO agregar nuevos features acá. Para agregar lógica nueva, usar
- * COINS_PACKAGES + tier loyalty.
- */
-export interface PlanFeatureLegacy {
-  name: string
-  price: number
-  features: string[]
-}
-export const PLAN_FEATURES: Record<'profesional' | 'premium' | 'elite', PlanFeatureLegacy> = {
-  profesional: { name: 'Legacy (modelo viejo)', price: 0, features: [] },
-  premium:     { name: 'Legacy (modelo viejo)', price: 0, features: [] },
-  elite:       { name: 'Legacy (modelo viejo)', price: 0, features: [] },
-}
-
 export function waLink(phone: string, msg: string): string {
   const clean = phone.replace(/\D/g, '')
   const full = clean.length === 9 ? '51' + clean : clean

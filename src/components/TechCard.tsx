@@ -17,14 +17,6 @@ type Props = {
   isFavorite?: boolean
 }
 
-// Los nombres de planes legacy (modelo viejo) no se muestran al usuario:
-// se mapean a badges neutrales de calidad (TOP / DESTACADO).
-const PLAN_COLORS: Record<string, { label: string; gradient: [string, string] }> = {
-  elite: { label: 'TOP', gradient: [THEME.color.oro, THEME.color.brand] },
-  premium: { label: 'DESTACADO', gradient: [THEME.color.brand, THEME.color.brandDark] },
-  pro: { label: 'DESTACADO', gradient: [THEME.color.brand, THEME.color.brandDark] },
-}
-
 // Color por tier de fidelidad (THEME.color.{bronce,plata,oro,platino}).
 const TIER_LABEL: Record<string, string> = {
   bronce: 'Bronce',
@@ -48,8 +40,6 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
   const router = useRouter()
   // Flujo de contacto primario in-app (crea lead + abre chat).
   const lead = useContactLead()
-  // V3.1: tech.plan ahora es opcional. Mapeamos string vacío al fallback.
-  const planStyle = PLAN_COLORS[tech.plan ?? ''] ?? null
   const avatarGradient = AVATAR_GRADIENTS[(tech.id || 0) % AVATAR_GRADIENTS.length]
   // Tier derivado de servicios_completados (no es columna). Bronce = base, sin badge.
   const tier = tierFromServicios(tech.servicios_completados)
@@ -190,22 +180,13 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
           </View>
         </View>
 
-        {/* Badges: verificado, plan (TOP/DESTACADO), tier */}
+        {/* Badges: verificado, tier de fidelidad, servicios completados */}
         <View style={{ flexDirection: 'row', gap: THEME.space.xs, marginTop: THEME.space.md, flexWrap: 'wrap' }}>
           {tech.verificado && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4 }}>
               <Ionicons name="checkmark-circle" size={13} color={THEME.color.success} />
               <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.success }}>Verificado</Text>
             </View>
-          )}
-          {planStyle && (
-            <LinearGradient
-              colors={planStyle.gradient}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-              style={{ borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4, justifyContent: 'center' }}
-            >
-              <Text style={{ ...THEME.font.caption, fontWeight: '800', color: THEME.color.white }}>{planStyle.label}</Text>
-            </LinearGradient>
           )}
           {tierColor && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: tierColor + '1A', borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4 }}>
