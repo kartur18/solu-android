@@ -1,5 +1,6 @@
 import { ENV, fetchWithTimeout } from './env'
 import { getTechToken as readTechToken } from './tech-session'
+import { notifyIf401 } from './session-expired'
 
 // Cliente del chat cliente↔técnico contra los endpoints server-side
 // (/api/chat/...). Reemplaza el acceso directo a Supabase con key anon
@@ -125,6 +126,8 @@ export async function fetchMensajes(opts: {
     url += `?token=${encodeURIComponent(chatToken)}`
   }
   const res = await fetchWithTimeout(url, { headers: authHeaders({ token, chatToken }) })
+  // Solo el técnico (Bearer) desloguea en 401; el cliente guest usa chatToken.
+  if (token) notifyIf401(res)
   if (!res.ok) throw await parseError(res)
   const data = (await res.json()) as { mensajes?: ChatMensaje[] }
   return data?.mensajes ?? []
@@ -164,6 +167,8 @@ export async function sendMensaje(opts: {
     headers: { 'Content-Type': 'application/json', ...authHeaders({ token, chatToken }) },
     body: JSON.stringify(body),
   })
+  // Solo el técnico (Bearer) desloguea en 401; el cliente guest usa chatToken.
+  if (token) notifyIf401(res)
   if (!res.ok) throw await parseError(res)
   const data = (await res.json()) as { mensaje?: ChatMensaje }
   if (!data?.mensaje) throw new ChatApiError(res.status, 'respuesta_invalida')

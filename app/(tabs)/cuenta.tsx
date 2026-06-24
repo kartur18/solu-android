@@ -8,6 +8,7 @@ import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { getTechAuthToken } from '../../src/lib/tech-auth'
 import { saveTechSession, getTechToken, getTechSessionMeta, clearTechSession } from '../../src/lib/tech-session'
+import { registerSessionExpiredHandler, resetSessionExpired } from '../../src/lib/session-expired'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
 import { markNotifRead as apiMarkNotifRead } from '../../src/lib/notif-api'
@@ -123,6 +124,8 @@ export default function CuentaScreen() {
         // Sesiones viejas sin token (o token vencido) -> pedir re-login.
         if (session?.id && savedToken) {
           setLoading(true)
+          // Sesión restaurada con token: rearma la detección de 401.
+          resetSessionExpired()
           setAuthToken(savedToken)
           const data = await fetchMyTechProfile(savedToken)
           if (data) {
@@ -150,6 +153,18 @@ export default function CuentaScreen() {
         setRestoring(false)
       }
     })()
+  }, [])
+
+  // Si el token vence en mitad de sesión (401 detectado en cualquier fetch
+  // autenticado), bajamos el estado local para mostrar el login. El layout raíz
+  // ya limpió la sesión y mostró el aviso; acá solo reseteamos la UI.
+  useEffect(() => {
+    return registerSessionExpiredHandler(() => {
+      setLoggedIn(false)
+      setTech(null)
+      setAuthToken(null)
+      setTab('dashboard')
+    })
   }, [])
 
   async function doLogin() {
@@ -195,6 +210,8 @@ export default function CuentaScreen() {
       // Persist session: {id, nombre} en AsyncStorage y el token en SecureStore
       // (necesario para /api/tecnico/me).
       await saveTechSession({ id: data.id, nombre: data.nombre }, token)
+      // Rearma la detección de 401: un futuro vencimiento vuelve a desloguear.
+      resetSessionExpired()
 
       registerForPushNotifications().then(token => {
         if (token) savePushToken(data.id, token)

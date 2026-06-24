@@ -2,6 +2,7 @@ import * as Location from 'expo-location'
 import { AppState, type AppStateStatus, type NativeEventSubscription } from 'react-native'
 import { ENV, fetchWithTimeout } from './env'
 import { getTechToken } from './tech-session'
+import { notifyIf401 } from './session-expired'
 import { logger } from './logger'
 
 let watchId: Location.LocationSubscription | null = null
@@ -23,11 +24,13 @@ async function armWatch(): Promise<boolean> {
           // El endpoint persiste tecnico_lat/lng/gps_updated_at en la fila del lead;
           // el id del técnico sale del Bearer y valida ownership por tecnico_asignado.
           const token = await getTechToken()
-          await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/lead/${currentPedidoId}/gps`, {
+          const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/lead/${currentPedidoId}/gps`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
             body: JSON.stringify({ lat: latitude, lng: longitude }),
           })
+          // Si el token venció en mitad del tracking, desloguear (solo 401).
+          if (token) notifyIf401(res)
         } catch (err) {
           logger.error('Live tracking update failed:', err)
         }

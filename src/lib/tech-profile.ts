@@ -1,4 +1,5 @@
 import { ENV } from './env'
+import { notifyIf401 } from './session-expired'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from './types'
 
 export interface TechDashboardData {
@@ -23,6 +24,7 @@ export async function fetchMyTechDashboard(
     const res = await fetch(`${ENV.API_BASE_URL}/tecnico/dashboard`, {
       headers: { Authorization: `Bearer ${token}` },
     })
+    notifyIf401(res)
     if (!res.ok) return null
     return (await res.json()) as TechDashboardData
   } catch {
@@ -42,6 +44,7 @@ export async function fetchMyTechProfile(token: string | null | undefined): Prom
     const res = await fetch(`${ENV.API_BASE_URL}/tecnico/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
+    notifyIf401(res)
     if (!res.ok) return null
     const data = (await res.json()) as { technician?: Tecnico }
     return data?.technician ?? null

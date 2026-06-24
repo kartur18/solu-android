@@ -1,5 +1,6 @@
 import { ENV, fetchWithTimeout } from './env'
 import { getTechToken as readTechToken } from './tech-session'
+import { notifyIf401 } from './session-expired'
 import type { Notificacion } from './types'
 
 // Cliente de las notificaciones del técnico contra los endpoints server-side
@@ -24,6 +25,7 @@ export async function fetchNotifications(
   const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/notifications?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
+  notifyIf401(res)
   if (!res.ok) throw new Error(`notifications_${res.status}`)
   const data = (await res.json()) as { notifications?: Notificacion[] }
   return data?.notifications ?? []
@@ -45,6 +47,7 @@ export async function markNotifRead(
       },
       body: JSON.stringify({ tecnicoId, notificationId }),
     })
+    notifyIf401(res)
     return res.ok
   } catch {
     return false
@@ -66,6 +69,7 @@ export async function markAllNotifRead(
       },
       body: JSON.stringify({ tecnicoId, markAllRead: true }),
     })
+    notifyIf401(res)
     return res.ok
   } catch {
     return false

@@ -9,6 +9,8 @@ import { ENV } from '../src/lib/env'
 import { ErrorBoundary } from '../src/components/ErrorBoundary'
 import { useAppUpdate } from '../src/lib/useAppUpdate'
 import { OnboardingModal } from '../src/components/OnboardingModal'
+import { clearTechSession } from '../src/lib/tech-session'
+import { registerSessionExpiredHandler } from '../src/lib/session-expired'
 
 // Initialize Sentry for crash reporting. Sin DSN no inicializamos: evita peso
 // muerto y ruido (un init con dsn vacío no reporta nada igual).
@@ -78,6 +80,17 @@ export default function RootLayout() {
       notificationListener.current?.remove()
       responseListener.current?.remove()
     }
+  }, [])
+
+  // Sesión de técnico expirada (401 en mitad de sesión): limpiamos el token,
+  // avisamos y llevamos al login del técnico. Solo lo dispara un 401 exacto
+  // (ver session-expired.ts): errores de red/5xx/timeout NO desloguean.
+  useEffect(() => {
+    return registerSessionExpiredHandler(() => {
+      void clearTechSession()
+      router.replace('/(tabs)/cuenta')
+      Alert.alert('Tu sesión expiró', 'Por seguridad cerramos tu sesión. Ingresá de nuevo para continuar.')
+    })
   }, [])
 
   return (
