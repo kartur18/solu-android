@@ -315,7 +315,7 @@ export default function TecnicoScreen() {
             <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Contactar</Text>
           </PressableScale>
         </View>
-        {/* Acciones secundarias: solicitar servicio, llamar, agendar */}
+        {/* Acciones secundarias: solicitar servicio */}
         <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.sm }}>
           <PressableScale
             onPress={() => router.push({ pathname: '/solicitar', params: { tecnicoId: String(tech.id), tecnicoNombre: tech.nombre, tecnicoOficio: tech.oficio } })}
@@ -328,14 +328,12 @@ export default function TecnicoScreen() {
           {/* Botón "Llamar" RETIRADO: revelaba el teléfono del técnico (vía
               fetchTechWhatsapp → GET /api/tecnico/[id]/contacto) sin crear lead
               ni cobrar coin. El contacto pasa solo por "Contactar" (chat in-app). */}
-          <PressableScale
-            onPress={() => router.push(`/agendar/${tech.id}`)}
-            accessibilityLabel="Agendar cita"
-            style={{ flex: 1, height: 44, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-          >
-            <Ionicons name="calendar" size={17} color={THEME.color.brand} />
-            <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>Agendar</Text>
-          </PressableScale>
+          {/* Botón "Agendar" RETIRADO: el flujo estaba huérfano — la cita
+              viajaba ANÓNIMA (sin nombre/WhatsApp del cliente), el técnico no
+              tiene pantalla de citas y la app mostraba "¡Cita confirmada!"
+              igual, salteando además el cobro del lead. Re-habilitar recién
+              cuando el flujo completo exista (identidad + vista técnico +
+              cobro de coin). La pantalla /agendar/[id] queda inaccesible. */}
         </View>
       </View>
 
