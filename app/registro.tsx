@@ -143,9 +143,11 @@ export default function RegistroScreen() {
       }
       if (reniec.nameMatches === false) {
         setLoading(false)
+        // No mostramos el nombre de RENIEC: si lo hiciéramos, cualquiera podría
+        // sacar el nombre real de un DNI ajeno probando números.
         return Alert.alert(
           'Nombre no coincide',
-          `Según RENIEC tu nombre es "${reniec.nombre}". El nombre que ingresaste no coincide. Corrige tu nombre y vuelve a intentar.`,
+          'El nombre que ingresaste no coincide con el titular de ese DNI. Escríbelo igual que en tu documento (nombres y apellidos completos) y vuelve a intentar.',
         )
       }
 

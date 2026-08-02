@@ -2,10 +2,14 @@ import { ENV, fetchWithTimeout } from './env'
 import { logger } from './logger'
 
 /**
- * RENIEC - Verificar DNI contra api/verify-dni en la web (llama Decolecta)
- * Retorna nombre completo si el DNI existe en RENIEC.
+ * RENIEC - Verificar DNI contra api/verify-dni en la web (llama Decolecta).
+ *
+ * `nombreRegistrado` es OBLIGATORIO desde ago-2026: el backend solo devuelve
+ * los datos de RENIEC cuando el nombre que mandamos ya coincide con el titular.
+ * Si no coincide devuelve `nameMatches: false` y ningún nombre — así el
+ * endpoint deja de servir como buscador público de "DNI → nombre real".
  */
-export async function verifyDNI(dni: string, nombreRegistrado?: string): Promise<{
+export async function verifyDNI(dni: string, nombreRegistrado: string): Promise<{
   valid: boolean
   nombre?: string
   nombres?: string

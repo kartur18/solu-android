@@ -91,7 +91,7 @@ export default function TerminosScreen() {
           CITYLAND GROUP E.I.R.L.{'\n'}
           RUC: 20614914239{'\n'}
           Email: contacto@solu.pe{'\n'}
-          WhatsApp: 904518343{'\n'}
+          WhatsApp: 983835904{'\n'}
           Web: solu.pe
         </Text>
       </View>

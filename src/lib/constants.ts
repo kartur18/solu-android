@@ -316,7 +316,7 @@ export const DISTRITOS = [
   'Pucallpa', 'Tingo María', 'Yurimaguas', 'Bagua',
 ]
 
-export const SUPPORT_PHONE = '904518343'
+export const SUPPORT_PHONE = '983835904'
 
 export const ESTADOS = {
   NUEVO: 'Nuevo',
