@@ -6,7 +6,7 @@
 //   3. Verificación DNI (frente + posterior)
 //
 // CAMBIO V3.1: eliminado el selector de plan (profesional/premium/elite).
-// Todos los técnicos arrancan con 5,000 SoluCoins de bienvenida y pueden
+// Todos los técnicos arrancan con 8,000 SoluCoins de bienvenida y pueden
 // comprar paquetes después desde su perfil. Sin gates por plan en oficios
 // ni zonas (el límite real lo da el saldo de SoluCoins, no un plan mensual).
 
@@ -156,7 +156,7 @@ export default function RegistroScreen() {
       if (dniBack) dniPosteriorUrl = await uploadDni(dniBack, 'posterior')
 
       // V3.1: no enviamos `plan` al backend (eliminado). El backend acredita
-      // los 5,000 SoluCoins de bienvenida automáticamente al crear el técnico.
+      // los 8,000 SoluCoins de bienvenida automáticamente al crear el técnico.
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/register-tech`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -185,7 +185,7 @@ export default function RegistroScreen() {
         haptics.success()
         Alert.alert(
           '¡Bienvenido a SOLU! 🎉',
-          'Tu cuenta está creada. Recibes 5,000 SoluCoins gratis para tus primeros leads. Inicia sesión desde Mi cuenta.',
+          'Tu cuenta está creada. Recibes 8,000 SoluCoins gratis para tus primeros leads. Inicia sesión desde Mi cuenta.',
           [{ text: 'Empezar', onPress: () => router.back() }]
         )
       }
@@ -233,7 +233,7 @@ export default function RegistroScreen() {
               <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginBottom: THEME.space.lg }}>
                 Los campos con * son obligatorios
               </Text>
-              {/* Banner bienvenida — anuncia los 5,000 SoluCoins gratis antes de empezar */}
+              {/* Banner bienvenida — anuncia los 8,000 SoluCoins gratis antes de empezar */}
               <View
                 style={{
                   flexDirection: 'row', gap: THEME.space.md, alignItems: 'center',
@@ -245,7 +245,7 @@ export default function RegistroScreen() {
                   <Text style={{ fontSize: 22 }}>🎁</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ ...THEME.font.h3, color: THEME.color.brandDark }}>5,000 SoluCoins gratis</Text>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.brandDark }}>8,000 SoluCoins gratis</Text>
                   <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 2 }}>
                     Te llegan al crear tu cuenta. Alcanzan para tus primeros leads.
                   </Text>

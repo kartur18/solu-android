@@ -7,11 +7,32 @@ import { fetchClienteServicios } from '../src/lib/servicios'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
-const REWARDS = [
-  { pts: 50, label: '10% de descuento', desc: 'En tu próximo servicio', emoji: '🎟️', code: 'SOLU10' },
-  { pts: 100, label: '20% de descuento', desc: 'En cualquier servicio', emoji: '🎫', code: 'SOLU20' },
-  { pts: 200, label: '30% de descuento', desc: 'En tu próximo servicio', emoji: '🎁', code: 'SOLU30' },
-  { pts: 500, label: 'Cliente VIP', desc: 'Prioridad + descuentos permanentes', emoji: '👑', code: 'SOLUVIP' },
+// Beneficios reales del historial. Antes esta lista prometía descuentos
+// del 10/20/30% y un "Cliente VIP" que NO existen: el cliente le paga
+// directo al técnico, así que SOLU no tiene de dónde descontar. Prometer
+// un canje inexistente es lo único de toda la app que puede terminar en
+// un reclamo, así que se muestra lo que el sistema sí hace hoy.
+const BENEFICIOS = [
+  {
+    label: 'Tus técnicos de confianza',
+    desc: 'Vuelve a contactar en un toque a quien ya te atendió bien',
+    emoji: '🤝',
+  },
+  {
+    label: 'Historial completo',
+    desc: 'Todos tus servicios, con su código de seguimiento',
+    emoji: '📋',
+  },
+  {
+    label: 'Repetir un servicio',
+    desc: 'Pide lo mismo otra vez sin volver a llenar el formulario',
+    emoji: '🔄',
+  },
+  {
+    label: 'Técnicos verificados con RENIEC',
+    desc: 'Cada especialista pasa validación de identidad antes de aparecer',
+    emoji: '🛡️',
+  },
 ]
 
 const HOW_TO_EARN = [
@@ -94,30 +115,6 @@ export default function FidelidadScreen() {
     } finally {
       setLoading(false)
     }
-  }
-
-  function claimReward(reward: typeof REWARDS[0]) {
-    if (points === null || points < reward.pts) {
-      Alert.alert('Puntos insuficientes', `Necesitas ${reward.pts - (points || 0)} puntos más`)
-      return
-    }
-
-    const msg = `Hola, quiero canjear mi recompensa SOLU:\n\n🎁 ${reward.label}\n📱 Mi WhatsApp: ${wa}\n🔑 Código: ${reward.code}\n⭐ Mis puntos: ${points}\n\nPor favor confirmen mi canje.`
-
-    Alert.alert(
-      'Canjear recompensa',
-      `¿Canjear "${reward.label}" por ${reward.pts} puntos?\n\nSe enviará tu solicitud por WhatsApp para confirmación.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Canjear',
-          onPress: () => {
-            haptics.success()
-            Linking.openURL(waLink(SUPPORT_PHONE, msg))
-          },
-        },
-      ]
-    )
   }
 
   const tier = points !== null ? tierFor(points) : null
@@ -210,16 +207,13 @@ export default function FidelidadScreen() {
             {/* Preview rewards */}
             <FadeInUp delay={180}>
               <View style={{ marginTop: THEME.space.lg }}>
-                <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.sm }}>Recompensas disponibles</Text>
+                <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.sm }}>Lo que ganas usando SOLU</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: THEME.space.sm }}>
-                  {REWARDS.map((r) => (
-                    <View key={r.pts} style={{ width: 150, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.md, ...THEME.shadow.sm }}>
-                      <Text style={{ fontSize: 30, marginBottom: THEME.space.xs }}>{r.emoji}</Text>
-                      <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>{r.label}</Text>
-                      <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>{r.desc}</Text>
-                      <View style={{ backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 3, marginTop: THEME.space.sm, alignSelf: 'flex-start' }}>
-                        <Text style={{ ...THEME.font.caption, fontWeight: '800', color: THEME.color.brand }}>{r.pts} pts</Text>
-                      </View>
+                  {BENEFICIOS.map((b) => (
+                    <View key={b.label} style={{ width: 170, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.md, ...THEME.shadow.sm }}>
+                      <Text style={{ fontSize: 30, marginBottom: THEME.space.xs }}>{b.emoji}</Text>
+                      <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>{b.label}</Text>
+                      <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>{b.desc}</Text>
                     </View>
                   ))}
                 </ScrollView>
@@ -252,42 +246,25 @@ export default function FidelidadScreen() {
               </View>
             </FadeInUp>
 
-            {/* Rewards - Claimable */}
+            {/* Beneficios reales (sin canje: ver comentario de BENEFICIOS) */}
             <FadeInUp delay={60}>
-              <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.sm }}>Canjear recompensa</Text>
-              {REWARDS.map((r) => {
-                const canClaim = points >= r.pts
-                return (
-                  <PressableScale
-                    key={r.pts}
-                    onPress={() => canClaim && claimReward(r)}
-                    disabled={!canClaim}
-                    accessibilityLabel={`Canjear ${r.label}`}
-                    haptic={canClaim}
-                    style={{
-                      flexDirection: 'row', alignItems: 'center', gap: THEME.space.md,
-                      backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.md, marginBottom: THEME.space.sm,
-                      opacity: canClaim ? 1 : 0.65,
-                      ...(canClaim ? THEME.shadow.md : THEME.shadow.sm),
-                    }}
-                  >
-                    <Text style={{ fontSize: 30 }}>{r.emoji}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ ...THEME.font.body, fontWeight: '700', color: THEME.color.ink }}>{r.label}</Text>
-                      <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft }}>{r.desc}</Text>
-                    </View>
-                    {canClaim ? (
-                      <View style={{ backgroundColor: THEME.color.success, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.xs + 2 }}>
-                        <Text style={{ ...THEME.font.label, fontWeight: '800', color: THEME.color.white }}>Canjear</Text>
-                      </View>
-                    ) : (
-                      <View style={{ backgroundColor: THEME.color.surfaceSunken, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.xs + 2 }}>
-                        <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.inkMuted }}>{r.pts - points} pts más</Text>
-                      </View>
-                    )}
-                  </PressableScale>
-                )
-              })}
+              <Text style={{ ...THEME.font.h3, color: THEME.color.ink, marginBottom: THEME.space.sm }}>Lo que ganas usando SOLU</Text>
+              {BENEFICIOS.map((b) => (
+                <View
+                  key={b.label}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: THEME.space.md,
+                    backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg,
+                    padding: THEME.space.md, marginBottom: THEME.space.sm, ...THEME.shadow.sm,
+                  }}
+                >
+                  <Text style={{ fontSize: 30 }}>{b.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...THEME.font.body, fontWeight: '700', color: THEME.color.ink }}>{b.label}</Text>
+                    <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft }}>{b.desc}</Text>
+                  </View>
+                </View>
+              ))}
             </FadeInUp>
 
             {/* History */}

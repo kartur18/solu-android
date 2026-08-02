@@ -31,7 +31,7 @@ export default function VecinosScreen() {
         await supabase.from('vecinos').update({ miembros: (data.miembros || 0) + 1 }).eq('id', data.id)
         haptics.success()
         setGrupo(data)
-        Alert.alert('¡Listo!', `Te uniste al grupo "${data.nombre}". Tienes 10% de descuento en todos los servicios.`)
+        Alert.alert('¡Listo!', `Te uniste al grupo "${data.nombre}". Ahora coordinas servicios con tus vecinos.`)
       }
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
@@ -56,7 +56,7 @@ export default function VecinosScreen() {
       } else {
         haptics.success()
         setGrupo(data)
-        Alert.alert('¡Grupo creado!', `Código: ${codigo}\nComparte este código con tus vecinos para que se unan y obtengan 10% de descuento.`)
+        Alert.alert('¡Grupo creado!', `Código: ${codigo}\nComparte este código con tus vecinos para que se unan al grupo.`)
       }
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
@@ -90,7 +90,7 @@ export default function VecinosScreen() {
           <Text style={{ ...THEME.font.h1, color: THEME.color.white }}>Vecinos SOLU</Text>
         </View>
         <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.72)', lineHeight: 19 }}>
-          Crea o únete a un grupo de vecinos y obtén 10% de descuento permanente en todos los servicios.
+          Crea o únete al grupo de tu edificio para coordinar servicios entre vecinos y pedir en conjunto.
         </Text>
       </View>
 
@@ -322,7 +322,7 @@ export default function VecinosScreen() {
                 <Ionicons name="pricetag" size={20} color={THEME.color.white} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>10% de descuento permanente</Text>
+                <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>Coordina servicios con tu edificio</Text>
                 <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 1 }}>Para todos los miembros del grupo, en cada servicio.</Text>
               </View>
             </View>

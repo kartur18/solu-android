@@ -347,8 +347,8 @@ export default function HomeScreen() {
           <FadeInUp delay={200}>
             <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.sm }}>
               {[
-                { icon: 'gift' as const, titulo: 'Mis SoluCoins', sub: 'Canjea descuentos', ruta: '/fidelidad', label: 'Ver mis SoluCoins y recompensas' },
-                { icon: 'people' as const, titulo: 'Vecinos', sub: '10% de descuento', ruta: '/(tabs)/vecinos', label: 'Grupos de vecinos con descuento' },
+                { icon: 'gift' as const, titulo: 'Mi historial', sub: 'Historial y beneficios', ruta: '/fidelidad', label: 'Ver mi historial y beneficios' },
+                { icon: 'people' as const, titulo: 'Vecinos', sub: 'Tu edificio, un grupo', ruta: '/(tabs)/vecinos', label: 'Grupos de vecinos de tu edificio' },
               ].map((acceso) => (
                 <PressableScale
                   key={acceso.ruta}
@@ -521,11 +521,11 @@ export default function HomeScreen() {
           </View>
         </FadeInUp>
 
-        {/* ── Banner técnico — 5,000 SoluCoins GRATIS (navy + gradiente) ── */}
+        {/* ── Banner técnico — 8,000 SoluCoins GRATIS (navy + gradiente) ── */}
         <FadeInUp delay={240}>
           <PressableScale
             onPress={() => router.push('/registro')}
-            accessibilityLabel="Regístrate como técnico y recibe 5,000 SoluCoins gratis"
+            accessibilityLabel="Regístrate como técnico y recibe 8,000 SoluCoins gratis"
             style={{ marginHorizontal: THEME.space.lg, marginBottom: THEME.space.md, borderRadius: THEME.radius.xl, overflow: 'hidden', ...THEME.shadow.md }}
           >
             <LinearGradient
@@ -537,7 +537,7 @@ export default function HomeScreen() {
                 <Ionicons name="gift" size={25} color="#FFD700" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>¿Eres técnico? 5,000 SoluCoins GRATIS</Text>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>¿Eres técnico? 8,000 SoluCoins GRATIS</Text>
                 <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3 }}>Regístrate con tu DNI y empieza a recibir clientes hoy</Text>
               </View>
               <Ionicons name="chevron-forward" size={17} color="rgba(255,255,255,0.6)" />

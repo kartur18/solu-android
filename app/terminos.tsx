@@ -23,7 +23,7 @@ export default function TerminosScreen() {
         <Text style={h}>3. SoluCoins y precios</Text>
         <Text style={p}>
           3.1 SOLU funciona con SoluCoins, créditos prepagos que el técnico usa para responder solicitudes de clientes (leads). No hay suscripciones ni pagos mensuales obligatorios.{'\n\n'}
-          3.2 Al registrarse y verificar su DNI con RENIEC, el técnico recibe 5,000 SoluCoins de bienvenida sin costo.{'\n\n'}
+          3.2 Al registrarse y verificar su DNI con RENIEC, el técnico recibe 8,000 SoluCoins de bienvenida sin costo.{'\n\n'}
           3.3 SOLU ofrece paquetes de SoluCoins desde S/30 hasta S/1,200. Cuanto más grande el paquete, más SoluCoins por sol. Los SoluCoins comprados no tienen fecha de vencimiento.{'\n\n'}
           3.4 El costo en SoluCoins de cada lead varía según el distrito y la urgencia del servicio, y se muestra antes de aceptar.{'\n\n'}
           3.5 El servicio para clientes (buscar y solicitar técnicos) es completamente gratuito.
