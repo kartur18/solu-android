@@ -129,10 +129,19 @@ export default function MisServiciosScreen() {
       setUser(data)
       await loadServicios(waClean)
 
-      // Register push notifications
+      // Register push notifications. El update con la key anon fallaba en
+      // silencio tras el lockdown de clientes_users (el cliente logueado
+      // nunca recibía push): va por el endpoint server-side.
       registerForPushNotifications().then(async (token) => {
-        if (token) {
-          await supabase.from('clientes_users').update({ push_token: token }).eq('id', data.id)
+        if (!token) return
+        try {
+          await fetchWithTimeout(`${ENV.API_BASE_URL}/cliente/push-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, whatsapp: waClean, nombre: data?.nombre }),
+          })
+        } catch {
+          // Sin push el resto de la app funciona igual; no molestamos al usuario.
         }
       })
     } catch {

@@ -342,6 +342,35 @@ export default function HomeScreen() {
             </PressableScale>
           </FadeInUp>
 
+          {/* Fidelidad y Vecinos: ambas pantallas existían pero ninguna
+              entrada de navegación llevaba a ellas (eran inalcanzables). */}
+          <FadeInUp delay={200}>
+            <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.sm }}>
+              {[
+                { icon: 'gift' as const, titulo: 'Mis SoluCoins', sub: 'Canjea descuentos', ruta: '/fidelidad', label: 'Ver mis SoluCoins y recompensas' },
+                { icon: 'people' as const, titulo: 'Vecinos', sub: '10% de descuento', ruta: '/(tabs)/vecinos', label: 'Grupos de vecinos con descuento' },
+              ].map((acceso) => (
+                <PressableScale
+                  key={acceso.ruta}
+                  onPress={() => router.push(acceso.ruta as never)}
+                  accessibilityLabel={acceso.label}
+                  style={{
+                    flex: 1, borderRadius: THEME.radius.lg, padding: THEME.space.md,
+                    backgroundColor: 'rgba(255,255,255,0.07)',
+                    borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)',
+                    minHeight: 44, justifyContent: 'center',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name={acceso.icon} size={17} color={THEME.color.brand} />
+                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>{acceso.titulo}</Text>
+                  </View>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 3 }}>{acceso.sub}</Text>
+                </PressableScale>
+              ))}
+            </View>
+          </FadeInUp>
+
           {/* Emergency link (discreto) */}
           <FadeInUp delay={220}>
             <TouchableOpacity

@@ -546,19 +546,27 @@ export default function CuentaScreen() {
 
     setSavingCotizacion(true)
     try {
-      const { error } = await supabase.from('cotizaciones').insert({
-        tecnico_id: tech.id,
-        cliente_id: selectedLead.id,
-        servicio: cotServicio || selectedLead.servicio,
-        descripcion: cotDescripcion,
-        monto: parseFloat(cotMonto),
-        estado: 'pendiente',
-        codigo_solicitud: selectedLead.codigo,
-        cliente_nombre: selectedLead.nombre,
-        cliente_whatsapp: selectedLead.whatsapp,
+      // El insert con la key anon fallaba SIEMPRE (`cotizaciones` está en
+      // deny-all para anon): ahora va por el endpoint server-side con
+      // Bearer, que además valida que el servicio sea de este técnico.
+      const res = await fetch(`${ENV.API_BASE_URL}/tecnico/cotizaciones`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          codigo_solicitud: selectedLead.codigo,
+          servicio: cotServicio || selectedLead.servicio,
+          descripcion: cotDescripcion,
+          monto: parseFloat(cotMonto),
+          cliente_id: selectedLead.id,
+        }),
       })
-
-      if (error) throw error
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error || 'No se pudo crear la cotización')
+      }
 
       // Auto-notify client via WhatsApp
       const waMsg = `Hola ${selectedLead.nombre}, soy ${tech.nombre} de SOLU. Te envío una cotización por ${cotServicio || selectedLead.servicio}:\n\n💰 Monto: S/${cotMonto}\n📝 ${cotDescripcion}\n\nCódigo: ${selectedLead.codigo}\n\n¿Aceptas la cotización?`
@@ -570,9 +578,10 @@ export default function CuentaScreen() {
       setCotMonto('')
       setCotDescripcion('')
       setCotServicio('')
-      // Reload
-      const { data: cotData } = await supabase.from('cotizaciones').select('*').eq('tecnico_id', tech.id).order('created_at', { ascending: false }).limit(30)
-      setCotizaciones(cotData || [])
+      // Recargar desde el dashboard server-side (la lectura anon también
+      // estaba bloqueada y devolvía vacío).
+      const dash = await fetchMyTechDashboard(authToken)
+      if (dash?.cotizaciones) setCotizaciones(dash.cotizaciones)
     } catch (err: any) {
       Alert.alert('Error', 'No se pudo crear: ' + (err?.message || 'Intenta de nuevo'))
     } finally {
@@ -971,25 +980,35 @@ export default function CuentaScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Mis promociones</Text>
                 <TouchableOpacity
                   onPress={() => {
-                    Alert.prompt ? Alert.prompt('Nueva promoción', 'Describe tu descuento (ej: 20% en gasfitería)', async (text) => {
-                      if (text) {
-                        const { error } = await supabase.from('promociones').insert({
-                          tecnico_id: tech.id, descripcion: text, activa: true,
-                          descuento: 10, tecnico_nombre: tech.nombre,
+                    // El insert anon fallaba doble: `promociones` está en
+                    // deny-all para anon Y se mandaba `tecnico_nombre`
+                    // (columna inexistente) omitiendo `titulo`, que es
+                    // obligatoria. Ahora va por el endpoint server-side.
+                    const crearPromocion = async (titulo: string) => {
+                      try {
+                        const res = await fetch(`${ENV.API_BASE_URL}/tecnico/promociones`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                          },
+                          body: JSON.stringify({ titulo, descuento: 10 }),
                         })
-                        if (error) { Alert.alert('No se pudo crear', 'Inténtalo de nuevo en un momento.'); return }
+                        if (!res.ok) {
+                          const body = await res.json().catch(() => ({}))
+                          Alert.alert('No se pudo crear', body?.error || 'Inténtalo de nuevo en un momento.')
+                          return
+                        }
                         Alert.alert('Promoción creada', 'Tu promoción ya está visible para los clientes')
+                      } catch {
+                        Alert.alert('No se pudo crear', 'Revisa tu conexión e inténtalo de nuevo.')
                       }
+                    }
+                    Alert.prompt ? Alert.prompt('Nueva promoción', 'Describe tu descuento (ej: 20% en gasfitería)', async (text) => {
+                      if (text) await crearPromocion(text)
                     }) : Alert.alert('Crear promoción', 'Para crear una promoción, describe tu descuento y se publicará a los clientes.\n\nEjemplo: "20% de descuento en gasfitería esta semana"', [
                       { text: 'Cancelar' },
-                      { text: 'Crear', onPress: async () => {
-                        const { error } = await supabase.from('promociones').insert({
-                          tecnico_id: tech.id, descripcion: `Descuento especial de ${tech.nombre}`,
-                          activa: true, descuento: 10, tecnico_nombre: tech.nombre,
-                        })
-                        if (error) { Alert.alert('No se pudo crear', 'Inténtalo de nuevo en un momento.'); return }
-                        Alert.alert('Promoción creada', 'Tu promoción ya está visible')
-                      }},
+                      { text: 'Crear', onPress: () => crearPromocion(`Descuento especial de ${tech.nombre}`) },
                     ])
                   }}
                   style={{ backgroundColor: THEME.color.brand, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}
