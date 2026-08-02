@@ -2205,11 +2205,15 @@ function LeadRow({ lead, onStatusChange, tech, router }: { lead: Cliente; onStat
 }
 
 function LegalSection({ router }: { router: any }) {
-  const items: { icon: string; label: string; route: string | null; danger?: boolean }[] = [
+  // "Eliminar mi cuenta" iba pegado debajo de "Soporte por WhatsApp" y la
+  // gente terminaba escribiéndole al soporte para pedir la baja, que la
+  // app ya hace sola. Se aclara el destino de cada uno y el de borrado
+  // queda al final, separado.
+  const items: { icon: string; label: string; sub?: string; route: string | null; danger?: boolean }[] = [
     { icon: 'shield-checkmark-outline', label: 'Política de Privacidad', route: '/privacidad' },
     { icon: 'document-text-outline', label: 'Términos y Condiciones', route: '/terminos' },
-    { icon: 'chatbubble-ellipses-outline', label: 'Soporte por WhatsApp', route: null },
-    { icon: 'trash-outline', label: 'Eliminar mi cuenta', route: '/eliminar-cuenta', danger: true },
+    { icon: 'chatbubble-ellipses-outline', label: 'Soporte por WhatsApp', sub: 'Dudas sobre leads, coins o pagos', route: null },
+    { icon: 'trash-outline', label: 'Eliminar mi cuenta', sub: 'Inmediato, sin escribirle a nadie', route: '/eliminar-cuenta', danger: true },
   ]
   return (
     <View style={{ margin: THEME.space.lg, marginBottom: 40 }}>
@@ -2224,7 +2228,12 @@ function LegalSection({ router }: { router: any }) {
               style={{ flexDirection: 'row', alignItems: 'center', padding: THEME.space.lg, minHeight: 48, borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: THEME.color.lineSoft }}
             >
               <Ionicons name={item.icon as any} size={18} color={tint} />
-              <Text style={{ flex: 1, marginLeft: THEME.space.md, ...THEME.font.bodySm, fontWeight: '600', color: tint }}>{item.label}</Text>
+              <View style={{ flex: 1, marginLeft: THEME.space.md }}>
+                <Text style={{ ...THEME.font.bodySm, fontWeight: '600', color: tint }}>{item.label}</Text>
+                {item.sub && (
+                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 1 }}>{item.sub}</Text>
+                )}
+              </View>
               <Ionicons name="chevron-forward" size={14} color={THEME.color.inkMuted} />
             </PressableScale>
           )

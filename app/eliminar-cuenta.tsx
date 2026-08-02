@@ -24,31 +24,54 @@ export default function EliminarCuentaScreen() {
           onPress: async () => {
             setDeleting(true)
             try {
-              // Check for tech session. El token vive en SecureStore.
+              // Técnico: borrado server-side inmediato con Bearer (el id
+              // sale del token, nunca del body).
               const token = await getTechToken()
+              let borradoAutomatico = false
               if (token) {
-                // Soft-delete del técnico server-side (Bearer); el id sale del token.
-                await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/eliminar-cuenta`, {
+                const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/eliminar-cuenta`, {
                   method: 'POST',
                   headers: { Authorization: `Bearer ${token}` },
                 })
+                borradoAutomatico = res.ok
                 await clearTechSession()
               }
-              // Cliente: cerramos la sesión local. El borrado de datos NO se
-              // puede hacer desde la app con la key anon (RLS deny-all): antes
-              // se hacía un update anon que NO aplicaba (no-op) pero igual se
-              // decía "Cuenta desactivada" = éxito falso en una acción de
-              // privacidad. El mecanismo real es la solicitud por correo, que
-              // soporte procesa (Ley 29733).
+
+              // Cliente: mismo camino por endpoint con su sesión.
               const clientSession = await AsyncStorage.getItem('solu_client_session')
               if (clientSession) {
+                try {
+                  const cli = JSON.parse(clientSession) as { whatsapp?: string }
+                  const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/usuario/eliminar-cuenta`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ whatsapp: cli?.whatsapp }),
+                  })
+                  if (res.ok) borradoAutomatico = true
+                } catch {
+                  // Si falla, cae al mensaje con el correo de respaldo.
+                }
                 await AsyncStorage.removeItem('solu_client_session')
               }
-              // Solicitud de eliminación total por correo (mecanismo real).
-              Linking.openURL('mailto:contacto@solu.pe?subject=Solicitud de eliminación de cuenta y datos&body=Solicito la eliminación total de mi cuenta y mis datos personales en SOLU.')
-              Alert.alert('Solicitud enviada', 'Cerramos tu sesión y se abrió tu correo para confirmar la solicitud. Procesaremos la eliminación total de tus datos en máximo 15 días hábiles.', [
-                { text: 'OK', onPress: () => router.dismiss() }
-              ])
+
+              // Solo se ofrece el correo si el borrado automático NO salió.
+              // Antes se abría SIEMPRE, incluso cuando la cuenta ya estaba
+              // eliminada: el usuario creía que faltaba un trámite y
+              // terminaba escribiéndole por WhatsApp al soporte.
+              if (borradoAutomatico) {
+                Alert.alert(
+                  'Cuenta eliminada',
+                  'Listo. Borramos tus datos personales y cerramos tu sesión. No necesitas hacer nada más.',
+                  [{ text: 'OK', onPress: () => router.dismiss() }],
+                )
+              } else {
+                Linking.openURL('mailto:contacto@solu.pe?subject=Solicitud de eliminación de cuenta y datos&body=Solicito la eliminación total de mi cuenta y mis datos personales en SOLU.')
+                Alert.alert(
+                  'Solicitud enviada',
+                  'Cerramos tu sesión y abrimos tu correo para completar la solicitud. Procesamos la eliminación en máximo 15 días hábiles.',
+                  [{ text: 'OK', onPress: () => router.dismiss() }],
+                )
+              }
             } catch {
               Alert.alert('Error', 'No se pudo procesar. Envía un email a contacto@solu.pe')
             } finally {
