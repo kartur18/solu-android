@@ -14,7 +14,7 @@ import { registerSessionExpiredHandler } from '../src/lib/session-expired'
 
 // Initialize Sentry for crash reporting. Sin DSN no inicializamos: evita peso
 // muerto y ruido (un init con dsn vacío no reporta nada igual).
-// TODO(carlos): setear SENTRY_DSN en EAS secrets para activar.
+// El DSN entra por el secret SENTRY_DSN de EAS (ver app.config.js).
 if (ENV.SENTRY_DSN) {
   Sentry.init({
     dsn: ENV.SENTRY_DSN,
