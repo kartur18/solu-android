@@ -10,6 +10,7 @@ import { getTechAuthToken } from '../../src/lib/tech-auth'
 import { saveTechSession, getTechToken, getTechSessionMeta, clearTechSession } from '../../src/lib/tech-session'
 import { ZonaTrabajoCard } from '../../src/components/ZonaTrabajoCard'
 import { subirImagen } from '../../src/lib/subirImagen'
+import { confirmarCostoLead } from '../../src/lib/confirmarCostoLead'
 import { registerSessionExpiredHandler, resetSessionExpired } from '../../src/lib/session-expired'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
@@ -1096,6 +1097,13 @@ export default function CuentaScreen() {
                       <TouchableOpacity
                         disabled={acceptingId === s.id}
                         onPress={async () => {
+                          // Antes de cobrar, decirle cuánto cuesta. Aceptar
+                          // descuenta entre 160 y 10.000 coins según categoría,
+                          // distrito y urgencia, y hasta ahora el técnico se
+                          // enteraba del monto DESPUÉS del descuento.
+                          const confirmado = await confirmarCostoLead(s.codigo, authToken)
+                          if (!confirmado) return
+
                           setAcceptingId(s.id)
                           try {
                             const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/solicitudes/${s.id}/accept`, {

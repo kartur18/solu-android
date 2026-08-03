@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, StatusBar } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '../../src/lib/supabase'
+import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../../src/components/ui/Motion'
 import type { GrupoVecinos } from '../../src/lib/types'
@@ -19,19 +19,20 @@ export default function VecinosScreen() {
     if (!code) return Alert.alert('Error', 'Ingresa el código del grupo')
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('vecinos')
-        .select('*')
-        .eq('codigo', code.toUpperCase())
-        .single()
-
-      if (error || !data) {
-        Alert.alert('Error', 'Grupo no encontrado')
+      // Server-side: la escritura anónima sobre `vecinos` se cerró porque
+      // dejaba reescribir el nombre y el WhatsApp de grupos ajenos.
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/vecinos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'unirse', codigo: code.toUpperCase() }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        Alert.alert('Error', res.status === 404 ? 'Grupo no encontrado' : (body?.error || 'No se pudo unir'))
       } else {
-        await supabase.from('vecinos').update({ miembros: (data.miembros || 0) + 1 }).eq('id', data.id)
         haptics.success()
-        setGrupo(data)
-        Alert.alert('¡Listo!', `Te uniste al grupo "${data.nombre}". Ahora coordinas servicios con tus vecinos.`)
+        setGrupo(body.grupo)
+        Alert.alert('¡Listo!', `Te uniste al grupo "${body.grupo.nombre}". Ahora coordinas servicios con tus vecinos.`)
       }
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
@@ -44,19 +45,23 @@ export default function VecinosScreen() {
     if (!nombre || !direccion || !whatsapp) return Alert.alert('Error', 'Completa todos los campos')
     setLoading(true)
     try {
-      const codigo = 'VEC-' + Math.random().toString(36).substring(2, 7).toUpperCase()
-      const { data, error } = await supabase
-        .from('vecinos')
-        .insert({ nombre, direccion, whatsapp_admin: whatsapp, codigo, miembros: 1 })
-        .select()
-        .single()
-
-      if (error) {
-        Alert.alert('Error', 'No se pudo crear el grupo')
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/vecinos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accion: 'crear',
+          nombre,
+          direccion,
+          whatsapp_admin: whatsapp.replace(/\D/g, ''),
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        Alert.alert('Error', body?.error || 'No se pudo crear el grupo')
       } else {
         haptics.success()
-        setGrupo(data)
-        Alert.alert('¡Grupo creado!', `Código: ${codigo}\nComparte este código con tus vecinos para que se unan al grupo.`)
+        setGrupo(body.grupo)
+        Alert.alert('¡Grupo creado!', `Código: ${body.grupo.codigo}\nComparte este código con tus vecinos para que se unan al grupo.`)
       }
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
