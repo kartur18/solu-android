@@ -1,10 +1,19 @@
 /**
  * Notas de voz para el chat cliente↔técnico (paridad con el chat web).
  *
- * Audio en el chat cliente-tecnico. expo-av (instalado, SDK 55) graba en
- * m4a/AAC y reproduce los audios del chat. Si el modulo faltara en un
- * build raro, isAudioChatAvailable() devuelve false y la UI oculta el
- * boton de microfono (degradacion limpia, sin crash).
+ * ESTADO (ago-2026): expo-av está DESINSTALADO. Rompía el build de iOS en
+ * SDK 55 — su módulo nativo busca `ExpoModulesCore/EXEventEmitter.h`, header
+ * que ya no existe, y Apple no llegaba ni a revisar la app. expo-av quedó
+ * sin mantenimiento y su reemplazo (expo-audio) tiene una API de hooks
+ * incompatible con este módulo, así que migrarlo es trabajo aparte.
+ *
+ * Mientras tanto la degradación es limpia y ya estaba prevista:
+ * `isAudioChatAvailable()` devuelve false, `ChatInputBar` no renderiza el
+ * botón de micrófono, y los audios que llegan igual se escuchan porque
+ * `AudioMessageBubble` abre la signed URL en el navegador. Nadie ve un error.
+ *
+ * Para reactivar las notas de voz: migrar a expo-audio (useAudioRecorder /
+ * useAudioPlayer) y probar en dispositivo real antes de publicar.
  *
  * Contrato del chat web (bucket privado 'chat-attachments' en Supabase):
  * - path: {codigo}/{cliente|tecnico}-{timestamp}-{random}.m4a
@@ -80,7 +89,7 @@ export function getAudioApi(): ExpoAudioApi | null {
   } catch {
     cachedAudioApi = null
   }
-  if (!cachedAudioApi) logger.warn('expo-av no instalado: notas de voz deshabilitadas')
+  if (!cachedAudioApi) logger.warn('expo-av no instalado: grabación de notas de voz deshabilitada')
   return cachedAudioApi
 }
 
