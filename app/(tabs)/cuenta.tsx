@@ -8,6 +8,7 @@ import { ENV } from '../../src/lib/env'
 import { fetchWithTimeout } from '../../src/lib/env'
 import { getTechAuthToken } from '../../src/lib/tech-auth'
 import { saveTechSession, getTechToken, getTechSessionMeta, clearTechSession } from '../../src/lib/tech-session'
+import { ZonaTrabajoCard } from '../../src/components/ZonaTrabajoCard'
 import { registerSessionExpiredHandler, resetSessionExpired } from '../../src/lib/session-expired'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
@@ -60,7 +61,7 @@ export default function CuentaScreen() {
   const [tech, setTech] = useState<Tecnico | null>(null)
   const [leads, setLeads] = useState<Cliente[]>([])
   const [reviews, setReviews] = useState<Resena[]>([])
-  const [openRequests, setOpenRequests] = useState<{ id: number; codigo: string; servicio: string; cliente_nombre: string; distrito: string; urgencia: string; created_at: string }[]>([])
+  const [openRequests, setOpenRequests] = useState<{ id: number; codigo: string; servicio: string; cliente_nombre: string; distrito: string; urgencia: string; created_at: string; distancia_label?: string | null }[]>([])
   const [acceptingId, setAcceptingId] = useState<number | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [tab, setTab] = useState<Tab>('dashboard')
@@ -1068,6 +1069,11 @@ export default function CuentaScreen() {
           {tab === 'servicios' && (
             <View style={{ gap: 12 }}>
 
+              {/* Zona de trabajo: define QUÉ trabajos ve abajo. Va primero
+                  porque si el técnico se movió de distrito, avisarlo es lo
+                  que tiene que hacer antes que nada. */}
+              <ZonaTrabajoCard token={authToken} />
+
               {/* Trabajos disponibles — solicitudes abiertas para aceptar */}
               {openRequests.length > 0 && (
                 <View style={{ backgroundColor: '#ECFDF5', borderRadius: 16, padding: 16, borderWidth: 2, borderColor: '#10B981' }}>
@@ -1089,7 +1095,7 @@ export default function CuentaScreen() {
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.dark }} numberOfLines={1}>{s.servicio}</Text>
                             <Text style={{ fontSize: 12, color: COLORS.gray, marginTop: 1 }} numberOfLines={1}>
-                              📍 {s.distrito} · {s.cliente_nombre} · {timeAgo(s.created_at) === 'ahora' ? 'recién' : `hace ${timeAgo(s.created_at)}`}
+                              📍 {s.distrito}{s.distancia_label ? ` · ${s.distancia_label}` : ''} · {timeAgo(s.created_at) === 'ahora' ? 'recién' : `hace ${timeAgo(s.created_at)}`}
                             </Text>
                           </View>
                         </View>
@@ -1147,9 +1153,9 @@ export default function CuentaScreen() {
               {openRequests.length === 0 && (
                 <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
                   <Text style={{ fontSize: 32 }}>🔎</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>Aún no hay trabajos disponibles</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>No hay trabajos en tu zona ahora</Text>
                   <Text style={{ fontSize: 12, color: COLORS.gray, textAlign: 'center', marginTop: 4, lineHeight: 17 }}>
-                    Te avisaremos apenas llegue una solicitud en tu zona. Mientras tanto, comparte tu perfil para conseguir clientes.
+                    Te avisamos apenas entre una solicitud de tu oficio cerca de ti. Si te moviste de distrito, actualiza tu zona de trabajo aquí arriba.
                   </Text>
                   <TouchableOpacity
                     onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}` })}
