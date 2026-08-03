@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { subirImagen } from '../src/lib/subirImagen'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Image, Animated, ActivityIndicator } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -126,19 +127,10 @@ export default function SolicitarScreen() {
     }
   }
 
-  async function uploadFoto(uri: string, index: number): Promise<string | null> {
-    try {
-      const ext = uri.split('.').pop() || 'jpg'
-      const name = `solicitudes/${Date.now()}_${index}.${ext}`
-      const response = await fetch(uri)
-      const blob = await response.blob()
-      const { error } = await supabase.storage.from('fotos').upload(name, blob)
-      if (error) return null
-      const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(name)
-      return urlData.publicUrl
-    } catch {
-      return null
-    }
+  async function uploadFoto(uri: string, _index: number): Promise<string | null> {
+    // Mismo motivo que en calificar: el bucket es privado, la URL pública
+    // que se guardaba no existía y la foto del problema nunca llegaba.
+    return subirImagen(uri, 'solicitudes')
   }
 
   async function submit() {

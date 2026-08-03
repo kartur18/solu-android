@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { subirImagen } from '../../src/lib/subirImagen'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
@@ -37,22 +38,10 @@ export default function CalificarScreen() {
   }
 
   async function uploadFoto(uri: string): Promise<string | null> {
-    try {
-      const ext = uri.split('.').pop() || 'jpg'
-      const fileName = `resenas/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-      const response = await fetch(uri)
-      const blob = await response.blob()
-      const { error } = await supabase.storage.from('fotos').upload(fileName, blob, {
-        contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
-        upsert: false,
-      })
-      if (error) throw error
-      const { data } = supabase.storage.from('fotos').getPublicUrl(fileName)
-      return data.publicUrl
-    } catch (err) {
-      if (__DEV__) console.error('Error uploading foto:', err)
-      return null
-    }
+    // Va por el servidor (Cloudinary). Antes subía al bucket , que es
+    // PRIVADO, y devolvía una URL pública inexistente: la foto de la reseña
+    // no cargaba nunca y quedaba una URL muerta guardada.
+    return subirImagen(uri, 'resenas')
   }
 
   useEffect(() => {

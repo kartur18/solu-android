@@ -9,6 +9,7 @@ import { fetchWithTimeout } from '../../src/lib/env'
 import { getTechAuthToken } from '../../src/lib/tech-auth'
 import { saveTechSession, getTechToken, getTechSessionMeta, clearTechSession } from '../../src/lib/tech-session'
 import { ZonaTrabajoCard } from '../../src/components/ZonaTrabajoCard'
+import { subirImagen } from '../../src/lib/subirImagen'
 import { registerSessionExpiredHandler, resetSessionExpired } from '../../src/lib/session-expired'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
@@ -343,24 +344,21 @@ export default function CuentaScreen() {
     if (result.canceled || !result.assets?.[0]) return
     try {
       const asset = result.assets[0]
-      const ext = asset.uri.split('.').pop() || 'jpg'
-      const fileName = `profile_${tech.id}_${Date.now()}.${ext}`
-      const response = await fetch(asset.uri)
-      const blob = await response.blob()
-      const { error: uploadError } = await supabase.storage.from('fotos').upload(fileName, blob, { contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`, upsert: true })
-      if (uploadError) throw uploadError
-      const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(fileName)
-      // La subida al bucket la hace la app; el endpoint solo persiste la URL.
+      // Va por el servidor (Cloudinary): antes subía al bucket `fotos`, que es
+      // PRIVADO, y guardaba una URL pública inexistente — la foto no cargaba
+      // para nadie y quedaba una URL muerta en la BD.
+      const fotoUrl = await subirImagen(asset.uri, 'perfil', authToken)
+      if (!fotoUrl) throw new Error('upload_failed')
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/foto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
-        body: JSON.stringify({ foto_url: urlData.publicUrl }),
+        body: JSON.stringify({ foto_url: fotoUrl }),
       })
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string }
         throw new Error(body.error || `foto_${res.status}`)
       }
-      setTech({ ...tech, foto_url: urlData.publicUrl })
+      setTech({ ...tech, foto_url: fotoUrl })
       Alert.alert('Listo', 'Foto de perfil actualizada')
     } catch (err) {
       Alert.alert('Error', 'No se pudo subir la foto')
@@ -391,20 +389,10 @@ export default function CuentaScreen() {
     setUploadingImage(true)
     try {
       const asset = result.assets[0]
-      const ext = asset.uri.split('.').pop() || 'jpg'
-      const fileName = `tech_${tech.id}_${Date.now()}.${ext}`
-
-      const response = await fetch(asset.uri)
-      const blob = await response.blob()
-
-      const { error: uploadError } = await supabase.storage
-        .from('fotos')
-        .upload(`galeria/${fileName}`, blob, { contentType: `image/${ext}`, upsert: false })
-
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(`galeria/${fileName}`)
-      const publicUrl = urlData.publicUrl
+      // Mismo motivo que la foto de perfil: el bucket es privado y la URL
+      // pública que se guardaba no existía.
+      const publicUrl = await subirImagen(asset.uri, 'galeria', authToken)
+      if (!publicUrl) throw new Error('upload_failed')
 
       const newGaleria = [...galleryImages, publicUrl]
       // Se manda el array completo resultante; el endpoint lo persiste tal cual.

@@ -1,111 +1,64 @@
-import { supabase } from './supabase'
-import { tierFromServicios } from './tecnico-columns'
+// Elección del técnico que atiende un pedido.
+//
+// Antes esto se calculaba ACÁ, en el celular y con la key anon, y salía mal
+// por diseño:
+//   - `.ilike('oficio', '%Gasfitería%')` nunca matchea al "Gasfitero", así
+//     que la consulta principal SIEMPRE devolvía vacío.
+//   - El fallback traía 20 técnicos de TODO el país sin filtro de zona y
+//     asignaba el de mejor rating: un cliente de Comas podía terminar con un
+//     técnico de Arequipa.
+//   - `lat`/`lng` están bloqueadas para anon por RLS, así que el bonus por
+//     distancia nunca sumaba: era código muerto.
+//
+// Ahora lo decide el servidor (/api/matching/mejor-tecnico), que con
+// service_role lee la cobertura completa —distrito, zonas declaradas, GPS
+// con radio, disponibilidad— y aplica el mismo criterio que la web. Un solo
+// lugar donde cambiar las reglas.
+
+import { ENV, fetchWithTimeout } from './env'
+import { logger } from './logger'
 
 export interface MatchableTech {
   id: number
   nombre: string
-  // whatsapp ya NO se lee en el listado (lockdown): se revela al contactar
-  // vía /api/tecnico/[id]/contacto. Queda opcional por compatibilidad.
+  /** El WhatsApp se revela recién al pagar el lead, nunca en el matching. */
   whatsapp?: string | null
   oficio?: string | null
   distrito?: string | null
   calificacion?: number | null
   servicios_completados?: number | null
-  tier?: string | null
-  lat?: number | null
-  lng?: number | null
 }
 
 export interface MatchInput {
   servicio: string
   distrito: string
   clientCoords?: { latitude: number; longitude: number } | null
+  clienteWhatsapp?: string | null
+  /** Técnicos ya intentados, para no volver a proponerlos. */
+  excluir?: number[]
 }
-
-// V3.1: el boost lo da el tier loyalty real (servicios cerrados + rating),
-// no un plan mensual pagado. Reemplaza el `PLAN_BOOST` legacy.
-const TIER_BOOST: Record<string, number> = {
-  platino: 30,
-  oro: 20,
-  plata: 10,
-  bronce: 0,
-}
-
-function haversineKm(
-  a: { latitude: number; longitude: number },
-  b: { lat: number; lng: number },
-): number {
-  const R = 6371
-  const dLat = ((b.lat - a.latitude) * Math.PI) / 180
-  const dLon = ((b.lng - a.longitude) * Math.PI) / 180
-  const lat1 = (a.latitude * Math.PI) / 180
-  const lat2 = (b.lat * Math.PI) / 180
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
-
-export function scoreTech(tech: MatchableTech, input: MatchInput): number {
-  let score = 0
-
-  // Rating (0-50 pts)
-  const rating = tech.calificacion ?? 0
-  score += Math.min(rating * 10, 50)
-
-  // Experience (0-20 pts, plateaus at 50 services)
-  const done = tech.servicios_completados ?? 0
-  score += Math.min((done / 50) * 20, 20)
-
-  // Tier boost (0-30 pts) — el tier NO es columna de `tecnicos`: se DERIVA de
-  // servicios_completados (igual que TechCard). Antes leía tech.tier, que nunca
-  // venía en el SELECT, así que el boost era SIEMPRE 0 y el tier loyalty no
-  // pesaba en el ranking. Ahora sí.
-  score += TIER_BOOST[tierFromServicios(tech.servicios_completados)] ?? 0
-
-  // Same district bonus (0-25 pts)
-  if (tech.distrito && input.distrito && tech.distrito.toLowerCase() === input.distrito.toLowerCase()) {
-    score += 25
-  }
-
-  // GPS distance bonus (0-40 pts, falls off with distance)
-  if (input.clientCoords && tech.lat != null && tech.lng != null) {
-    const km = haversineKm(input.clientCoords, { lat: tech.lat, lng: tech.lng })
-    if (km < 2) score += 40
-    else if (km < 5) score += 25
-    else if (km < 10) score += 12
-    else if (km < 20) score += 4
-  }
-
-  return score
-}
-
-// Solo columnas que el anon puede leer tras el lockdown. lat/lng/whatsapp/
-// tier quedaron bloqueadas: el ranking degrada sin bonus GPS y el WhatsApp
-// se revela aparte. Distancia/zona aproximada por `distrito`.
-const SELECT_COLS = 'id, nombre, oficio, distrito, calificacion, servicios_completados, zonas'
 
 export async function findBestTech(input: MatchInput): Promise<MatchableTech | null> {
-  const { data } = await supabase
-    .from('tecnicos')
-    .select(SELECT_COLS)
-    .eq('disponible', true)
-    .eq('verificado', true)
-    .ilike('oficio', `%${input.servicio}%`)
-    .limit(20)
-
-  let candidates = (data as MatchableTech[] | null) ?? []
-
-  if (!candidates.length) {
-    const { data: fallback } = await supabase
-      .from('tecnicos')
-      .select(SELECT_COLS)
-      .eq('disponible', true)
-      .eq('verificado', true)
-      .limit(20)
-    candidates = (fallback as MatchableTech[] | null) ?? []
+  try {
+    const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/matching/mejor-tecnico`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        servicio: input.servicio,
+        distrito: input.distrito,
+        lat: input.clientCoords?.latitude ?? null,
+        lng: input.clientCoords?.longitude ?? null,
+        clienteWhatsapp: input.clienteWhatsapp ?? null,
+        excluir: input.excluir ?? undefined,
+      }),
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { tecnico: MatchableTech | null }
+    return data.tecnico ?? null
+  } catch (err) {
+    // Sin técnico asignado el pedido igual se crea y entra a la subasta:
+    // preferimos eso a bloquear al cliente por un problema de red.
+    logger.warn('matching: no se pudo resolver el técnico', err)
+    return null
   }
-
-  if (!candidates.length) return null
-
-  candidates.sort((a, b) => scoreTech(b, input) - scoreTech(a, input))
-  return candidates[0]
 }
