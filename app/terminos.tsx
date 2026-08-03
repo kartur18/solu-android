@@ -41,7 +41,7 @@ export default function TerminosScreen() {
         <Text style={p}>
           5.1 El técnico tiene 7 días calendario desde la compra de un paquete para solicitar el reembolso completo (Código de Protección y Defensa del Consumidor - INDECOPI), siempre que no haya consumido los SoluCoins del paquete.{'\n\n'}
           5.2 En caso de errores de cobro duplicado o problemas técnicos con el procesador de pago, SOLU evaluará el caso y procederá con el reembolso correspondiente dentro de los 15 días hábiles siguientes a la reclamación.{'\n\n'}
-          5.3 Las solicitudes de reembolso deben realizarse a contacto@solu.pe o al WhatsApp +51 904 518 343.
+          5.3 Las solicitudes de reembolso deben realizarse a contacto@solu.pe o al WhatsApp +51 983 835 904.
         </Text>
 
         <Text style={h}>6. Responsabilidad</Text>
