@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTechToken, fetchNotifications } from '../../src/lib/notif-api'
 import { getTechSessionMeta } from '../../src/lib/tech-session'
-import { fetchChatsResumen } from './mensajes'
+import { fetchChatsResumen } from '../../src/components/tecnico/lead-api'
 import { logger } from '../../src/lib/logger'
 import { THEME } from '../../src/lib/theme'
 
@@ -207,7 +207,9 @@ export default function TabLayout() {
           href: null,
         }}
       />
-      <Tabs.Screen name="cuenta" options={{ href: null }} />
+      {/* Fuera del tab bar pero navegable: la bandeja manda acá. Sin título
+          propio la cabecera decía "cuenta" (el nombre del archivo). */}
+      <Tabs.Screen name="cuenta" options={{ href: null, title: 'Mi cuenta de técnico' }} />
       <Tabs.Screen name="vecinos" options={{ href: null }} />
     </Tabs>
   )

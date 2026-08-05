@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator, Share } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { COLORS, getTechLevel, getTechLevelProgress, ACHIEVEMENTS, LEVELS, waLink, DISTRITOS, SUPPORT_PHONE, ESTADOS, OFICIOS_LIST } from '../../src/lib/constants'
@@ -10,7 +10,6 @@ import { getTechAuthToken } from '../../src/lib/tech-auth'
 import { saveTechSession, getTechToken, getTechSessionMeta, clearTechSession } from '../../src/lib/tech-session'
 import { ZonaTrabajoCard } from '../../src/components/ZonaTrabajoCard'
 import { subirImagen } from '../../src/lib/subirImagen'
-import { confirmarCostoLead } from '../../src/lib/confirmarCostoLead'
 import { registerSessionExpiredHandler, resetSessionExpired } from '../../src/lib/session-expired'
 import { supabase } from '../../src/lib/supabase'
 import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
@@ -21,8 +20,29 @@ import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../s
 import NotificationCenter from '../../src/components/NotificationCenter'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../../src/components/ui/Motion'
+import { SaldoCoinsBar } from '../../src/components/tecnico/SaldoCoinsBar'
+import { ConfirmarCostoModal } from '../../src/components/tecnico/ConfirmarCostoModal'
+import { estadoSaldo, type PrecioLead } from '../../src/components/tecnico/lead-utils'
+import { fetchChatsResumen, fetchPrecioLead } from '../../src/components/tecnico/lead-api'
 
 type Tab = 'dashboard' | 'servicios' | 'resenas' | 'cotizaciones' | 'ingresos' | 'plan' | 'perfil'
+
+const TAB_KEYS: Tab[] = ['dashboard', 'servicios', 'resenas', 'cotizaciones', 'ingresos', 'plan', 'perfil']
+
+interface SolicitudAbierta {
+  id: number
+  codigo: string
+  servicio: string
+  cliente_nombre: string
+  distrito: string
+  urgencia: string
+  created_at: string
+  distancia_label?: string | null
+}
+
+function esTab(valor: string | undefined): valor is Tab {
+  return !!valor && (TAB_KEYS as string[]).includes(valor)
+}
 
 const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'dashboard', icon: 'grid', label: 'Inicio' },
@@ -54,6 +74,10 @@ function timeAgo(dateStr: string): string {
 
 export default function CuentaScreen() {
   const router = useRouter()
+  // Permite entrar directo a una sección: la bandeja de mensajes manda acá con
+  // ?tab=servicios cuando el técnico no tiene contactos y hay que revisar su
+  // zona de trabajo.
+  const params = useLocalSearchParams<{ tab?: string }>()
   const [loggedIn, setLoggedIn] = useState(false)
   const [loginId, setLoginId] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
@@ -63,10 +87,19 @@ export default function CuentaScreen() {
   const [tech, setTech] = useState<Tecnico | null>(null)
   const [leads, setLeads] = useState<Cliente[]>([])
   const [reviews, setReviews] = useState<Resena[]>([])
-  const [openRequests, setOpenRequests] = useState<{ id: number; codigo: string; servicio: string; cliente_nombre: string; distrito: string; urgencia: string; created_at: string; distancia_label?: string | null }[]>([])
+  const [openRequests, setOpenRequests] = useState<SolicitudAbierta[]>([])
   const [acceptingId, setAcceptingId] = useState<number | null>(null)
+  // Trabajo cuyo costo se está confirmando (undefined en `precio` = consultando).
+  const [solicitudConfirmar, setSolicitudConfirmar] = useState<SolicitudAbierta | null>(null)
+  const [precioConfirmar, setPrecioConfirmar] = useState<PrecioLead | null | undefined>(undefined)
+  const confirmandoRef = useRef<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const [tab, setTab] = useState<Tab>(esTab(params.tab) ? params.tab : 'dashboard')
+  // Clientes que escribieron y siguen sin leerse. El panel es la pantalla que
+  // el técnico abre primero: si no dice que hay gente esperando, no entra a la
+  // bandeja y el lead se enfría.
+  const [chatsSinLeer, setChatsSinLeer] = useState(0)
+  const [mensajesSinLeer, setMensajesSinLeer] = useState(0)
   const [profileViews, setProfileViews] = useState(0)
   const [editOficios, setEditOficios] = useState<string[]>([])
   const [editZonas, setEditZonas] = useState<string[]>([])
@@ -158,6 +191,30 @@ export default function CuentaScreen() {
     })()
   }, [])
 
+  useEffect(() => {
+    if (esTab(params.tab)) setTab(params.tab)
+  }, [params.tab])
+
+  // Al volver de la bandeja, el contador de "clientes esperando" tiene que
+  // reflejar lo que el técnico ya leyó, no lo que había al abrir el panel.
+  useFocusEffect(
+    useCallback(() => {
+      if (!loggedIn) return
+      let activo = true
+      void (async () => {
+        const token = await getTechToken()
+        if (!token || !activo) return
+        try {
+          const chats = await fetchChatsResumen(token)
+          if (!activo) return
+          setChatsSinLeer(chats.filter((c) => c.mensajes_nuevos > 0).length)
+          setMensajesSinLeer(chats.reduce((sum, c) => sum + c.mensajes_nuevos, 0))
+        } catch { /* la bandeja tiene su propio manejo de error */ }
+      })()
+      return () => { activo = false }
+    }, [loggedIn]),
+  )
+
   // Si el token vence en mitad de sesión (401 detectado en cualquier fetch
   // autenticado), bajamos el estado local para mostrar el login. El layout raíz
   // ya limpió la sesión y mostró el aviso; acá solo reseteamos la UI.
@@ -242,6 +299,16 @@ export default function CuentaScreen() {
         setCotizaciones(dash.cotizaciones)
         setPagos(dash.pagos)
       }
+      // Resumen de la bandeja: cuántos clientes están esperando respuesta.
+      // Falla en silencio — el panel no puede quedarse sin cargar por esto.
+      try {
+        const tokenChats = token ?? authToken
+        if (tokenChats) {
+          const chats = await fetchChatsResumen(tokenChats)
+          setChatsSinLeer(chats.filter((c) => c.mensajes_nuevos > 0).length)
+          setMensajesSinLeer(chats.reduce((sum, c) => sum + c.mensajes_nuevos, 0))
+        }
+      } catch { /* la bandeja tiene su propio manejo de error */ }
       // Load profile views count
       try {
         const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
@@ -250,6 +317,53 @@ export default function CuentaScreen() {
       } catch { /* table might not exist */ }
     } catch {
       // silent
+    }
+  }
+
+  // Consulta el costo y abre la hoja de confirmación. La consulta corre con la
+  // hoja ya abierta para que el técnico no toque un botón que "no hace nada"
+  // mientras el endpoint responde.
+  async function pedirConfirmacion(s: SolicitudAbierta) {
+    confirmandoRef.current = s.codigo
+    setSolicitudConfirmar(s)
+    setPrecioConfirmar(undefined)
+    const precio = await fetchPrecioLead(s.codigo, authToken)
+    // Si mientras tanto cerró la hoja o abrió otro trabajo, este precio ya no
+    // corresponde a lo que está viendo.
+    if (confirmandoRef.current !== s.codigo) return
+    setPrecioConfirmar(precio)
+  }
+
+  async function aceptarTrabajo(s: SolicitudAbierta) {
+    confirmandoRef.current = null
+    setSolicitudConfirmar(null)
+    setAcceptingId(s.id)
+    try {
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/solicitudes/${s.id}/accept`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Bearer firmado: el endpoint deriva el tecnicoId del token
+          // (no del body). Sin esto el endpoint devolvía 401.
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ tecnicoId: tech?.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        Alert.alert('¡Trabajo aceptado!', `Contacta a ${s.cliente_nombre} por WhatsApp.`)
+        setOpenRequests(prev => prev.filter(r => r.id !== s.id))
+        if (tech) loadData(tech.id)
+      } else if (data.taken) {
+        Alert.alert('Ya tomado', 'Otro técnico fue más rápido.')
+        setOpenRequests(prev => prev.filter(r => r.id !== s.id))
+      } else {
+        Alert.alert('Error', data.error || 'No se pudo aceptar')
+      }
+    } catch {
+      Alert.alert('Error', 'Error de conexión')
+    } finally {
+      setAcceptingId(null)
     }
   }
 
@@ -774,20 +888,18 @@ export default function CuentaScreen() {
           </View>
         </View>
 
-        {/* Low balance alert — V3.1: reemplaza el "Plan vencido" del modelo viejo */}
-        {(tech.coins_balance ?? 0) < 500 && (
+        {/* Saldo — misma barra y mismo umbral que la bandeja de mensajes: el
+            técnico que usa las dos pantallas ve el mismo estado y el mismo
+            camino a comprar. Con saldo sano no aparece: ya está en la cabecera. */}
+        {/* Sin dato de saldo no se avisa nada: si /tecnico/me no pudo derivarlo,
+            decirle "te quedaste sin coins" sería una falsa alarma. */}
+        {typeof tech.coins_balance === 'number' && estadoSaldo(tech.coins_balance) !== 'ok' && (
           <FadeInUp delay={60}>
-            <View style={{ margin: THEME.space.lg, backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, ...THEME.shadow.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
-                <Ionicons name="warning" size={18} color={THEME.color.warning} />
-                <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: '#92400E' }}>Saldo bajo de SoluCoins</Text>
-              </View>
-              <Text style={{ ...THEME.font.bodySm, color: '#78350F', marginTop: THEME.space.xs, lineHeight: 18 }}>
-                Tu perfil sigue visible pero pronto te quedarás sin saldo para responder leads. Compra un paquete para seguir trabajando.
-              </Text>
-              <PressableScale onPress={() => router.push('/comprar-coins')} accessibilityLabel="Comprar SoluCoins" style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: THEME.space.md, ...THEME.shadow.brand }}>
-                <Text style={{ ...THEME.font.bodySm, color: THEME.color.white, fontWeight: '700' }}>Comprar SoluCoins →</Text>
-              </PressableScale>
+            <View style={{ marginHorizontal: THEME.space.lg, marginTop: THEME.space.lg }}>
+              <SaldoCoinsBar
+                saldo={tech.coins_balance}
+                onComprar={() => router.push('/comprar-coins')}
+              />
             </View>
           </FadeInUp>
         )}
@@ -806,7 +918,10 @@ export default function CuentaScreen() {
                 onPress={() => setTab(t.key)}
                 accessibilityLabel={t.label}
                 style={{
-                  flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
+                  // 44px: el técnico cambia de sección con el celular en una
+                  // mano, muchas veces con guantes o los dedos sucios.
+                  minHeight: 44,
                   paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, borderRadius: THEME.radius.full,
                   backgroundColor: active ? THEME.color.navy : THEME.color.surface,
                   marginRight: THEME.space.sm,
@@ -832,16 +947,33 @@ export default function CuentaScreen() {
               <FadeInUp delay={0}>
               <PressableScale
                 onPress={() => router.push('/(tabs)/mensajes')}
-                accessibilityLabel="Ver mensajes de clientes"
+                accessibilityLabel={chatsSinLeer > 0
+                  ? `Ver mensajes de clientes, ${chatsSinLeer} sin leer`
+                  : 'Ver mensajes de clientes'}
                 style={{ backgroundColor: THEME.color.navy, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, ...THEME.shadow.md }}
               >
                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(242,107,33,0.18)', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="chatbubbles" size={22} color={THEME.color.brand} />
+                  {mensajesSinLeer > 0 && (
+                    <View style={{ position: 'absolute', top: -6, right: -6, minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 5, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: THEME.color.navy }}>
+                      <Text style={{ ...THEME.font.caption, fontWeight: '900', color: THEME.color.white }}>
+                        {mensajesSinLeer > 99 ? '99+' : mensajesSinLeer}
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Mensajes de clientes</Text>
-                  <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
-                    Responde a quienes te contactaron
+                  {/* Acá solo sabemos quién escribió sin leer; la bandeja
+                      además sabe a quién nunca le respondiste, así que su
+                      número es mayor. Con la misma frase en las dos pantallas
+                      parecían dos cuentas distintas de lo mismo. */}
+                  <Text style={{ ...THEME.font.bodySm, color: chatsSinLeer > 0 ? THEME.color.brand : 'rgba(255,255,255,0.7)', fontWeight: chatsSinLeer > 0 ? '800' : '500', marginTop: 2 }}>
+                    {chatsSinLeer === 0
+                      ? 'Responde a quienes te contactaron'
+                      : chatsSinLeer === 1
+                        ? '1 cliente te escribió'
+                        : `${chatsSinLeer} clientes te escribieron`}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
@@ -870,8 +1002,12 @@ export default function CuentaScreen() {
                   <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.dark }}>{profileViews}</Text>
                   <Text style={{ fontSize: 11, color: COLORS.gray }}>Vistas a tu perfil esta semana</Text>
                 </View>
-                <TouchableOpacity onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}` })} style={{ backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>Compartir</Text>
+                <TouchableOpacity
+                  onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}` })}
+                  accessibilityLabel="Compartir mi perfil"
+                  style={{ backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 14, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>Compartir</Text>
                 </TouchableOpacity>
               </View>
               </FadeInUp>
@@ -1022,10 +1158,11 @@ export default function CuentaScreen() {
                       { text: 'Crear', onPress: () => crearPromocion(`Descuento especial de ${tech.nombre}`) },
                     ])
                   }}
-                  style={{ backgroundColor: THEME.color.brand, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                  accessibilityLabel="Crear una promoción nueva"
+                  style={{ backgroundColor: THEME.color.brand, borderRadius: 10, paddingHorizontal: 14, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                 >
-                  <Ionicons name="add" size={14} color="#fff" />
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>Nueva</Text>
+                  <Ionicons name="add" size={16} color="#fff" />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Nueva</Text>
                 </TouchableOpacity>
               </View>
               <Text style={{ fontSize: 11, color: COLORS.gray }}>
@@ -1109,55 +1246,30 @@ export default function CuentaScreen() {
                             </Text>
                           </View>
                         </View>
-                        {s.urgencia === 'emergencia' && (
-                          <View style={{ backgroundColor: '#FEE2E2', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                            <Text style={{ fontSize: 10, fontWeight: '800', color: '#DC2626' }}>URGENTE</Text>
+                        {/* Emergencia y urgente pagan distinto y se atienden
+                            distinto: mostrarlos igual borraba la diferencia. */}
+                        {(s.urgencia === 'emergencia' || s.urgencia === 'urgente') && (
+                          <View style={{
+                            backgroundColor: s.urgencia === 'emergencia' ? THEME.color.dangerBg : THEME.color.warningBg,
+                            borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+                          }}>
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: s.urgencia === 'emergencia' ? '#DC2626' : '#B45309' }}>
+                              {s.urgencia === 'emergencia' ? 'EMERGENCIA' : 'URGENTE'}
+                            </Text>
                           </View>
                         )}
                       </View>
                       <TouchableOpacity
                         disabled={acceptingId === s.id}
-                        onPress={async () => {
-                          // Antes de cobrar, decirle cuánto cuesta. Aceptar
-                          // descuenta entre 160 y 10.000 coins según categoría,
-                          // distrito y urgencia, y hasta ahora el técnico se
-                          // enteraba del monto DESPUÉS del descuento.
-                          const confirmado = await confirmarCostoLead(s.codigo, authToken)
-                          if (!confirmado) return
-
-                          setAcceptingId(s.id)
-                          try {
-                            const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/solicitudes/${s.id}/accept`, {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                // Bearer firmado: el endpoint deriva el tecnicoId del token
-                                // (no del body). Sin esto el endpoint devolvía 401.
-                                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-                              },
-                              body: JSON.stringify({ tecnicoId: tech?.id }),
-                            })
-                            const data = await res.json()
-                            if (res.ok) {
-                              Alert.alert('¡Trabajo aceptado!', `Contacta a ${s.cliente_nombre} por WhatsApp.`)
-                              setOpenRequests(prev => prev.filter(r => r.id !== s.id))
-                              if (tech) loadData(tech.id)
-                            } else if (data.taken) {
-                              Alert.alert('Ya tomado', 'Otro técnico fue más rápido.')
-                              setOpenRequests(prev => prev.filter(r => r.id !== s.id))
-                            } else {
-                              Alert.alert('Error', data.error || 'No se pudo aceptar')
-                            }
-                          } catch {
-                            Alert.alert('Error', 'Error de conexión')
-                          } finally {
-                            setAcceptingId(null)
-                          }
-                        }}
-                        style={{ backgroundColor: '#10B981', borderRadius: 12, padding: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, opacity: acceptingId === s.id ? 0.5 : 1 }}
+                        // Antes de cobrar, decirle cuánto cuesta: aceptar
+                        // descuenta entre 160 y 10.000 coins según categoría,
+                        // distrito y urgencia.
+                        onPress={() => { void pedirConfirmacion(s) }}
+                        accessibilityLabel={`Aceptar el trabajo de ${s.servicio} en ${s.distrito}`}
+                        style={{ backgroundColor: '#10B981', borderRadius: 12, minHeight: 48, paddingHorizontal: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, opacity: acceptingId === s.id ? 0.5 : 1 }}
                       >
-                        <Ionicons name="checkmark-circle" size={16} color="#fff" />
-                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                        <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
                           {acceptingId === s.id ? 'Aceptando...' : 'Aceptar trabajo'}
                         </Text>
                       </TouchableOpacity>
@@ -1491,10 +1603,11 @@ export default function CuentaScreen() {
                   </View>
                   <TouchableOpacity
                     onPress={() => setShowNewCotizacion(true)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: THEME.color.navy, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
+                    accessibilityLabel="Crear una cotización nueva"
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: THEME.color.navy, paddingHorizontal: 14, minHeight: 44, borderRadius: 10 }}
                   >
                     <Ionicons name="add" size={16} color="#fff" />
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>Nueva</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Nueva</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -2001,6 +2114,20 @@ export default function CuentaScreen() {
           token={authToken}
         />
       )}
+
+      {/* Costo del trabajo antes de tomarlo, con salida a comprar coins si no
+          le alcanza (el Alert nativo anterior dejaba "Recargar" sin destino). */}
+      <ConfirmarCostoModal
+        trabajo={solicitudConfirmar}
+        precio={precioConfirmar}
+        onCancelar={() => { confirmandoRef.current = null; setSolicitudConfirmar(null) }}
+        onConfirmar={() => { if (solicitudConfirmar) void aceptarTrabajo(solicitudConfirmar) }}
+        onComprarCoins={() => {
+          confirmandoRef.current = null
+          setSolicitudConfirmar(null)
+          router.push('/comprar-coins')
+        }}
+      />
     </View>
   )
 }
