@@ -17,6 +17,11 @@ export async function verifyDNI(dni: string, nombreRegistrado: string): Promise<
   apellidoMaterno?: string
   nameMatches?: boolean
   error?: string
+  /** `not_found` = el DNI no existe (culpa del dato).
+   *  `servicio_no_disponible` = RENIEC no responde (culpa nuestra).
+   *  La diferencia importa: colapsar ambos en valid:false hacía que una caída
+   *  del proveedor bloqueara el registro de gente con su documento en la mano. */
+  codigoError?: 'not_found' | 'servicio_no_disponible' | 'conexion'
 }> {
   try {
     const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/verify-dni`, {
@@ -26,7 +31,7 @@ export async function verifyDNI(dni: string, nombreRegistrado: string): Promise<
     })
     const data = await res.json()
     if (!res.ok || !data.success) {
-      return { valid: false, error: data.error }
+      return { valid: false, error: data.error, codigoError: data.codigo_error }
     }
     return {
       valid: true,
@@ -38,7 +43,7 @@ export async function verifyDNI(dni: string, nombreRegistrado: string): Promise<
     }
   } catch (err) {
     logger.error('RENIEC verify error:', err)
-    return { valid: false, error: 'Error de conexión' }
+    return { valid: false, error: 'Error de conexión', codigoError: 'conexion' }
   }
 }
 

@@ -134,7 +134,17 @@ export default function RegistroScreen() {
 
     try {
       const reniec = await verifyDNI(dni, nombre)
-      if (!reniec.valid) {
+      // Si RENIEC no responde, el problema es NUESTRO: el registro sigue y el
+      // servidor deja el DNI encolado para verificarlo después (cron
+      // auto-verify). Antes cualquier caída del proveedor mostraba "DNI no
+      // verificado" y la persona abandonaba con su documento en la mano —
+      // durante meses ese fue el 100% de los registros desde la app, porque
+      // la URL de Decolecta apuntaba a una ruta que ya no existía.
+      // Solo se corta cuando el dato está mal: DNI inexistente o nombre que
+      // no coincide con el titular.
+      const fallaNuestra =
+        reniec.codigoError === 'servicio_no_disponible' || reniec.codigoError === 'conexion'
+      if (!reniec.valid && !fallaNuestra) {
         setLoading(false)
         return Alert.alert(
           'DNI no verificado',
