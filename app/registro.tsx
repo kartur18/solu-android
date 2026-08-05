@@ -21,6 +21,7 @@ import { logger } from '../src/lib/logger'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { verifyDNI } from '../src/lib/integrations'
 import { compressDNIPhoto } from '../src/lib/imageCompress'
+import { validarPassword, PASSWORD_MIN_LENGTH } from '../src/lib/password-policy'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
@@ -36,6 +37,32 @@ const OFICIOS = [
 // editan luego desde Mi cuenta.
 const MAX_OFICIOS = 5
 const MAX_ZONAS = 10
+
+// El requisito tiene que estar a la vista mientras escribe: si la contraseña
+// llega mal al servidor son 5 intentos y el registro queda bloqueado 10 min.
+function ReglasPassword({ password }: { password: string }) {
+  const reglas = [
+    { ok: password.length >= PASSWORD_MIN_LENGTH, texto: `${PASSWORD_MIN_LENGTH} caracteres` },
+    { ok: /[a-zA-Z]/.test(password), texto: 'Una letra' },
+    { ok: /\d/.test(password), texto: 'Un número' },
+  ]
+  return (
+    <View style={styles.reglas}>
+      {reglas.map((regla) => (
+        <View key={regla.texto} style={styles.regla}>
+          <Ionicons
+            name={regla.ok ? 'checkmark-circle' : 'ellipse-outline'}
+            size={14}
+            color={regla.ok ? THEME.color.success : THEME.color.inkMuted}
+          />
+          <Text style={{ ...THEME.font.caption, color: regla.ok ? THEME.color.success : THEME.color.inkMuted }}>
+            {regla.texto}
+          </Text>
+        </View>
+      ))}
+    </View>
+  )
+}
 
 export default function RegistroScreen() {
   const router = useRouter()
@@ -114,9 +141,15 @@ export default function RegistroScreen() {
       Alert.alert('Error', 'Ingresa un email válido')
       return false
     }
-    if (password && password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres')
-      return false
+    // La contraseña es opcional, pero si la crea vale la misma política que
+    // registerTechSchema en el servidor: aceptar acá algo que allá se rechaza
+    // gasta intentos del rate limit de registro.
+    if (password) {
+      const errorPassword = validarPassword(password)
+      if (errorPassword) {
+        Alert.alert('Error', errorPassword)
+        return false
+      }
     }
     if (password && password !== confirmPassword) {
       Alert.alert('Error', 'Las contraseñas no coinciden')
@@ -289,7 +322,7 @@ export default function RegistroScreen() {
                 <View style={styles.inputWrap(focused === 'pass')}>
                   <Ionicons name="lock-closed-outline" size={18} color={focused === 'pass' ? THEME.color.brand : THEME.color.inkMuted} />
                   <TextInput
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder={`Mínimo ${PASSWORD_MIN_LENGTH} caracteres`}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
@@ -306,6 +339,13 @@ export default function RegistroScreen() {
                     <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
                   </TouchableOpacity>
                 </View>
+                {password.length === 0 ? (
+                  <Text style={styles.hint}>
+                    Si creas una contraseña: mínimo {PASSWORD_MIN_LENGTH} caracteres, con al menos una letra y un número.
+                  </Text>
+                ) : (
+                  <ReglasPassword password={password} />
+                )}
 
                 <Text style={styles.label}>Confirmar contraseña</Text>
                 <View style={styles.inputWrap(focused === 'confirm')}>
@@ -626,6 +666,25 @@ const styles = {
     fontWeight: '600' as const,
     color: THEME.color.ink,
     paddingVertical: THEME.space.md,
+  },
+  // Requisito de contraseña: se mete bajo el input, dentro de su margen.
+  hint: {
+    ...THEME.font.caption,
+    color: THEME.color.inkSoft,
+    marginTop: -THEME.space.md,
+    marginBottom: THEME.space.lg,
+  },
+  reglas: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: THEME.space.md,
+    marginTop: -THEME.space.md,
+    marginBottom: THEME.space.lg,
+  },
+  regla: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
   },
   chip: {
     flexDirection: 'row' as const,

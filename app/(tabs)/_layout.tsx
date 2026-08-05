@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTechToken, fetchNotifications } from '../../src/lib/notif-api'
 import { getTechSessionMeta } from '../../src/lib/tech-session'
+import { fetchChatsResumen } from './mensajes'
 import { logger } from '../../src/lib/logger'
 import { THEME } from '../../src/lib/theme'
 
@@ -35,11 +36,40 @@ function TabIcon({ focused, iconFilled, iconOutline }: { focused: boolean; iconF
   )
 }
 
+// Contador sobre el ícono de una pestaña (notificaciones / mensajes sin leer).
+function TabBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <View style={{
+      position: 'absolute',
+      top: -4,
+      right: -10,
+      backgroundColor: THEME.color.danger,
+      borderRadius: 8,
+      minWidth: 16,
+      height: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 3,
+      borderWidth: 1.5,
+      borderColor: THEME.color.surface,
+    }}>
+      <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
+        {count > 99 ? '99+' : count}
+      </Text>
+    </View>
+  )
+}
+
 export default function TabLayout() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const bottomPad = Math.max(insets.bottom, 16)
   const [unreadCount, setUnreadCount] = useState(0)
+  // La bandeja solo tiene sentido con sesión de técnico: al cliente no se le
+  // muestra la pestaña.
+  const [esTecnico, setEsTecnico] = useState(false)
+  const [mensajesNuevos, setMensajesNuevos] = useState(0)
 
   // Los técnicos se autentican con Bearer (no Supabase Auth) y la tabla
   // `notificaciones` está en deny-all para anon tras el lockdown RLS: por eso
@@ -51,17 +81,30 @@ export default function TabLayout() {
       async function fetchUnread() {
         try {
           const session = await getTechSessionMeta()
-          if (!session) {
-            if (activo) setUnreadCount(0)
-            return
-          }
           const token = await getTechToken()
           if (!session?.id || !token) {
-            if (activo) setUnreadCount(0)
+            if (activo) {
+              setEsTecnico(false)
+              setUnreadCount(0)
+              setMensajesNuevos(0)
+            }
             return
           }
-          const notifs = await fetchNotifications(token, 50, session.id)
-          if (activo) setUnreadCount(notifs.filter((n) => !n.leido).length)
+          if (activo) setEsTecnico(true)
+
+          // Independientes: que fallen las notificaciones no debe dejar la
+          // bandeja sin badge (ni al revés).
+          const [notifs, chats] = await Promise.allSettled([
+            fetchNotifications(token, 50, session.id),
+            fetchChatsResumen(token),
+          ])
+          if (!activo) return
+          if (notifs.status === 'fulfilled') {
+            setUnreadCount(notifs.value.filter((n) => !n.leido).length)
+          }
+          if (chats.status === 'fulfilled') {
+            setMensajesNuevos(chats.value.reduce((sum, c) => sum + c.mensajes_nuevos, 0))
+          }
         } catch (err) {
           logger.error('No se pudo cargar el contador de notificaciones:', err)
         }
@@ -115,6 +158,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="mensajes"
+        options={{
+          title: 'Mensajes',
+          tabBarLabel: 'Mensajes',
+          // Sin sesión de técnico la pestaña no existe para el cliente.
+          href: esTecnico ? '/(tabs)/mensajes' : null,
+          tabBarIcon: ({ focused }) => (
+            <View>
+              <TabIcon focused={focused} iconFilled="chatbubbles" iconOutline="chatbubbles-outline" />
+              <TabBadge count={mensajesNuevos} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="urgencias-tab"
         listeners={{
           tabPress: (e) => {
@@ -138,26 +196,7 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <View>
               <TabIcon focused={focused} iconFilled="person-circle" iconOutline="person-circle-outline" />
-              {unreadCount > 0 && (
-                <View style={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -10,
-                  backgroundColor: THEME.color.danger,
-                  borderRadius: 8,
-                  minWidth: 16,
-                  height: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingHorizontal: 3,
-                  borderWidth: 1.5,
-                  borderColor: THEME.color.surface,
-                }}>
-                  <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              )}
+              <TabBadge count={unreadCount} />
             </View>
           ),
         }}

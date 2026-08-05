@@ -1,11 +1,52 @@
 import { useState } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { DISTRITOS } from '../src/lib/constants'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
+import { validarPassword, PASSWORD_MIN_LENGTH } from '../src/lib/password-policy'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
+import type { ClienteUser } from '../src/lib/types'
+
+// Misma clave que leen la pantalla de servicios y useClientProfile.
+const SESSION_KEY = 'solu_client_session'
+
+// La sesión guardada tiene la forma que devuelve login-client: sin el hash.
+type SesionCliente = Omit<ClienteUser, 'password_hash'>
+
+type RespuestaRegistro = {
+  id?: number
+  error?: string
+  tambien_es_tecnico?: boolean
+}
+
+// El requisito tiene que estar a la vista mientras escribe: si la contraseña
+// llega mal al servidor son 5 intentos y el registro queda bloqueado 10 min.
+function ReglasPassword({ password }: { password: string }) {
+  const reglas = [
+    { ok: password.length >= PASSWORD_MIN_LENGTH, texto: `${PASSWORD_MIN_LENGTH} caracteres` },
+    { ok: /[a-zA-Z]/.test(password), texto: 'Una letra' },
+    { ok: /\d/.test(password), texto: 'Un número' },
+  ]
+  return (
+    <View style={styles.reglas}>
+      {reglas.map((regla) => (
+        <View key={regla.texto} style={styles.regla}>
+          <Ionicons
+            name={regla.ok ? 'checkmark-circle' : 'ellipse-outline'}
+            size={14}
+            color={regla.ok ? THEME.color.success : THEME.color.inkMuted}
+          />
+          <Text style={{ ...THEME.font.caption, color: regla.ok ? THEME.color.success : THEME.color.inkMuted }}>
+            {regla.texto}
+          </Text>
+        </View>
+      ))}
+    </View>
+  )
+}
 
 export default function RegistroClienteScreen() {
   const router = useRouter()
@@ -22,13 +63,37 @@ export default function RegistroClienteScreen() {
   // Foco visual de inputs (borde brand 2px al enfocar)
   const [focused, setFocused] = useState<string | null>(null)
 
+  // register-client deja la cuenta lista y devuelve el id, así que guardamos
+  // la sesión igual que login-client: la persona no tiene que volver a tipear
+  // la contraseña que acaba de crear (la web hace lo mismo con su cookie).
+  async function guardarSesion(id: number | undefined, waClean: string): Promise<boolean> {
+    if (typeof id !== 'number') return false
+    try {
+      const sesion: SesionCliente = {
+        id,
+        nombre: nombre.trim(),
+        whatsapp: waClean,
+        // El endpoint no devuelve created_at y la cuenta nace en este instante.
+        created_at: new Date().toISOString(),
+        ...(distrito ? { distrito } : {}),
+      }
+      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sesion))
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async function submit() {
     if (!nombre.trim()) return Alert.alert('Error', 'Ingresa tu nombre')
     const waClean = whatsapp.replace(/\D/g, '')
     if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
       return Alert.alert('Error', 'Ingresa un WhatsApp válido (9 dígitos, empieza con 9)')
     }
-    if (!password || password.length < 6) return Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres')
+    // Misma política que registerClientSchema en el servidor: aceptar acá algo
+    // que allá se rechaza gasta intentos del rate limit de registro.
+    const errorPassword = validarPassword(password)
+    if (errorPassword) return Alert.alert('Error', errorPassword)
     if (password !== confirmPassword) return Alert.alert('Error', 'Las contraseñas no coinciden')
 
     setLoading(true)
@@ -43,18 +108,32 @@ export default function RegistroClienteScreen() {
           password,
         }),
       })
-      const result = await res.json()
+      const result = (await res.json().catch(() => ({}))) as RespuestaRegistro
 
       if (!res.ok) {
         Alert.alert('Error', result.error || 'No se pudo crear la cuenta.')
-      } else {
-        haptics.success()
+        return
+      }
+
+      haptics.success()
+      if (!(await guardarSesion(result.id, waClean))) {
+        // Sin sesión local no podemos entrar solos, pero la cuenta ya existe.
         Alert.alert(
           '¡Cuenta creada!',
-          'Ahora puedes iniciar sesión desde la pestaña Servicios.',
-          [{ text: 'OK', onPress: () => router.back() }]
+          'Entra con tu WhatsApp y la contraseña que acabas de crear.',
+          [{ text: 'OK', onPress: () => router.back() }],
         )
+        return
       }
+
+      const aviso = result.tambien_es_tecnico
+        ? '\n\nCon este número ya tenías perfil de especialista: son cuentas distintas y puedes moverte entre las dos.'
+        : ''
+      Alert.alert(
+        `¡Listo, ${nombre.trim().split(' ')[0]}!`,
+        `Tu cuenta está creada y ya iniciaste sesión.${aviso}`,
+        [{ text: 'Pedir un servicio', onPress: () => router.replace('/solicitar') }],
+      )
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
     } finally {
@@ -179,7 +258,7 @@ export default function RegistroClienteScreen() {
             <View style={styles.inputWrap(focused === 'pass')}>
               <Ionicons name="lock-closed-outline" size={18} color={focused === 'pass' ? THEME.color.brand : THEME.color.inkMuted} />
               <TextInput
-                placeholder="Mínimo 6 caracteres"
+                placeholder={`Mínimo ${PASSWORD_MIN_LENGTH} caracteres`}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -196,6 +275,13 @@ export default function RegistroClienteScreen() {
                 <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
               </TouchableOpacity>
             </View>
+            {password.length === 0 ? (
+              <Text style={styles.hint}>
+                Mínimo {PASSWORD_MIN_LENGTH} caracteres, con al menos una letra y un número.
+              </Text>
+            ) : (
+              <ReglasPassword password={password} />
+            )}
 
             <Text style={styles.label}>Confirmar contraseña *</Text>
             <View style={styles.inputWrap(focused === 'confirm')}>
@@ -261,6 +347,25 @@ const styles = {
     fontWeight: '600' as const,
     color: THEME.color.ink,
     paddingVertical: THEME.space.md,
+  },
+  // Requisito de contraseña: se mete bajo el input, dentro de su margen.
+  hint: {
+    ...THEME.font.caption,
+    color: THEME.color.inkSoft,
+    marginTop: -THEME.space.md,
+    marginBottom: THEME.space.lg,
+  },
+  reglas: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: THEME.space.md,
+    marginTop: -THEME.space.md,
+    marginBottom: THEME.space.lg,
+  },
+  regla: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
   },
   dropdown: {
     backgroundColor: THEME.color.surface,

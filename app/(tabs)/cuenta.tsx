@@ -827,6 +827,27 @@ export default function CuentaScreen() {
           {/* ═══ DASHBOARD ═══ */}
           {tab === 'dashboard' && (
             <View style={{ gap: 12 }}>
+              {/* Bandeja de mensajes: el técnico vive en este panel, así que el
+                  acceso va acá arriba además de la pestaña del tab bar. */}
+              <FadeInUp delay={0}>
+              <PressableScale
+                onPress={() => router.push('/(tabs)/mensajes')}
+                accessibilityLabel="Ver mensajes de clientes"
+                style={{ backgroundColor: THEME.color.navy, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, ...THEME.shadow.md }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(242,107,33,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="chatbubbles" size={22} color={THEME.color.brand} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Mensajes de clientes</Text>
+                  <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                    Responde a quienes te contactaron
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+              </PressableScale>
+              </FadeInUp>
+
               {/* Quick stats */}
               <FadeInUp delay={0}>
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, ...THEME.shadow.sm }}>

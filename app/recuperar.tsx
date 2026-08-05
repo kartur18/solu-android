@@ -1,110 +1,140 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
+import TipoCuentaPicker, { TipoCuenta } from '../src/components/TipoCuentaPicker'
+import { validarPassword, PASSWORD_MIN_LENGTH } from '../src/lib/password-policy'
 
 type Step = 'phone' | 'code' | 'reset'
+type ResetResponse = { success?: boolean; message?: string; error?: string }
+
+// El backend expira el código a los 15 min (src/app/api/password-reset/route.ts).
+const CODE_TTL_MS = 15 * 60 * 1000
+
+// Mismo texto neutro que devuelve el servidor: no confirma si el número está
+// registrado. Solo se usa si la respuesta viniera sin `message`.
+const MENSAJE_ENVIO = 'Si la cuenta existe, te enviamos un código a tu WhatsApp o email registrado.'
+
+const ETIQUETA_TIPO: Record<TipoCuenta, string> = { cliente: 'cliente', tecnico: 'técnico' }
 
 export default function RecuperarScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams<{ tipo?: string }>()
   const [step, setStep] = useState<Step>('phone')
   const [whatsapp, setWhatsapp] = useState('')
   const [loading, setLoading] = useState(false)
-  // generatedCode no longer needed - verification happens server-side
   const [inputCode, setInputCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [userType, setUserType] = useState<'tecnico' | 'cliente' | null>(null)
+  // El tipo lo ELIGE la persona. Antes la pantalla pedía el código como
+  // 'tecnico' y solo caía a 'cliente' con un 404 que el servidor dejó de
+  // devolver (anti-enumeración): ningún cliente podía recuperar su cuenta.
+  const [tipo, setTipo] = useState<TipoCuenta | null>(
+    params.tipo === 'cliente' || params.tipo === 'tecnico' ? params.tipo : null,
+  )
+  // Expiración del código — arranca cuando el servidor confirma el envío.
+  const [expiraEn, setExpiraEn] = useState<number | null>(null)
+  const [segundos, setSegundos] = useState(0)
   // Foco visual de inputs (borde brand 2px al enfocar)
   const [focused, setFocused] = useState<string | null>(null)
-  // userId no longer needed - password reset handled entirely by backend API
 
-  async function sendCode() {
+  // Preselección por sesión guardada, igual que la web con localStorage. Es
+  // solo una pista: el selector queda visible y la persona confirma. Nunca
+  // pisa una elección ya hecha (por eso el update funcional).
+  useEffect(() => {
+    let vivo = true
+    AsyncStorage.multiGet(['solu_client_session', 'solu_tech_session'])
+      .then((pares) => {
+        if (!vivo) return
+        const guardado = pares.find(([, valor]) => Boolean(valor))?.[0]
+        if (guardado === 'solu_client_session') setTipo((prev) => prev ?? 'cliente')
+        else if (guardado === 'solu_tech_session') setTipo((prev) => prev ?? 'tecnico')
+      })
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!expiraEn) return
+    const tick = () => setSegundos(Math.max(0, Math.floor((expiraEn - Date.now()) / 1000)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [expiraEn])
+
+  const reiniciar = useCallback(() => {
+    setStep('phone')
+    setInputCode('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setExpiraEn(null)
+    setSegundos(0)
+  }, [])
+
+  const sendCode = useCallback(async () => {
+    if (!tipo) {
+      return Alert.alert(
+        'Elige tu tipo de cuenta',
+        'Cuéntanos si entras como cliente o como técnico para enviarte el código.',
+      )
+    }
     const waClean = whatsapp.replace(/\D/g, '')
-    if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
+    if (!/^9\d{8}$/.test(waClean)) {
       return Alert.alert('Error', 'Ingresa un número de WhatsApp válido (9 dígitos, empieza con 9)')
     }
 
     setLoading(true)
     try {
-      let successResult: any = null
-
-      // Try as tecnico first
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/password-reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: waClean, tipo: 'tecnico' }),
+        body: JSON.stringify({ whatsapp: waClean, tipo }),
       })
-      const result = await res.json()
+      const result = (await res.json().catch(() => ({}))) as ResetResponse
 
-      if (res.ok) {
-        setUserType('tecnico')
-        successResult = result
-      } else if (res.status === 404) {
-        // Try as client
-        const res2 = await fetchWithTimeout(`${ENV.API_BASE_URL}/password-reset`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ whatsapp: waClean, tipo: 'cliente' }),
-        })
-        const result2 = await res2.json()
-
-        if (!res2.ok) {
-          Alert.alert('No encontrado', result2.error || 'No hay cuenta registrada con ese número.')
-          setLoading(false)
-          return
-        }
-        setUserType('cliente')
-        successResult = result2
-      } else {
-        Alert.alert('Error', result.error || 'Error al generar código')
-        setLoading(false)
+      if (!res.ok) {
+        Alert.alert('No pudimos enviar el código', result.error || 'Intenta de nuevo en unos minutos.')
         return
       }
 
-      // If both WhatsApp and email failed, the API returns the code directly
-      if (successResult?.codigo) {
-        setInputCode(successResult.codigo)
-        Alert.alert(
-          '⚠️ Código de recuperación',
-          `No se pudo enviar el código por WhatsApp ni email.\n\nTu código es:\n\n${successResult.codigo}\n\nAnótalo ahora. Expira en 15 minutos.`,
-          [{ text: 'Entendido', onPress: () => setStep('code') }]
-        )
-      } else {
-        // Show the message from the API (WhatsApp or email sent)
-        Alert.alert(
-          'Código enviado',
-          successResult?.message || `Revisa tu WhatsApp terminado en ${waClean.slice(-4)}. Te hemos enviado un código de 6 dígitos.`,
-          [{ text: 'OK', onPress: () => setStep('code') }]
-        )
-      }
+      setInputCode('')
+      setExpiraEn(Date.now() + CODE_TTL_MS)
+      setStep('code')
+      // El servidor responde igual exista o no la cuenta: mostramos su mensaje
+      // tal cual para no convertir la app en un oráculo de números registrados.
+      Alert.alert('Revisa tu WhatsApp', result.message || MENSAJE_ENVIO)
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [tipo, whatsapp])
 
   function verifyCode() {
-    if (!inputCode || inputCode.length !== 6) {
+    if (!/^\d{6}$/.test(inputCode)) {
       return Alert.alert('Error', 'Ingresa el código de 6 dígitos')
     }
-    // Code will be verified server-side when resetting password
+    if (expiraEn && segundos === 0) {
+      return Alert.alert('Código expirado', 'Pide uno nuevo con "Reenviar código".')
+    }
+    // El código se verifica en el servidor al cambiar la contraseña.
     setStep('reset')
   }
 
   async function resetPassword() {
-    if (!newPassword || newPassword.length < 6) {
-      return Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres')
-    }
+    if (!tipo) return reiniciar()
+    const errorPass = validarPassword(newPassword)
+    if (errorPass) return Alert.alert('Error', errorPass)
     if (newPassword !== confirmPassword) {
       return Alert.alert('Error', 'Las contraseñas no coinciden')
     }
-    if (!userType) return
 
     setLoading(true)
     try {
@@ -112,25 +142,32 @@ export default function RecuperarScreen() {
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/password-reset`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          whatsapp: waClean,
-          tipo: userType,
-          codigo: inputCode,
-          newPassword,
-        }),
+        body: JSON.stringify({ whatsapp: waClean, tipo, codigo: inputCode, newPassword }),
       })
-      const result = await res.json()
+      const result = (await res.json().catch(() => ({}))) as ResetResponse
 
       if (!res.ok) {
-        Alert.alert('Error', result.error || 'No se pudo actualizar la contraseña.')
-      } else {
-        haptics.success()
+        // "Código inválido" también aparece cuando la cuenta no existe para ese
+        // tipo (el servidor no distingue, a propósito). Damos la salida en vez
+        // de dejar a la persona sin camino.
+        const otro = tipo === 'cliente' ? 'técnico' : 'cliente'
         Alert.alert(
-          'Contraseña actualizada',
-          'Tu contraseña se cambió exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.',
-          [{ text: 'Ir a login', onPress: () => router.back() }]
+          'No se pudo cambiar la contraseña',
+          `${result.error || 'Intenta de nuevo.'}\n\nSi elegiste el tipo de cuenta equivocado, vuelve al inicio y pide el código como ${otro}.`,
+          [
+            { text: 'Volver al inicio', style: 'cancel', onPress: reiniciar },
+            { text: 'Corregir código', onPress: () => setStep('code') },
+          ],
         )
+        return
       }
+
+      haptics.success()
+      Alert.alert(
+        'Contraseña actualizada',
+        'Tu contraseña se cambió exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.',
+        [{ text: 'Ir a login', onPress: () => router.back() }],
+      )
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
     } finally {
@@ -139,6 +176,7 @@ export default function RecuperarScreen() {
   }
 
   const stepIndex = ['phone', 'code', 'reset'].indexOf(step)
+  const cuenta = tipo ? ETIQUETA_TIPO[tipo] : ''
 
   return (
     <ScrollView
@@ -169,7 +207,7 @@ export default function RecuperarScreen() {
             Recuperar contraseña
           </Text>
           <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, textAlign: 'center', marginBottom: THEME.space.xxl }}>
-            {step === 'phone' && 'Ingresa tu número de WhatsApp registrado'}
+            {step === 'phone' && 'Elige tu tipo de cuenta e ingresa tu WhatsApp registrado'}
             {step === 'code' && 'Ingresa el código de verificación'}
             {step === 'reset' && 'Crea tu nueva contraseña'}
           </Text>
@@ -187,9 +225,12 @@ export default function RecuperarScreen() {
             ))}
           </View>
 
-          {/* STEP 1: Phone number */}
+          {/* STEP 1: Tipo de cuenta + teléfono */}
           {step === 'phone' && (
             <FadeInUp delay={80}>
+              <Text style={styles.label}>¿Cómo usas SOLU?</Text>
+              <TipoCuentaPicker value={tipo} onChange={setTipo} disabled={loading} />
+
               <Text style={styles.label}>WhatsApp</Text>
               <View style={styles.inputWrap(focused === 'whatsapp')}>
                 <Ionicons name="logo-whatsapp" size={18} color={focused === 'whatsapp' ? THEME.color.brand : THEME.color.inkMuted} />
@@ -212,7 +253,7 @@ export default function RecuperarScreen() {
                 style={styles.primaryBtn}
               >
                 <Text style={styles.primaryBtnText}>
-                  {loading ? 'Verificando…' : 'Enviar código'}
+                  {loading ? 'Enviando…' : 'Enviar código'}
                 </Text>
               </PressableScale>
             </FadeInUp>
@@ -221,12 +262,44 @@ export default function RecuperarScreen() {
           {/* STEP 2: Code verification */}
           {step === 'code' && (
             <FadeInUp delay={80}>
+              {tipo && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.xs, marginBottom: THEME.space.sm }}>
+                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft }}>
+                    Cuenta de {cuenta}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={reiniciar}
+                    accessibilityLabel="Cambiar tipo de cuenta o número"
+                    hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                    style={{ paddingVertical: THEME.space.xs }}
+                  >
+                    <Text style={{ ...THEME.font.caption, fontWeight: '800', color: THEME.color.brand }}>· Cambiar</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {expiraEn && (
+                <Text
+                  style={{
+                    ...THEME.font.caption,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                    marginBottom: THEME.space.md,
+                    color: segundos === 0 ? THEME.color.danger : segundos < 60 ? THEME.color.brand : THEME.color.inkSoft,
+                  }}
+                >
+                  {segundos === 0
+                    ? 'Código expirado · pide uno nuevo abajo'
+                    : `Caduca en ${String(Math.floor(segundos / 60)).padStart(2, '0')}:${String(segundos % 60).padStart(2, '0')}`}
+                </Text>
+              )}
+
               <Text style={styles.label}>Código de 6 dígitos</Text>
               <View style={[styles.inputWrap(focused === 'code'), { justifyContent: 'center' }]}>
                 <TextInput
                   placeholder="------"
                   value={inputCode}
-                  onChangeText={setInputCode}
+                  onChangeText={(t) => setInputCode(t.replace(/\D/g, '').slice(0, 6))}
                   keyboardType="number-pad"
                   maxLength={6}
                   onFocus={() => setFocused('code')}
@@ -247,8 +320,15 @@ export default function RecuperarScreen() {
                 <Text style={styles.primaryBtnText}>Verificar código</Text>
               </PressableScale>
 
-              <TouchableOpacity onPress={() => setStep('phone')} style={{ alignItems: 'center', minHeight: 44, justifyContent: 'center' }}>
-                <Text style={{ ...THEME.font.bodySm, color: THEME.color.brand, fontWeight: '700' }}>Reenviar código</Text>
+              <TouchableOpacity
+                onPress={sendCode}
+                disabled={loading}
+                accessibilityLabel="Reenviar código"
+                style={{ alignItems: 'center', minHeight: 44, justifyContent: 'center' }}
+              >
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.brand, fontWeight: '700' }}>
+                  {loading ? 'Enviando…' : 'Reenviar código'}
+                </Text>
               </TouchableOpacity>
             </FadeInUp>
           )}
@@ -260,7 +340,7 @@ export default function RecuperarScreen() {
               <View style={[styles.inputWrap(focused === 'pass'), { marginBottom: THEME.space.md }]}>
                 <Ionicons name="lock-closed-outline" size={18} color={focused === 'pass' ? THEME.color.brand : THEME.color.inkMuted} />
                 <TextInput
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={`Mínimo ${PASSWORD_MIN_LENGTH} caracteres`}
                   value={newPassword}
                   onChangeText={setNewPassword}
                   secureTextEntry={!showPassword}
@@ -277,6 +357,9 @@ export default function RecuperarScreen() {
                   <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={THEME.color.inkMuted} />
                 </TouchableOpacity>
               </View>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: -THEME.space.sm, marginBottom: THEME.space.md }}>
+                Debe incluir al menos una letra y un número.
+              </Text>
 
               <Text style={styles.label}>Confirmar contraseña</Text>
               <View style={styles.inputWrap(focused === 'confirm')}>
