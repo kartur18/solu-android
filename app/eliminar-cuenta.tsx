@@ -89,7 +89,7 @@ export default function EliminarCuentaScreen() {
       {/* Header serio */}
       <View style={{ backgroundColor: THEME.color.navy, paddingHorizontal: THEME.space.xl, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.lg, paddingBottom: THEME.space.xl, borderBottomLeftRadius: THEME.radius.xl, borderBottomRightRadius: THEME.radius.xl, ...THEME.shadow.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
-          <PressableScale onPress={() => router.back()} haptic={false} accessibilityLabel="Volver" style={{ width: 40, height: 40, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center' }}>
+          <PressableScale onPress={() => router.back()} haptic={false} accessibilityLabel="Volver" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ width: 40, height: 40, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={22} color={THEME.color.white} />
           </PressableScale>
           <View style={{ flex: 1 }}>

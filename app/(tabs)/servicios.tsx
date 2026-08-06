@@ -340,6 +340,7 @@ export default function MisServiciosScreen() {
           </View>
           <TouchableOpacity
             onPress={logout}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{ width: 40, height: 40, borderRadius: THEME.radius.md, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
             accessibilityLabel="Cerrar sesión"
           >

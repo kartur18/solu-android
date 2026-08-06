@@ -87,7 +87,9 @@ export function HojaCostoLead({
             }}>
               {consultando ? (
                 <>
-                  <Shimmer style={{ height: 30, width: 170, borderRadius: THEME.radius.md }} />
+                  {/* Alto del texto `display` (30px de fuente): con 30 la hoja
+                      pegaba un salto al llegar el monto. */}
+                  <Shimmer style={{ height: 38, width: 170, borderRadius: THEME.radius.md }} />
                   <Text style={{ ...THEME.font.bodySm, color: THEME.color.brandDark, marginTop: THEME.space.sm }}>
                     Consultando cuánto cuesta responder…
                   </Text>

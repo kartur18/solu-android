@@ -401,8 +401,10 @@ export default function ChatScreen() {
         {/* Quick replies */}
         {senderType === 'tecnico' && !text.trim() && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: THEME.color.surface, paddingVertical: THEME.space.sm, paddingHorizontal: THEME.space.md, ...THEME.shadow.sm }} contentContainerStyle={{ gap: THEME.space.sm }}>
+            {/* hitSlop en vez de agrandar la píldora: 36px de alto quedaba bajo
+                el mínimo de 44 y las respuestas rápidas se erraban al tocar. */}
             {['Estoy en camino 🚗', 'Llego en 15 min', 'Ya llegué ✅', 'Te paso mi cotización', 'Necesito ver el problema primero', 'Cuéntame más del trabajo', '¿A qué hora te conviene?', 'Gracias por tu confianza 🙏'].map(msg => (
-              <PressableScale key={msg} onPress={() => { setText(msg); }} style={{ backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, minHeight: 36, justifyContent: 'center' }}>
+              <PressableScale key={msg} onPress={() => { setText(msg) }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }} style={{ backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, minHeight: 36, justifyContent: 'center' }}>
                 <Text style={{ ...THEME.font.label, color: THEME.color.brandDark }}>{msg}</Text>
               </PressableScale>
             ))}

@@ -521,6 +521,9 @@ export default function BuscarScreen() {
             onPress={() => setViewMode('list')}
             activeOpacity={0.8}
             accessibilityLabel="Ver en lista"
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'list' }}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 2 }}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 5,
               paddingHorizontal: THEME.space.md, paddingVertical: 7, borderRadius: THEME.radius.sm,
@@ -535,6 +538,9 @@ export default function BuscarScreen() {
             onPress={() => setViewMode('map')}
             activeOpacity={0.8}
             accessibilityLabel="Ver en mapa"
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'map' }}
+            hitSlop={{ top: 8, bottom: 8, left: 2, right: 4 }}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 5,
               paddingHorizontal: THEME.space.md, paddingVertical: 7, borderRadius: THEME.radius.sm,
@@ -566,6 +572,12 @@ export default function BuscarScreen() {
               key={f.key}
               onPress={f.onPress}
               activeOpacity={0.8}
+              accessibilityLabel={`Filtro ${f.label}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: f.active }}
+              // Los chips miden ~30px de alto: sin hitSlop vertical quedaban
+              // muy por debajo del mínimo táctil y erraban el toque.
+              hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 5,
                 paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm, borderRadius: THEME.radius.full,
@@ -582,6 +594,7 @@ export default function BuscarScreen() {
               onPress={clearAllFilters}
               activeOpacity={0.8}
               accessibilityLabel="Limpiar todos los filtros"
+              hitSlop={{ top: 8, bottom: 8, left: 2, right: 4 }}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 4,
                 paddingHorizontal: THEME.space.md, paddingVertical: THEME.space.sm, borderRadius: THEME.radius.full,

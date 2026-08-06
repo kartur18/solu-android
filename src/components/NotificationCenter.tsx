@@ -14,7 +14,9 @@ import type { Notificacion } from '../lib/types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
-const NOTIF_ICONS: Record<string, string> = {
+type IconName = React.ComponentProps<typeof Ionicons>['name']
+
+const NOTIF_ICONS: Record<string, IconName> = {
   nueva_solicitud: 'notifications',
   pago_recibido: 'cash',
   plan_vencimiento: 'warning',
@@ -120,7 +122,9 @@ export default function NotificationCenter({ visible, onClose, techId, token }: 
   }
 
   return (
-    <Modal visible={visible} transparent animationType="none">
+    // Sin onRequestClose el botón atrás de Android no hacía nada: el panel
+    // quedaba abierto y solo se salía con la X.
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}>
         <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={handleClose} />
         <Animated.View
@@ -227,7 +231,7 @@ export default function NotificationCenter({ visible, onClose, techId, token }: 
               keyExtractor={(item) => String(item.id)}
               contentContainerStyle={{ paddingVertical: 8 }}
               renderItem={({ item }) => {
-                const iconName = NOTIF_ICONS[item.tipo] || 'notifications'
+                const iconName: IconName = NOTIF_ICONS[item.tipo] || 'notifications'
                 const iconColor = NOTIF_COLORS[item.tipo] || COLORS.gray
                 const isUnread = !item.leido
                 return (
@@ -251,7 +255,7 @@ export default function NotificationCenter({ visible, onClose, techId, token }: 
                       backgroundColor: iconColor + '15',
                       alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <Ionicons name={iconName as any} size={20} color={iconColor} />
+                      <Ionicons name={iconName} size={20} color={iconColor} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

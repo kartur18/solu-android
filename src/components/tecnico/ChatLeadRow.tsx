@@ -135,7 +135,10 @@ function ChipUrgencia({ nivel }: { nivel: 'emergencia' | 'urgente' }) {
 // entrar, no después del descuento.
 function ChipCosto({ precio, saldo }: { precio: PrecioLead | null | undefined; saldo: number | null }) {
   if (precio === undefined) {
-    return <Shimmer style={{ height: 20, width: 150, borderRadius: THEME.radius.full }} />
+    // Mide lo mismo que el chip real (24 de alto, ~190 de ancho): con 20×150
+    // cada fila crecía 4px y cambiaba de renglón al llegar el precio, así que
+    // la lista entera saltaba mientras el técnico la leía.
+    return <Shimmer style={{ height: 24, width: 190, borderRadius: THEME.radius.full }} />
   }
   if (precio === null || precio.costo_coins == null) return null
 
@@ -195,14 +198,19 @@ export function Etiqueta({
   texto: string
 }) {
   return (
+    // Con el tamaño de letra del sistema en normal el chip más largo
+    // ("Responder cuesta 4,000 coins · te falta saldo", el tope de precio)
+    // entra holgado en 360dp. flexShrink + numberOfLines son la red para el
+    // técnico que agranda la fuente del teléfono: ahí el chip se pasaba del
+    // borde de la tarjeta en vez de recortarse.
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: THEME.space.xs,
-      alignSelf: 'flex-start',
+      alignSelf: 'flex-start', flexShrink: 1, minWidth: 0,
       backgroundColor: fondo, borderRadius: THEME.radius.full,
       paddingHorizontal: THEME.space.md, paddingVertical: 5,
     }}>
       <Ionicons name={icono} size={13} color={color} />
-      <Text style={{ ...THEME.font.caption, fontWeight: '700', color }}>{texto}</Text>
+      <Text numberOfLines={1} style={{ ...THEME.font.caption, fontWeight: '700', color, flexShrink: 1 }}>{texto}</Text>
     </View>
   )
 }

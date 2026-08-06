@@ -224,9 +224,12 @@ export default function MensajesScreen() {
   if (cargando && chats.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt, padding: THEME.space.lg, gap: THEME.space.md }}>
+        {/* 124 = alto real de ChatLeadRow (padding 32 + bloque de texto 57 +
+            chip 24 + su margen 12). Con 92 la lista pegaba un salto de 30px
+            por fila al llegar los chats. */}
         <Shimmer style={{ height: 64, borderRadius: THEME.radius.lg }} />
         {[0, 1, 2].map((i) => (
-          <Shimmer key={i} style={{ height: 92, borderRadius: THEME.radius.lg }} />
+          <Shimmer key={i} style={{ height: 124, borderRadius: THEME.radius.lg }} />
         ))}
       </View>
     )

@@ -6,7 +6,7 @@
 // sobre react-native-reanimated 4 + expo-haptics.
 
 import React, { useEffect } from 'react'
-import { Pressable, ViewStyle, StyleProp, View } from 'react-native'
+import { Pressable, PressableProps, ViewStyle, StyleProp, View } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import Animated, {
   useSharedValue,
@@ -55,6 +55,7 @@ export function PressableScale({
   haptic = true,
   disabled = false,
   accessibilityLabel,
+  hitSlop,
 }: {
   children: React.ReactNode
   onPress?: () => void
@@ -63,6 +64,9 @@ export function PressableScale({
   haptic?: boolean
   disabled?: boolean
   accessibilityLabel?: string
+  // Sin esto no había forma de llegar a 44×44 en botones chicos (íconos de
+  // 36-40px): la única salida era agrandarlos y romper el diseño.
+  hitSlop?: PressableProps['hitSlop']
 }) {
   const s = useSharedValue(1)
   // El transform + el style del caller van DIRECTO sobre el Pressable (vía
@@ -77,6 +81,7 @@ export function PressableScale({
     <AnimatedPressable
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
+      hitSlop={hitSlop}
       onPressIn={() => {
         s.value = withSpring(scaleTo, { mass: 0.4, damping: 14 })
       }}

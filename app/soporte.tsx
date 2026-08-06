@@ -115,7 +115,15 @@ export default function SoporteScreen() {
       <StatusBar barStyle="light-content" />
       {/* Header */}
       <View style={{ backgroundColor: THEME.color.navy, paddingHorizontal: THEME.space.lg, paddingBottom: THEME.space.lg, paddingTop: (StatusBar.currentHeight || 40) + THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, ...THEME.shadow.md }}>
-        <PressableScale accessibilityLabel="Volver" haptic={false} onPress={() => router.dismiss()} style={{ width: 40, height: 40, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center' }}>
+        {/* router.dismiss() a secas moría cuando soporte era la única pantalla
+            del stack (deep link / notificación): el botón no hacía nada. */}
+        <PressableScale
+          accessibilityLabel="Volver"
+          haptic={false}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={() => { if (router.canDismiss()) router.dismiss(); else router.replace('/(tabs)') }}
+          style={{ width: 40, height: 40, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center' }}
+        >
           <Ionicons name="arrow-back" size={22} color={THEME.color.white} />
         </PressableScale>
         <View style={{ width: 42, height: 42, borderRadius: THEME.radius.full, backgroundColor: 'rgba(242,107,33,0.18)', alignItems: 'center', justifyContent: 'center' }}>

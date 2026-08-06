@@ -67,12 +67,12 @@ export function OnboardingModal() {
   const isLast = currentSlide === SLIDES.length - 1
 
   return (
-    <Modal visible={visible} animationType="fade" transparent={false} statusBarTranslucent>
+    // onRequestClose: sin esto el botón atrás de Android no hacía nada y en el
+    // último slide ya no hay "Saltar", así que la única salida era el botón.
+    <Modal visible={visible} animationType="fade" transparent={false} statusBarTranslucent onRequestClose={handleClose}>
       <View style={{
         flex: 1,
         backgroundColor: '#1E3A5F',
-        justifyContent: 'center',
-        alignItems: 'center',
         paddingHorizontal: 40,
       }}>
         {/* Skip button */}
@@ -87,8 +87,8 @@ export function OnboardingModal() {
           </TouchableOpacity>
         )}
 
-        {/* Slide content */}
-        <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+        {/* Slide content — el paddingTop reserva el lugar del botón "Saltar". */}
+        <Animated.View style={{ flex: 1, opacity: fadeAnim, alignItems: 'center', justifyContent: 'center', paddingTop: 100 }}>
           <View style={{
             width: 120,
             height: 120,
@@ -120,14 +120,17 @@ export function OnboardingModal() {
           </Text>
         </Animated.View>
 
-        {/* Bottom controls */}
+        {/* Controles de abajo.
+            Estaban en position:absolute bottom:80 mientras el texto se
+            centraba en TODA la pantalla: en celulares cortos (360×640) el
+            subtítulo caía encima de los puntitos. Ahora comparten columna,
+            así que nunca pueden solaparse.
+            Sin paddingHorizontal propio: en absolute los insets ignoraban el
+            padding del contenedor, pero en flujo normal ya viene aplicado y
+            duplicarlo achicaba el botón 80px. */}
         <View style={{
-          position: 'absolute',
-          bottom: 80,
-          left: 0,
-          right: 0,
           alignItems: 'center',
-          paddingHorizontal: 40,
+          paddingBottom: 56,
         }}>
           {/* Dot indicators */}
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 32 }}>

@@ -110,7 +110,10 @@ export default function TecnicoScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }}>
+      {/* La barra fija de abajo mide 145px (12+52+8+44+28+1). Con 120 la última
+          card se metía 13px bajo la barra (perdía sus esquinas y su padding);
+          160 reserva la barra + aire. Si cambia la barra, actualizar acá. */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 160 }}>
         {/* ── Hero oscuro con avatar grande ── */}
         <FadeInUp delay={0}>
           <LinearGradient

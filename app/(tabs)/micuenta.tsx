@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { View, Text, ScrollView, StatusBar } from 'react-native'
-import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 
 export default function MiCuentaScreen() {
-  const router = useRouter()
   const [selected, setSelected] = useState<'cliente' | 'tecnico' | null>(null)
 
   if (!selected) {
@@ -72,39 +70,59 @@ export default function MiCuentaScreen() {
 
   // Redirect to the correct panel
   if (selected === 'cliente') {
-    return <ClienteRedirect router={router} onBack={() => setSelected(null)} />
+    return <ClienteRedirect onBack={() => setSelected(null)} />
   }
-  return <TecnicoRedirect router={router} onBack={() => setSelected(null)} />
+  return <TecnicoRedirect onBack={() => setSelected(null)} />
 }
 
-function ClienteRedirect({ router, onBack }: { router: any; onBack: () => void }) {
+// Barra de "volver" propia, en flujo normal.
+//
+// Antes flotaba con position:absolute sobre la pantalla embebida, en el mismo
+// x/y que el avatar de su header (cliente y técnico lo tienen arriba a la
+// izquierda): el botón caía justo encima de la foto de perfil y la tapaba.
+// Ocupando su propia barra nada queda debajo de nada.
+function VolverBar({ onBack, titulo }: { onBack: () => void; titulo: string }) {
+  return (
+    <View style={{
+      backgroundColor: THEME.color.navy,
+      paddingTop: (StatusBar.currentHeight || 40) + THEME.space.xs,
+      paddingHorizontal: THEME.space.lg,
+      paddingBottom: THEME.space.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: THEME.space.md,
+    }}>
+      <PressableScale
+        onPress={onBack}
+        accessibilityLabel="Volver a elegir cómo ingresar"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={{ width: 40, height: 40, borderRadius: THEME.radius.full, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Ionicons name="arrow-back" size={20} color={THEME.color.white} />
+      </PressableScale>
+      <Text numberOfLines={1} style={{ ...THEME.font.label, fontWeight: '700', color: 'rgba(255,255,255,0.75)', flex: 1 }}>
+        {titulo}
+      </Text>
+    </View>
+  )
+}
+
+function ClienteRedirect({ onBack }: { onBack: () => void }) {
   // Import and render servicios screen inline
   const ServiciosScreen = require('./servicios').default
   return (
-    <View style={{ flex: 1 }}>
-      <PressableScale
-        onPress={onBack}
-        accessibilityLabel="Volver"
-        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: THEME.space.lg, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: THEME.radius.full, padding: THEME.space.sm, ...THEME.shadow.md }}
-      >
-        <Ionicons name="arrow-back" size={20} color={THEME.color.navy} />
-      </PressableScale>
+    <View style={{ flex: 1, backgroundColor: THEME.color.navy }}>
+      <VolverBar onBack={onBack} titulo="Estás como cliente" />
       <ServiciosScreen />
     </View>
   )
 }
 
-function TecnicoRedirect({ router, onBack }: { router: any; onBack: () => void }) {
+function TecnicoRedirect({ onBack }: { onBack: () => void }) {
   const CuentaScreen = require('./cuenta').default
   return (
-    <View style={{ flex: 1 }}>
-      <PressableScale
-        onPress={onBack}
-        accessibilityLabel="Volver"
-        style={{ position: 'absolute', top: (StatusBar.currentHeight || 40) + 4, left: THEME.space.lg, zIndex: 100, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: THEME.radius.full, padding: THEME.space.sm, ...THEME.shadow.md }}
-      >
-        <Ionicons name="arrow-back" size={20} color={THEME.color.navy} />
-      </PressableScale>
+    <View style={{ flex: 1, backgroundColor: THEME.color.navy }}>
+      <VolverBar onBack={onBack} titulo="Estás como técnico" />
       <CuentaScreen />
     </View>
   )

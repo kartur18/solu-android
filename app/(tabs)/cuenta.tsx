@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator, Share } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, Switch, RefreshControl, Image, Modal, FlatList, ActivityIndicator, Share, KeyboardAvoidingView, Platform } from 'react-native'
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
@@ -1650,10 +1650,19 @@ export default function CuentaScreen() {
                 )}
               </View>
 
-              {/* New cotizacion form modal */}
-              <Modal visible={showNewCotizacion} transparent animationType="slide">
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-                  <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
+              {/* New cotizacion form modal.
+                  Iba sin onRequestClose (el botón atrás de Android no cerraba
+                  nada) y sin scroll: el formulario mide ~530px contra un tope
+                  de 80% de pantalla, así que en celulares chicos —y siempre
+                  con el teclado abierto— el botón "Enviar cotización" quedaba
+                  cortado y no había forma de mandarla. */}
+              <Modal visible={showNewCotizacion} transparent animationType="slide" onRequestClose={() => setShowNewCotizacion(false)}>
+                <KeyboardAvoidingView
+                  behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                  style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+                >
+                  <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24, maxHeight: '90%' }}>
+                    <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                       <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.dark }}>Nueva cotización</Text>
                       <TouchableOpacity
@@ -1729,8 +1738,9 @@ export default function CuentaScreen() {
                         {savingCotizacion ? 'Enviando...' : 'Enviar cotización'}
                       </Text>
                     </PressableScale>
+                    </ScrollView>
                   </View>
-                </View>
+                </KeyboardAvoidingView>
               </Modal>
             </View>
           )}
