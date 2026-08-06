@@ -12,7 +12,7 @@ import { ZonaTrabajoCard } from '../../src/components/ZonaTrabajoCard'
 import { subirImagen } from '../../src/lib/subirImagen'
 import { registerSessionExpiredHandler, resetSessionExpired } from '../../src/lib/session-expired'
 import { supabase } from '../../src/lib/supabase'
-import { fetchMyTechProfile, fetchMyTechDashboard } from '../../src/lib/tech-profile'
+import { fetchMyTechProfile, fetchMyTechDashboard, fetchMyTechProfileResult, fetchMyTechDashboardResult, debeCerrarSesion } from '../../src/lib/tech-profile'
 import { markNotifRead as apiMarkNotifRead } from '../../src/lib/notif-api'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import { sendPush } from '../../src/lib/integrations'
@@ -72,6 +72,29 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mes`
 }
 
+// "No pude cargar" NO es "no hay nada". Cuando el dashboard fallaba, el panel
+// afirmaba "No hay trabajos en tu zona ahora" / "Sin pagos registrados": hechos
+// de negocio falsos. El técnico que los cree concluye que SOLU no le trae trabajo.
+function ErrorDeCarga({ titulo, onRetry }: { titulo: string; onRetry: () => void }) {
+  return (
+    <View accessibilityRole="alert" style={{ alignItems: 'center', paddingVertical: 20 }}>
+      <Ionicons name="cloud-offline-outline" size={32} color={COLORS.gray2} />
+      <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.dark, marginTop: 8, textAlign: 'center' }}>{titulo}</Text>
+      <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center', lineHeight: 17 }}>
+        Es un problema de conexión con SOLU, no que no tengas actividad.
+      </Text>
+      <TouchableOpacity
+        onPress={onRetry}
+        accessibilityLabel="Reintentar la carga de tu panel"
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#EFF6FF', borderRadius: 12, paddingHorizontal: 16, minHeight: 44, marginTop: 12 }}
+      >
+        <Ionicons name="refresh" size={16} color="#2563EB" />
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#2563EB' }}>Reintentar</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
 export default function CuentaScreen() {
   const router = useRouter()
   // Permite entrar directo a una sección: la bandeja de mensajes manda acá con
@@ -108,6 +131,12 @@ export default function CuentaScreen() {
   const [zonaSearch, setZonaSearch] = useState('')
   // true mientras se restaura la sesión guardada (evita el flash del login)
   const [restoring, setRestoring] = useState(true)
+  // No se pudo PREGUNTAR por el perfil al restaurar (red caída, 5xx, 429). La
+  // sesión sigue guardada: se ofrece reintentar en vez de pedir la contraseña.
+  const [sessionError, setSessionError] = useState(false)
+  // El panel no pudo cargarse. Distinto de "el técnico no tiene datos": mientras
+  // esté en true no se muestran los vacíos ("No hay trabajos en tu zona ahora").
+  const [dashError, setDashError] = useState(false)
 
   // V3.1: la función handleSubscribe (Flow-subscribe para planes mensuales)
   // fue eliminada. La compra de SoluCoins se hace desde la pantalla
@@ -147,48 +176,60 @@ export default function CuentaScreen() {
   // leer el perfil propio vía /api/tecnico/me (post-lockdown).
   const [authToken, setAuthToken] = useState<string | null>(null)
 
+  // Restaura la sesión guardada. Un fallo de RED jamás borra el token: antes,
+  // cualquier respuesta no-2xx de /tecnico/me (429 del rate limit incluido) o un
+  // fetch que reventaba sin internet ejecutaba clearTechSession(), así que abrir
+  // la app en el subte o dos veces seguidas deslogueaba al técnico.
+  async function restaurarSesion() {
+    setSessionError(false)
+    try {
+      const session = await getTechSessionMeta()
+      if (!session) return
+      // El token vive en SecureStore (getTechToken hace fallback/migración
+      // desde sesiones viejas que lo guardaban en AsyncStorage).
+      const savedToken = await getTechToken()
+      // El perfil propio se lee server-side con el token (post-lockdown).
+      // Sesiones viejas sin token (o token vencido) -> pedir re-login.
+      if (session?.id && savedToken) {
+        setLoading(true)
+        // Sesión restaurada con token: rearma la detección de 401.
+        resetSessionExpired()
+        setAuthToken(savedToken)
+        const perfil = await fetchMyTechProfileResult(savedToken)
+        if (perfil.ok) {
+          const data = perfil.data
+          setTech(data)
+          setLoggedIn(true)
+          setEditDesc(data.descripcion || '')
+          setEditPrecio(data.precio_desde?.toString() || '')
+          setEditDisponible(data.disponible)
+          setGalleryImages(data.galeria || [])
+          registerForPushNotifications().then(token => {
+            if (token) savePushToken(data.id, token)
+          })
+          await loadData(data.id, savedToken)
+        } else if (debeCerrarSesion(perfil)) {
+          // 401/403: el token realmente no sirve.
+          await clearTechSession()
+        } else {
+          // No se pudo preguntar: la sesión queda intacta y se ofrece reintentar.
+          setSessionError(true)
+        }
+        setLoading(false)
+      } else if (session?.id) {
+        // Sesión legacy sin token: limpiar para forzar login nuevo.
+        await clearTechSession()
+      }
+    } catch {
+      setLoading(false)
+    } finally {
+      setRestoring(false)
+    }
+  }
+
   // Auto-login from saved session
   useEffect(() => {
-    (async () => {
-      try {
-        const session = await getTechSessionMeta()
-        if (!session) return
-        // El token vive en SecureStore (getTechToken hace fallback/migración
-        // desde sesiones viejas que lo guardaban en AsyncStorage).
-        const savedToken = await getTechToken()
-        // El perfil propio se lee server-side con el token (post-lockdown).
-        // Sesiones viejas sin token (o token vencido) -> pedir re-login.
-        if (session?.id && savedToken) {
-          setLoading(true)
-          // Sesión restaurada con token: rearma la detección de 401.
-          resetSessionExpired()
-          setAuthToken(savedToken)
-          const data = await fetchMyTechProfile(savedToken)
-          if (data) {
-            setTech(data)
-            setLoggedIn(true)
-            setEditDesc(data.descripcion || '')
-            setEditPrecio(data.precio_desde?.toString() || '')
-            setEditDisponible(data.disponible)
-            setGalleryImages(data.galeria || [])
-            registerForPushNotifications().then(token => {
-              if (token) savePushToken(data.id, token)
-            })
-            await loadData(data.id, savedToken)
-          } else {
-            await clearTechSession()
-          }
-          setLoading(false)
-        } else if (session?.id) {
-          // Sesión legacy sin token: limpiar para forzar login nuevo.
-          await clearTechSession()
-        }
-      } catch {
-        setLoading(false)
-      } finally {
-        setRestoring(false)
-      }
-    })()
+    void restaurarSesion()
   }, [])
 
   useEffect(() => {
@@ -289,15 +330,19 @@ export default function CuentaScreen() {
       // Todo el panel se lee server-side con el token (clientes estaba
       // expuesta a anon; notificaciones/cotizaciones/pagos en deny-all
       // daban vacío). Un solo endpoint autenticado: seguro + datos reales.
-      const dash = await fetchMyTechDashboard(token ?? authToken)
-      if (dash) {
-        setLeads(dash.leads)
-        setReviews(dash.resenas)
-        setOpenRequests(dash.openRequests)
-        setNotifications(dash.notificaciones)
-        setUnreadCount(dash.notificaciones.filter((n: Notificacion) => !n.leido).length)
-        setCotizaciones(dash.cotizaciones)
-        setPagos(dash.pagos)
+      const dash = await fetchMyTechDashboardResult(token ?? authToken)
+      if (dash.ok) {
+        setDashError(false)
+        setLeads(dash.data.leads)
+        setReviews(dash.data.resenas)
+        setOpenRequests(dash.data.openRequests)
+        setNotifications(dash.data.notificaciones)
+        setUnreadCount(dash.data.notificaciones.filter((n: Notificacion) => !n.leido).length)
+        setCotizaciones(dash.data.cotizaciones)
+        setPagos(dash.data.pagos)
+      } else {
+        // Sin datos frescos: el panel NO puede afirmar "no tenés trabajos".
+        setDashError(true)
       }
       // Resumen de la bandeja: cuántos clientes están esperando respuesta.
       // Falla en silencio — el panel no puede quedarse sin cargar por esto.
@@ -723,6 +768,35 @@ export default function CuentaScreen() {
     )
   }
 
+  // No se pudo contactar a SOLU al restaurar la sesión. El token sigue guardado:
+  // se ofrece reintentar en vez de mandarlo a escribir la contraseña de nuevo.
+  if (!loggedIn && sessionError) {
+    return (
+      <View accessibilityRole="alert" style={{ flex: 1, backgroundColor: THEME.color.navy, alignItems: 'center', justifyContent: 'center', padding: THEME.space.xxl, gap: THEME.space.lg }}>
+        <Ionicons name="cloud-offline-outline" size={48} color={THEME.color.brand} />
+        <Text style={{ color: THEME.color.white, fontSize: 18, fontWeight: '800', textAlign: 'center' }}>No pudimos conectar con SOLU</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, textAlign: 'center', lineHeight: 19 }}>
+          Tu sesión sigue activa. Revisa tu internet y vuelve a intentar.
+        </Text>
+        <TouchableOpacity
+          onPress={() => { setRestoring(true); void restaurarSesion() }}
+          accessibilityLabel="Reintentar la conexión con SOLU"
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, paddingHorizontal: 24, minHeight: 48, minWidth: 200 }}
+        >
+          <Ionicons name="refresh" size={18} color={THEME.color.white} />
+          <Text style={{ color: THEME.color.white, fontSize: 15, fontWeight: '800' }}>Reintentar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setSessionError(false)}
+          accessibilityLabel="Ingresar con mi contraseña"
+          style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}
+        >
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '700' }}>Ingresar con mi contraseña</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
   // LOGIN SCREEN
   if (!loggedIn) {
     return (
@@ -936,6 +1010,28 @@ export default function CuentaScreen() {
             )
           })}
         </ScrollView>
+
+        {/* Aviso global: lo que se ve abajo puede estar viejo o incompleto. Sin
+            esto, un refresh fallido dejaba números de negocio (solicitudes del
+            mes, completados) que el técnico leía como reales. */}
+        {dashError && (
+          <View
+            accessibilityRole="alert"
+            style={{ marginHorizontal: 16, marginTop: 4, backgroundColor: '#FEF3C7', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+          >
+            <Ionicons name="cloud-offline-outline" size={20} color="#B45309" />
+            <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: '#B45309', lineHeight: 17 }}>
+              No pudimos actualizar tu panel. Lo que ves puede estar incompleto.
+            </Text>
+            <TouchableOpacity
+              onPress={() => { void loadData(tech.id) }}
+              accessibilityLabel="Reintentar la carga de tu panel"
+              style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 10 }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#B45309' }}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={{ padding: 16, paddingTop: 4 }}>
 
@@ -1278,8 +1374,13 @@ export default function CuentaScreen() {
                 </View>
               )}
 
-              {/* Empty state: sin trabajos disponibles */}
-              {openRequests.length === 0 && (
+              {/* Empty state: sin trabajos disponibles (solo si el panel cargó) */}
+              {openRequests.length === 0 && dashError && (
+                <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                  <ErrorDeCarga titulo="No pudimos cargar los trabajos disponibles" onRetry={() => { void loadData(tech.id) }} />
+                </View>
+              )}
+              {openRequests.length === 0 && !dashError && (
                 <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
                   <Text style={{ fontSize: 32 }}>🔎</Text>
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>No hay trabajos en tu zona ahora</Text>
@@ -1301,11 +1402,15 @@ export default function CuentaScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Servicios activos</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 10 }}>Solicitudes pendientes y en proceso</Text>
                 {leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').length === 0 ? (
+                  dashError ? (
+                    <ErrorDeCarga titulo="No pudimos cargar tus servicios activos" onRetry={() => { void loadData(tech.id) }} />
+                  ) : (
                   <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                     <Ionicons name="briefcase-outline" size={32} color={COLORS.gray2} />
                     <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>No tienes servicios activos</Text>
                     <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center' }}>Cuando aceptes un trabajo aparecerá aquí</Text>
                   </View>
+                  )
                 ) : (
                   leads.filter(l => l.estado !== 'Completado' && l.estado !== 'Calificado' && l.estado !== 'Cancelado').map((l) => (
                     <LeadRow key={l.id} lead={l} onStatusChange={() => tech && loadData(tech.id)} tech={tech} router={router} />
@@ -1318,11 +1423,15 @@ export default function CuentaScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Historial</Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 10 }}>Servicios completados</Text>
                 {leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').length === 0 ? (
+                  dashError ? (
+                    <ErrorDeCarga titulo="No pudimos cargar tu historial" onRetry={() => { void loadData(tech.id) }} />
+                  ) : (
                   <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                     <Ionicons name="time-outline" size={32} color={COLORS.gray2} />
                     <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>Sin historial aún</Text>
                     <Text style={{ fontSize: 12, color: COLORS.gray2, marginTop: 2, textAlign: 'center' }}>Tus trabajos completados aparecerán aquí</Text>
                   </View>
+                  )
                 ) : (
                   leads.filter(l => l.estado === 'Completado' || l.estado === 'Calificado').map((l) => (
                     <LeadRow key={l.id} lead={l} tech={tech} router={router} />
@@ -1337,7 +1446,9 @@ export default function CuentaScreen() {
             <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16 }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark, marginBottom: 4 }}>Mis reseñas</Text>
               <Text style={{ fontSize: 11, color: COLORS.gray, marginBottom: 12 }}>Lo que dicen tus clientes</Text>
-              {reviews.length === 0 ? (
+              {reviews.length === 0 && dashError ? (
+                <ErrorDeCarga titulo="No pudimos cargar tus reseñas" onRetry={() => { void loadData(tech.id) }} />
+              ) : reviews.length === 0 ? (
                 <View style={{ alignItems: 'center', paddingVertical: 24 }}>
                   <Ionicons name="star-outline" size={32} color="#F59E0B" />
                   <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>Aún no tienes reseñas</Text>
@@ -1560,7 +1671,9 @@ export default function CuentaScreen() {
                   <Ionicons name="receipt-outline" size={18} color={COLORS.dark} />
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Historial de pagos</Text>
                 </View>
-                {pagos.length === 0 ? (
+                {pagos.length === 0 && dashError ? (
+                  <ErrorDeCarga titulo="No pudimos cargar tu historial de pagos" onRetry={() => { void loadData(tech.id) }} />
+                ) : pagos.length === 0 ? (
                   <View style={{ alignItems: 'center', padding: 20 }}>
                     <Ionicons name="wallet-outline" size={32} color={COLORS.gray2} />
                     <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>Sin pagos registrados</Text>
@@ -1611,7 +1724,9 @@ export default function CuentaScreen() {
                   </TouchableOpacity>
                 </View>
 
-                {cotizaciones.length === 0 ? (
+                {cotizaciones.length === 0 && dashError ? (
+                  <ErrorDeCarga titulo="No pudimos cargar tus cotizaciones" onRetry={() => { void loadData(tech.id) }} />
+                ) : cotizaciones.length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                     <Ionicons name="document-text-outline" size={32} color={COLORS.gray2} />
                     <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.dark, marginTop: 8 }}>No tienes cotizaciones aún</Text>
