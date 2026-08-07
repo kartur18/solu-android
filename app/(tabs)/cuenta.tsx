@@ -204,6 +204,14 @@ export default function CuentaScreen() {
           setEditPrecio(data.precio_desde?.toString() || '')
           setEditDisponible(data.disponible)
           setGalleryImages(data.galeria || [])
+          // Oficios y zonas TAMBIEN acá, igual que doLogin. Faltaban, y el
+          // auto-login es el camino normal: el técnico abría Editar perfil,
+          // veía sus oficios y zonas VACIOS aunque tuviera tres y cinco,
+          // agregaba uno creyendo que sumaba, y saveProfile manda el array
+          // entero — reemplazando todo por ese único valor. Perdía el resto
+          // sin enterarse, y con ellos los leads de esos oficios y distritos.
+          setEditOficios(data.oficios || [data.oficio].filter(Boolean))
+          setEditZonas(data.zonas || [data.distrito].filter(Boolean))
           registerForPushNotifications().then(token => {
             if (token) savePushToken(data.id, token)
           })

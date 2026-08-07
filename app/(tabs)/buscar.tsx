@@ -205,7 +205,12 @@ export default function BuscarScreen() {
         query = query.or(filters.join(','))
       }
       if (distrito) {
-        query = query.or(`distrito.ilike.%${distrito}%`)
+        // También por `zonas`, igual que la web (useBusquedaTecnicos:252).
+        // Filtrar sólo por `distrito` dejaba invisible al técnico que declaró
+        // ese distrito entre sus zonas de cobertura pero vive en otro: medido
+        // en prod, San Isidro daba 1 técnico en la web y 0 en la app.
+        const safeDistrito = distrito.replace(/["\\,(){}]/g, '')
+        query = query.or(`distrito.ilike.%${safeDistrito}%,zonas.cs.{"${safeDistrito}"}`)
       }
 
       const { data, error } = await query

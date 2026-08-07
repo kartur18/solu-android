@@ -5,6 +5,13 @@ export interface Tecnico {
   email?: string
   dni: string
   oficio: string
+  /**
+   * Oficios secundarios. /api/tecnico/me ya los devuelve (tecnico-columns:16)
+   * pero el tipo no los declaraba, así que la pantalla de perfil no podía
+   * rehidratarlos al restaurar sesión y el técnico los perdía al editar. El
+   * matching reparte leads por la UNIÓN de `oficio` y `oficios`.
+   */
+  oficios?: string[]
   distrito: string
   // V3.1: el modelo de planes mensuales se eliminó; el técnico usa saldo de
   // SoluCoins prepagos (ver `coins_balance`) + tier de fidelidad derivado.
