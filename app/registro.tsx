@@ -141,17 +141,20 @@ export default function RegistroScreen() {
       Alert.alert('Error', 'Ingresa un email válido')
       return false
     }
-    // La contraseña es opcional, pero si la crea vale la misma política que
-    // registerTechSchema en el servidor: aceptar acá algo que allá se rechaza
-    // gasta intentos del rate limit de registro.
-    if (password) {
-      const errorPassword = validarPassword(password)
-      if (errorPassword) {
-        Alert.alert('Error', errorPassword)
-        return false
-      }
+    // Contraseña OBLIGATORIA: la app no hace auto-login tras registrar, así que
+    // sin contraseña el técnico quedaba sin poder entrar por el flujo normal
+    // (login-tech con password_hash null da 401). Se exige acá con la misma
+    // política que registerTechSchema en el servidor.
+    if (!password) {
+      Alert.alert('Error', 'Crea una contraseña para poder ingresar luego')
+      return false
     }
-    if (password && password !== confirmPassword) {
+    const errorPassword = validarPassword(password)
+    if (errorPassword) {
+      Alert.alert('Error', errorPassword)
+      return false
+    }
+    if (password !== confirmPassword) {
       Alert.alert('Error', 'Las contraseñas no coinciden')
       return false
     }
@@ -318,7 +321,7 @@ export default function RegistroScreen() {
                   <TextInput placeholder="correo@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
                 </View>
 
-                <Text style={styles.label}>Contraseña (opcional)</Text>
+                <Text style={styles.label}>Contraseña</Text>
                 <View style={styles.inputWrap(focused === 'pass')}>
                   <Ionicons name="lock-closed-outline" size={18} color={focused === 'pass' ? THEME.color.brand : THEME.color.inkMuted} />
                   <TextInput
@@ -341,7 +344,7 @@ export default function RegistroScreen() {
                 </View>
                 {password.length === 0 ? (
                   <Text style={styles.hint}>
-                    Si creas una contraseña: mínimo {PASSWORD_MIN_LENGTH} caracteres, con al menos una letra y un número.
+                    Mínimo {PASSWORD_MIN_LENGTH} caracteres, con al menos una letra y un número. La necesitas para ingresar luego.
                   </Text>
                 ) : (
                   <ReglasPassword password={password} />
@@ -570,6 +573,25 @@ export default function RegistroScreen() {
                   Tus fotos solo se usan para verificar tu identidad y darte el badge ✅ Verificado. Los clientes nunca las ven.
                 </Text>
               </View>
+
+              {/* Aviso clave: sin DNI validado el técnico no aparece en las
+                  búsquedas (mismo criterio que la web). Antes la app dejaba
+                  crear la cuenta sin subir fotos y sin avisar por qué después
+                  no le llegaban trabajos. */}
+              {(!dniFront || !dniBack) && (
+                <View
+                  style={{
+                    flexDirection: 'row', gap: THEME.space.md, alignItems: 'flex-start',
+                    backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.lg,
+                    padding: THEME.space.lg, marginBottom: THEME.space.xl,
+                  }}
+                >
+                  <Ionicons name="alert-circle" size={18} color={THEME.color.warning} style={{ marginTop: 1 }} />
+                  <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#92400E', lineHeight: 19 }}>
+                    Sin las fotos de tu DNI no validamos tu identidad y no apareces en las búsquedas de clientes. Súbelas para empezar a recibir trabajos.
+                  </Text>
+                </View>
+              )}
             </FadeInUp>
 
             <FadeInUp delay={120}>
