@@ -19,6 +19,8 @@ import { fetchMyTechProfile, fetchMyTechProfileResult, fetchMyTechDashboardResul
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 import NotificationCenter from '../../src/components/NotificationCenter'
+import { CambiarModo } from '../../src/components/CambiarModo'
+import { useOtroModoDisponible } from '../../src/lib/modo-sesion'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 import { SaldoCoinsBar } from '../../src/components/tecnico/SaldoCoinsBar'
@@ -54,7 +56,10 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'perfil', icon: 'person', label: 'Perfil' },
 ]
 
-export default function CuentaScreen() {
+// onCambiarModo lo pasa Mi cuenta cuando este panel va embebido ahí: sin él la
+// pantalla se abrió sola (la bandeja o una push mandan directo acá) y el cambio
+// de modo tiene que navegar.
+export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => void }) {
   const router = useRouter()
   // Permite entrar directo a una sección: la bandeja de mensajes manda acá con
   // ?tab=servicios cuando el técnico no tiene contactos y hay que revisar su
@@ -105,6 +110,9 @@ export default function CuentaScreen() {
   // Aviso no bloqueante (reemplaza los Alert.alert informativos).
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const mostrarAviso = useCallback((a: Aviso) => setAviso(a), [])
+  // 'cliente' solo si en ESTE teléfono ya hay sesión de cliente guardada.
+  // Nunca se le pregunta al servidor por el número de nadie.
+  const otroModo = useOtroModoDisponible('tecnico')
 
   // V3.1: la función handleSubscribe (Flow-subscribe para planes mensuales)
   // fue eliminada. La compra de SoluCoins se hace desde la pantalla
@@ -906,6 +914,21 @@ export default function CuentaScreen() {
               </View>
             )}
           </View>
+
+          {/* Mismo WhatsApp, dos cuentas: el técnico que también pide servicios
+              cruza de lado desde acá y NINGUNA de las dos sesiones se cierra.
+              Sin cuenta de cliente en el teléfono no aparece nada. */}
+          {otroModo && (
+            <View style={{ marginTop: THEME.space.md }}>
+              <CambiarModo
+                destino={otroModo}
+                onCambiado={() => {
+                  if (onCambiarModo) onCambiarModo()
+                  else router.replace('/(tabs)/micuenta')
+                }}
+              />
+            </View>
+          )}
         </View>
 
         {/* Sin verificar = invisible: no aparece en búsquedas y accept devuelve

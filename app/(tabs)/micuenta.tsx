@@ -1,34 +1,42 @@
-import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StatusBar } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useEffect, useState, type ComponentType } from 'react'
+import { View, Text, StatusBar } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { THEME } from '../../src/lib/theme'
-import { getTechSessionMeta } from '../../src/lib/tech-session'
+import { modoInicial, type ModoCuenta } from '../../src/lib/modo-cuenta'
+import { cambiarModo, leerCuentasEnDispositivo, leerModoActivo, olvidarModo, onModoChange } from '../../src/lib/modo-sesion'
 import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 
 export default function MiCuentaScreen() {
-  const [selected, setSelected] = useState<'cliente' | 'tecnico' | null>(null)
+  const [selected, setSelected] = useState<ModoCuenta | null>(null)
   // true mientras se consulta la sesión guardada (evita el flash del selector)
   const [restaurando, setRestaurando] = useState(true)
 
-  // Con sesión guardada se entra directo a su lado: técnico gana si hay
-  // ambas (el panel es su pantalla diaria); si solo hay sesión de cliente,
-  // va a sus servicios sin re-elegir. El selector queda para quien no tiene
-  // ninguna, y la VolverBar conserva el camino para cambiar de lado.
+  // Con sesión guardada se entra directo a su lado: manda el último modo que
+  // eligió (si esa cuenta sigue abierta), si no gana técnico — el panel es su
+  // pantalla diaria. El selector queda para quien no tiene ninguna.
   useEffect(() => {
     let activo = true
     void (async () => {
       try {
-        const session = await getTechSessionMeta()
-        if (activo && session?.id) { setSelected('tecnico'); return }
-        const clienteGuardado = await AsyncStorage.getItem('solu_client_session').catch(() => null)
-        if (activo && clienteGuardado) setSelected('cliente')
+        const [guardado, cuentas] = await Promise.all([leerModoActivo(), leerCuentasEnDispositivo()])
+        if (activo) setSelected(modoInicial(guardado, cuentas))
       } finally {
         if (activo) setRestaurando(false)
       }
     })()
     return () => { activo = false }
   }, [])
+
+  // El panel del técnico y la pantalla del cliente cambian el modo desde su
+  // propio header: acá se refleja sin cerrar ninguna de las dos sesiones.
+  useEffect(() => onModoChange((modo) => setSelected(modo)), [])
+
+  // Volver al selector: se olvida la elección para que la próxima apertura no
+  // la reimponga.
+  function volverAElegir() {
+    olvidarModo()
+    setSelected(null)
+  }
 
   if (restaurando) {
     return <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} />
@@ -51,7 +59,7 @@ export default function MiCuentaScreen() {
         {/* Client option */}
         <FadeInUp delay={60}>
           <PressableScale
-            onPress={() => setSelected('cliente')}
+            onPress={() => cambiarModo('cliente')}
             accessibilityLabel="Ingresar como cliente"
             style={{
               backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.xl, marginBottom: THEME.space.md,
@@ -73,7 +81,7 @@ export default function MiCuentaScreen() {
         {/* Technician option */}
         <FadeInUp delay={120}>
           <PressableScale
-            onPress={() => setSelected('tecnico')}
+            onPress={() => cambiarModo('tecnico')}
             accessibilityLabel="Ingresar como técnico"
             style={{
               backgroundColor: THEME.color.navy, borderRadius: THEME.radius.xl, padding: THEME.space.xl,
@@ -97,9 +105,9 @@ export default function MiCuentaScreen() {
 
   // Redirect to the correct panel
   if (selected === 'cliente') {
-    return <ClienteRedirect onBack={() => setSelected(null)} />
+    return <ClienteRedirect onBack={volverAElegir} onCambiarModo={() => setSelected('tecnico')} />
   }
-  return <TecnicoRedirect onBack={() => setSelected(null)} onEntrarCliente={() => setSelected('cliente')} />
+  return <TecnicoRedirect onBack={volverAElegir} onCambiarModo={() => setSelected('cliente')} />
 }
 
 // Barra de "volver" propia, en flujo normal.
@@ -108,10 +116,11 @@ export default function MiCuentaScreen() {
 // x/y que el avatar de su header (cliente y técnico lo tienen arriba a la
 // izquierda): el botón caía justo encima de la foto de perfil y la tapaba.
 // Ocupando su propia barra nada queda debajo de nada.
-function VolverBar({ onBack, titulo, accion }: {
+// El cambio de modo NO vive acá: cada panel lo ofrece en su propio header
+// (CambiarModo), que también funciona cuando se abre sin pasar por Mi cuenta.
+function VolverBar({ onBack, titulo }: {
   onBack: () => void
   titulo: string
-  accion?: { label: string; onPress: () => void }
 }) {
   return (
     <View style={{
@@ -134,45 +143,31 @@ function VolverBar({ onBack, titulo, accion }: {
       <Text numberOfLines={1} style={{ ...THEME.font.label, fontWeight: '700', color: 'rgba(255,255,255,0.75)', flex: 1 }}>
         {titulo}
       </Text>
-      {accion && (
-        <PressableScale
-          onPress={accion.onPress}
-          accessibilityLabel={accion.label}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: THEME.space.sm }}
-        >
-          <Text style={{ ...THEME.font.caption, fontWeight: '700', color: 'rgba(255,255,255,0.85)', textDecorationLine: 'underline' }}>
-            {accion.label}
-          </Text>
-        </PressableScale>
-      )}
     </View>
   )
 }
 
-function ClienteRedirect({ onBack }: { onBack: () => void }) {
+// Las dos pantallas se montan embebidas: reciben onCambiarModo para que su
+// entrada de cambio de modo se refleje acá sin remontar ni navegar.
+type PantallaEmbebida = ComponentType<{ onCambiarModo?: () => void }>
+
+function ClienteRedirect({ onBack, onCambiarModo }: { onBack: () => void; onCambiarModo: () => void }) {
   // Import and render servicios screen inline
-  const ServiciosScreen = require('./servicios').default
+  const ServiciosScreen = require('./servicios').default as PantallaEmbebida
   return (
     <View style={{ flex: 1, backgroundColor: THEME.color.navy }}>
       <VolverBar onBack={onBack} titulo="Estás como cliente" />
-      <ServiciosScreen />
+      <ServiciosScreen onCambiarModo={onCambiarModo} />
     </View>
   )
 }
 
-function TecnicoRedirect({ onBack, onEntrarCliente }: { onBack: () => void; onEntrarCliente: () => void }) {
-  const CuentaScreen = require('./cuenta').default
+function TecnicoRedirect({ onBack, onCambiarModo }: { onBack: () => void; onCambiarModo: () => void }) {
+  const CuentaScreen = require('./cuenta').default as PantallaEmbebida
   return (
     <View style={{ flex: 1, backgroundColor: THEME.color.navy }}>
-      {/* Link chico para el técnico que también pide servicios como cliente
-          (con auto-selección, este es su camino de vuelta al lado cliente). */}
-      <VolverBar
-        onBack={onBack}
-        titulo="Estás como técnico"
-        accion={{ label: 'Entrar como cliente', onPress: onEntrarCliente }}
-      />
-      <CuentaScreen />
+      <VolverBar onBack={onBack} titulo="Estás como técnico" />
+      <CuentaScreen onCambiarModo={onCambiarModo} />
     </View>
   )
 }

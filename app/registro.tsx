@@ -23,6 +23,19 @@ import { compressDNIPhoto } from '../src/lib/imageCompress'
 import { validarPassword, PASSWORD_MIN_LENGTH } from '../src/lib/password-policy'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
+import { AvisoCruceCuentas } from '../src/components/AvisoCruceCuentas'
+
+// register-tech avisa si ese WhatsApp ya tiene cuenta de cliente. Los dos
+// nombres son opcionales a propósito: si el server todavía no manda el flag,
+// el registro sigue exactamente igual (`tambien_es_cliente` es la forma que
+// usa el endpoint hermano register-client).
+interface RespuestaRegistroTech {
+  id?: number
+  success?: boolean
+  error?: string
+  ya_es_cliente?: boolean
+  tambien_es_cliente?: boolean
+}
 
 const OFICIOS = [
   'Gasfitero', 'Electricista', 'Pintor', 'Cerrajero', 'Técnico en refrigeración',
@@ -93,6 +106,10 @@ export default function RegistroScreen() {
   // Step 3
   const [dniFront, setDniFront] = useState<string | null>(null)
   const [dniBack, setDniBack] = useState<string | null>(null)
+
+  // Cuenta creada sobre un WhatsApp que YA era cliente: se avisa el cruce en
+  // vez de dejarlo con dos cuentas sin saberlo. null = no hubo cruce.
+  const [cruce, setCruce] = useState<{ sinFotos: boolean } | null>(null)
 
   async function pickImage(setter: (uri: string) => void) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -264,13 +281,19 @@ export default function RegistroScreen() {
           dni_posterior_url: dniPosteriorUrl,
         }),
       })
-      const result = await res.json()
+      const result = (await res.json().catch(() => ({}))) as RespuestaRegistroTech
 
       if (!res.ok) {
         Alert.alert('Error', result.error || 'No se pudo completar el registro.')
       } else {
         haptics.success()
         const sinFotos = !dniFrenteUrl || !dniPosteriorUrl
+        // El cruce merece su propia hoja: el texto no entra cómodo en un Alert
+        // y es lo que evita el "la app no me reconoce" de la segunda cuenta.
+        if (result.ya_es_cliente === true || result.tambien_es_cliente === true) {
+          setCruce({ sinFotos })
+          return
+        }
         Alert.alert(
           '¡Bienvenido a SOLU! 🎉',
           `Tu cuenta está creada. Recibes 8,000 SoluCoins gratis para tus primeros leads: vencen en 30 días, aprovéchalos tu primer mes.${sinFotos ? ' Sube tu DNI desde tu panel para aparecer en las búsquedas.' : ''} Inicia sesión desde Mi cuenta.`,
@@ -287,6 +310,7 @@ export default function RegistroScreen() {
   const STEP_TITLES = ['Datos personales', 'Tu servicio', 'Verificación']
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}
       contentContainerStyle={{ paddingBottom: 48 }}
@@ -694,6 +718,13 @@ export default function RegistroScreen() {
         )}
       </View>
     </ScrollView>
+
+    <AvisoCruceCuentas
+      visible={cruce !== null}
+      sinFotos={cruce?.sinFotos === true}
+      onCerrar={() => { setCruce(null); router.back() }}
+    />
+    </>
   )
 }
 

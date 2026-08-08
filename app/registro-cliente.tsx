@@ -7,6 +7,7 @@ import { DISTRITOS } from '../src/lib/constants'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { validarPassword, PASSWORD_MIN_LENGTH } from '../src/lib/password-policy'
 import { THEME } from '../src/lib/theme'
+import { notificarCuentasCambiaron } from '../src/lib/modo-sesion'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 import type { ClienteUser } from '../src/lib/types'
 
@@ -78,6 +79,9 @@ export default function RegistroClienteScreen() {
         ...(distrito ? { distrito } : {}),
       }
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sesion))
+      // Ya hay cuenta de cliente en el teléfono: el panel del técnico puede
+      // ofrecer el cambio de modo.
+      notificarCuentasCambiaron()
       return true
     } catch {
       return false

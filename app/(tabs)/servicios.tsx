@@ -10,6 +10,8 @@ import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { registerForPushNotifications, sendLocalNotification, getStatusNotification } from '../../src/lib/notifications'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, haptics } from '../../src/components/ui/Motion'
+import { CambiarModo } from '../../src/components/CambiarModo'
+import { notificarCuentasCambiaron, useOtroModoDisponible } from '../../src/lib/modo-sesion'
 import { MisTecnicosConfianza } from '../../src/components/MisTecnicosConfianza'
 import type { Cliente, ClienteUser } from '../../src/lib/types'
 
@@ -53,7 +55,10 @@ function ServiceCardShimmer() {
   )
 }
 
-export default function MisServiciosScreen() {
+// onCambiarModo lo pasa Mi cuenta cuando esta pantalla va embebida ahí: sin él
+// se abrió sola (el atajo del inicio manda directo acá) y el cambio de modo
+// tiene que navegar.
+export default function MisServiciosScreen({ onCambiarModo }: { onCambiarModo?: () => void }) {
   const router = useRouter()
   const [user, setUser] = useState<ClienteUser | null>(null)
   const [loginWa, setLoginWa] = useState('')
@@ -62,6 +67,9 @@ export default function MisServiciosScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [servicios, setServicios] = useState<Cliente[]>([])
+  // 'tecnico' solo si en ESTE teléfono ya hay sesión de técnico guardada.
+  // Nunca se le pregunta al servidor por el número de nadie.
+  const otroModo = useOtroModoDisponible('cliente')
 
   // Auto-login from saved session
   useEffect(() => {
@@ -128,6 +136,9 @@ export default function MisServiciosScreen() {
 
       // Save session
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(data))
+      // Recién ahora existe cuenta de cliente en el teléfono: el panel del
+      // técnico puede ofrecer el cambio de modo.
+      notificarCuentasCambiaron()
       haptics.success()
       setUser(data)
       await loadServicios(waClean)
@@ -160,6 +171,7 @@ export default function MisServiciosScreen() {
       {
         text: 'Salir', onPress: async () => {
           await AsyncStorage.removeItem(SESSION_KEY)
+          notificarCuentasCambiaron()
           setUser(null)
           setServicios([])
           setLoginWa('')
@@ -364,6 +376,21 @@ export default function MisServiciosScreen() {
             </View>
           ))}
         </View>
+
+        {/* Mismo WhatsApp, dos cuentas: quien además trabaja como técnico cruza
+            de lado desde acá y NINGUNA de las dos sesiones se cierra. Sin cuenta
+            de técnico en el teléfono no aparece nada. */}
+        {otroModo && (
+          <View style={{ marginTop: THEME.space.md }}>
+            <CambiarModo
+              destino={otroModo}
+              onCambiado={() => {
+                if (onCambiarModo) onCambiarModo()
+                else router.replace('/(tabs)/micuenta')
+              }}
+            />
+          </View>
+        )}
       </View>
 
       <View style={{ padding: THEME.space.lg }}>
