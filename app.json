@@ -2,7 +2,7 @@
   "expo": {
     "name": "SOLU — Lo que necesites, hoy",
     "slug": "solu-app",
-    "version": "2.3.0",
+    "version": "2.3.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,11 +15,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "pe.solu.app",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "associatedDomains": [
-        "applinks:solu.pe",
-        "webcredentials:solu.pe",
-        "applinks:www.solu.pe"
+        "applinks:www.solu.pe",
+        "webcredentials:www.solu.pe"
       ],
       "config": {
         "googleMapsApiKey": "AIzaSyA3WHoPEfjZHdrYpH6auE4aab-7AJFZSFM"
@@ -28,14 +27,12 @@
         "NSPhotoLibraryUsageDescription": "SOLU necesita acceso a tus fotos para subir tu foto de perfil y DNI.",
         "NSCameraUsageDescription": "SOLU necesita acceso a tu cámara para tomar fotos de tu DNI y perfil.",
         "NSLocationWhenInUseUsageDescription": "SOLU necesita tu ubicación para mostrar técnicos cerca de ti.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "SOLU necesita tu ubicación para encontrar técnicos disponibles en tu zona.",
-        "NSMicrophoneUsageDescription": "SOLU usa el micrófono solo cuando usas el dictado por voz para describir tu problema o enviar un mensaje de voz. No grabamos audio en segundo plano.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 36,
+      "versionCode": 37,
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
@@ -44,18 +41,8 @@
           "data": [
             {
               "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/tracking"
-            },
-            {
-              "scheme": "https",
               "host": "www.solu.pe",
               "pathPrefix": "/tracking"
-            },
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/tecnico"
             },
             {
               "scheme": "https",
@@ -64,18 +51,8 @@
             },
             {
               "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/calificar"
-            },
-            {
-              "scheme": "https",
               "host": "www.solu.pe",
               "pathPrefix": "/calificar"
-            },
-            {
-              "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/chat"
             },
             {
               "scheme": "https",
@@ -84,22 +61,51 @@
             },
             {
               "scheme": "https",
-              "host": "solu.pe",
-              "pathPrefix": "/solicitar"
-            },
-            {
-              "scheme": "https",
               "host": "www.solu.pe",
               "pathPrefix": "/solicitar"
             },
             {
               "scheme": "https",
-              "host": "solu.pe",
+              "host": "www.solu.pe",
               "pathPrefix": "/fidelidad"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/tracking"
             },
             {
               "scheme": "https",
-              "host": "www.solu.pe",
+              "host": "solu.pe",
+              "pathPrefix": "/tecnico"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/calificar"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
+              "pathPrefix": "/solicitar"
+            },
+            {
+              "scheme": "https",
+              "host": "solu.pe",
               "pathPrefix": "/fidelidad"
             }
           ],
@@ -124,8 +130,11 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.RECORD_AUDIO",
         "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -134,12 +143,19 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-image-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SOLU necesita acceso a tus fotos para subir tu foto de perfil, tu DNI y las fotos del trabajo.",
+          "cameraPermission": "SOLU necesita acceso a tu cámara para tomar fotos de tu DNI, tu perfil y el trabajo a cotizar.",
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti.",
-          "locationAlwaysPermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
           "locationWhenInUsePermission": "SOLU necesita tu ubicación para encontrar técnicos cerca de ti."
         }
       ],
@@ -153,6 +169,7 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/android-icon-monochrome.png",
           "color": "#F26B21"
         }
       ]

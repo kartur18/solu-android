@@ -42,6 +42,10 @@ yarn-error.*
 # Firebase config (contains API keys)
 google-services.json
 
+# Service account de Google Play: clave privada que autoriza subir builds.
+# Si se commitea, cualquiera puede publicar en la ficha de SOLU.
+google-service-account.json
+
 # App config (contains Google Maps API key and other secrets)
 # Use app.config.ts + EAS Secrets for sensitive values
 # app.json

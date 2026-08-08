@@ -17,6 +17,9 @@ web-build/
 android/
 ios/
 
+# `eas submit` la lee del disco local; no tiene por qué viajar al build server.
+google-service-account.json
+
 # Cache / build artifacts
 coverage/
 .cache/

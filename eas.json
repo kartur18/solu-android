@@ -14,7 +14,6 @@
       "ios": { "simulator": false }
     },
     "apk-prod": {
-      "autoIncrement": true,
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
@@ -23,7 +22,6 @@
       }
     },
     "production": {
-      "autoIncrement": true,
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
@@ -37,6 +35,13 @@
     }
   },
   "submit": {
+    "closed-testing": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
+    },
     "production": {
       "ios": {
         "appleId": "carlosrtr18@icloud.com",
@@ -50,4 +55,3 @@
     }
   }
 }
-
