@@ -13,23 +13,9 @@
 import { Alert } from 'react-native'
 import { ENV, fetchWithTimeout } from './env'
 import { logger } from './logger'
-
-interface PrecioLead {
-  costo_coins: number | null
-  saldo_total: number
-  ilimitado: boolean
-  congelado: boolean
-  alcanza: boolean
-}
-
-function formatCoins(n: number): string {
-  return n.toLocaleString('es-PE')
-}
-
-/** Soles aproximados, para que el número tenga sentido real. 1 coin = S/0.005 */
-function aSoles(coins: number): string {
-  return (coins * 0.005).toFixed(2)
-}
+// Tipo y helpers compartidos: acá vivían copias con el ratio 0.005 hardcodeado,
+// que quedarían mintiendo en silencio el día que se recalibre el coin.
+import { aSoles, formatCoins, type PrecioLead } from '../components/tecnico/lead-utils'
 
 /**
  * Muestra el costo y espera la decisión del técnico.

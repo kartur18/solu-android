@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator, TouchableOpacity,
   AppState,
 } from 'react-native'
-import { useLocalSearchParams, Stack } from 'expo-router'
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { THEME } from '../../src/lib/theme'
@@ -26,6 +26,7 @@ const MAX_QUIET_POLLS = 4
 type Mensaje = ChatMensaje
 
 export default function ChatScreen() {
+  const router = useRouter()
   const params = useLocalSearchParams<{
     id: string
     codigo?: string
@@ -394,19 +395,30 @@ export default function ChatScreen() {
 
         {/* Aviso sin coins (1er mensaje del técnico en un lead) */}
         {coinsError && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, backgroundColor: THEME.color.brandLight, borderTopWidth: 1, borderTopColor: THEME.color.line }}>
-            <Ionicons name="cash-outline" size={20} color={THEME.color.brand} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>Necesitas coins para responder</Text>
-              <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 1 }}>
-                {coinsError.costo != null
-                  ? `Cuesta ${coinsError.costo} coins${coinsError.saldo != null ? ` · tienes ${coinsError.saldo}` : ''}. Compra coins en tu cuenta.`
-                  : 'Compra coins en tu cuenta para iniciar este chat.'}
-              </Text>
+          <View style={{ paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, backgroundColor: THEME.color.brandLight, borderTopWidth: 1, borderTopColor: THEME.color.line }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
+              <Ionicons name="cash-outline" size={20} color={THEME.color.brand} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.ink }}>Necesitas coins para responder</Text>
+                <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 1 }}>
+                  {coinsError.costo != null
+                    ? `Cuesta ${coinsError.costo} coins${coinsError.saldo != null ? ` · tienes ${coinsError.saldo}` : ''}. Tu mensaje queda listo para reenviar.`
+                    : 'Recarga SoluCoins para iniciar este chat. Tu mensaje queda listo para reenviar.'}
+                </Text>
+              </View>
+              <TouchableOpacity accessibilityLabel="Cerrar aviso de coins" onPress={() => setCoinsError(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={18} color={THEME.color.inkMuted} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity accessibilityLabel="Cerrar aviso de coins" onPress={() => setCoinsError(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close" size={18} color={THEME.color.inkMuted} />
-            </TouchableOpacity>
+            {/* Camino directo a recargar en el momento de máxima intención:
+                antes solo se podía cerrar el aviso y navegar a mano. */}
+            <PressableScale
+              onPress={() => router.push('/comprar-coins')}
+              accessibilityLabel="Comprar SoluCoins"
+              style={{ minHeight: 44, marginTop: THEME.space.sm, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.color.brand, ...THEME.shadow.brand }}
+            >
+              <Text style={{ ...THEME.font.bodySm, fontWeight: '800', color: THEME.color.white }}>Comprar SoluCoins</Text>
+            </PressableScale>
           </View>
         )}
 

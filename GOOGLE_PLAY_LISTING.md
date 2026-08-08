@@ -29,17 +29,17 @@ AGENDA Y DA SEGUIMIENTO
 
 PROGRAMA DE FIDELIDAD
 • Acumula puntos por cada servicio y reseña
-• Canjea por descuentos del 10%, 20% o un servicio gratis
-• Programa VIP para clientes frecuentes
+• Sube de nivel: Bronce, Plata, Oro y Platino
+• Tu historial de servicios siempre a la mano
 
 VECINOS SOLU
 • Crea un grupo con tu edificio o condominio
-• Obtén 10% de descuento permanente para todos los miembros
-• Comparte el código con tus vecinos
+• Encuentra especialistas ya probados por tus vecinos
+• Comparte el código con tu comunidad
 
 ¿ERES TÉCNICO?
 • Regístrate gratis con DNI verificado por RENIEC
-• Recibe 5,000 SoluCoins de bienvenida (≈ 10 leads gratis)
+• Recibe 8,000 SoluCoins de bienvenida para tus primeros contactos (vencen a los 30 días)
 • Modelo prepago sin suscripción: compra paquetes de SoluCoins desde S/30 (Inicio) hasta S/1,200 (Empresarial) — el descuento por coin mejora a medida que el paquete es más grande
 • Cobra al cliente directo (Yape, Plin, efectivo o tarjeta) — SOLU no se queda con comisión por servicio
 • Boleta SUNAT automática por cada compra de SoluCoins

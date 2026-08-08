@@ -89,7 +89,7 @@ export default function RootLayout() {
     return registerSessionExpiredHandler(() => {
       void clearTechSession()
       router.replace('/(tabs)/cuenta')
-      Alert.alert('Tu sesión expiró', 'Por seguridad cerramos tu sesión. Ingresá de nuevo para continuar.')
+      Alert.alert('Tu sesión expiró', 'Por seguridad cerramos tu sesión. Ingresa de nuevo para continuar.')
     })
   }, [])
 
@@ -113,6 +113,7 @@ export default function RootLayout() {
         <Stack.Screen name="solicitar" options={{ title: 'Solicitar técnico', presentation: 'modal' }} />
         <Stack.Screen name="cotizar-foto" options={{ title: 'Cotiza con una foto', presentation: 'modal' }} />
         <Stack.Screen name="registro" options={{ title: 'Registro de técnico', presentation: 'modal' }} />
+        <Stack.Screen name="subir-dni" options={{ title: 'Verificación de DNI', presentation: 'modal' }} />
         <Stack.Screen name="agendar/[id]" options={{ title: 'Agendar servicio', presentation: 'modal' }} />
         <Stack.Screen name="privacidad" options={{ title: 'Política de Privacidad', presentation: 'modal' }} />
         <Stack.Screen name="terminos" options={{ title: 'Términos y Condiciones', presentation: 'modal' }} />

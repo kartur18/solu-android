@@ -1,11 +1,33 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, StatusBar } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { THEME } from '../../src/lib/theme'
+import { getTechSessionMeta } from '../../src/lib/tech-session'
 import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 
 export default function MiCuentaScreen() {
   const [selected, setSelected] = useState<'cliente' | 'tecnico' | null>(null)
+  // true mientras se consulta la sesión guardada (evita el flash del selector)
+  const [restaurando, setRestaurando] = useState(true)
+
+  // Con sesión de técnico guardada, el panel es su pantalla diaria: entrar
+  // directo en vez de hacerle tocar "Soy técnico" en cada arranque frío.
+  useEffect(() => {
+    let activo = true
+    void (async () => {
+      try {
+        const session = await getTechSessionMeta()
+        if (activo && session?.id) setSelected('tecnico')
+      } finally {
+        if (activo) setRestaurando(false)
+      }
+    })()
+    return () => { activo = false }
+  }, [])
+
+  if (restaurando) {
+    return <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} />
+  }
 
   if (!selected) {
     return (
@@ -72,7 +94,7 @@ export default function MiCuentaScreen() {
   if (selected === 'cliente') {
     return <ClienteRedirect onBack={() => setSelected(null)} />
   }
-  return <TecnicoRedirect onBack={() => setSelected(null)} />
+  return <TecnicoRedirect onBack={() => setSelected(null)} onEntrarCliente={() => setSelected('cliente')} />
 }
 
 // Barra de "volver" propia, en flujo normal.
@@ -81,7 +103,11 @@ export default function MiCuentaScreen() {
 // x/y que el avatar de su header (cliente y técnico lo tienen arriba a la
 // izquierda): el botón caía justo encima de la foto de perfil y la tapaba.
 // Ocupando su propia barra nada queda debajo de nada.
-function VolverBar({ onBack, titulo }: { onBack: () => void; titulo: string }) {
+function VolverBar({ onBack, titulo, accion }: {
+  onBack: () => void
+  titulo: string
+  accion?: { label: string; onPress: () => void }
+}) {
   return (
     <View style={{
       backgroundColor: THEME.color.navy,
@@ -103,6 +129,18 @@ function VolverBar({ onBack, titulo }: { onBack: () => void; titulo: string }) {
       <Text numberOfLines={1} style={{ ...THEME.font.label, fontWeight: '700', color: 'rgba(255,255,255,0.75)', flex: 1 }}>
         {titulo}
       </Text>
+      {accion && (
+        <PressableScale
+          onPress={accion.onPress}
+          accessibilityLabel={accion.label}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: THEME.space.sm }}
+        >
+          <Text style={{ ...THEME.font.caption, fontWeight: '700', color: 'rgba(255,255,255,0.85)', textDecorationLine: 'underline' }}>
+            {accion.label}
+          </Text>
+        </PressableScale>
+      )}
     </View>
   )
 }
@@ -118,11 +156,17 @@ function ClienteRedirect({ onBack }: { onBack: () => void }) {
   )
 }
 
-function TecnicoRedirect({ onBack }: { onBack: () => void }) {
+function TecnicoRedirect({ onBack, onEntrarCliente }: { onBack: () => void; onEntrarCliente: () => void }) {
   const CuentaScreen = require('./cuenta').default
   return (
     <View style={{ flex: 1, backgroundColor: THEME.color.navy }}>
-      <VolverBar onBack={onBack} titulo="Estás como técnico" />
+      {/* Link chico para el técnico que también pide servicios como cliente
+          (con auto-selección, este es su camino de vuelta al lado cliente). */}
+      <VolverBar
+        onBack={onBack}
+        titulo="Estás como técnico"
+        accion={{ label: 'Entrar como cliente', onPress: onEntrarCliente }}
+      />
       <CuentaScreen />
     </View>
   )

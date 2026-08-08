@@ -35,11 +35,12 @@ const BENEFICIOS = [
   },
 ]
 
+// Sin fila "Referir un amigo": el cálculo de puntos jamás los sumaba y no
+// existe mecanismo de referidos de clientes — era una promesa inalcanzable.
 const HOW_TO_EARN = [
   { action: 'Solicitar un servicio', pts: 10, icon: 'build' as const },
   { action: 'Completar un servicio', pts: 15, icon: 'checkmark-circle' as const },
   { action: 'Dejar una reseña', pts: 5, icon: 'star' as const },
-  { action: 'Referir un amigo', pts: 20, icon: 'people' as const },
   { action: 'Primera solicitud', pts: 25, icon: 'gift' as const },
 ]
 
@@ -78,10 +79,12 @@ export default function FidelidadScreen() {
       // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
       const services = await fetchClienteServicios(waClean)
 
-      const { data: reviews } = await supabase
+      const { data: reviews, error: errResenas } = await supabase
         .from('resenas')
         .select('id, created_at')
         .eq('whatsapp_cliente', waClean)
+      // supabase-js no lanza: sin este check un fallo mostraba menos puntos en silencio.
+      if (errResenas) throw errResenas
 
       const solicitudes = services?.length || 0
       const completados = services?.filter(s => s.estado === ESTADOS.COMPLETADO || s.estado === ESTADOS.CALIFICADO).length || 0
@@ -135,8 +138,9 @@ export default function FidelidadScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ ...THEME.font.h1, color: THEME.color.white }}>Fidelidad SOLU</Text>
+            {/* Sin "canjea descuentos": ese canje no existe (ver BENEFICIOS). */}
             <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
-              Acumula puntos y canjea descuentos
+              Acumula puntos y sube de nivel
             </Text>
           </View>
         </View>

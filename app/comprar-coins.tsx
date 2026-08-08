@@ -106,7 +106,7 @@ export default function ComprarCoinsScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: THEME.space.sm, alignSelf: 'flex-start', backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4 }}>
                     <Ionicons name="flash" size={12} color={THEME.color.warning} />
                     <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.inkSoft }}>
-                      {p.leads}
+                      {p.contactos}
                     </Text>
                   </View>
                 </View>

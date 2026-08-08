@@ -1,3 +1,6 @@
+import { COINS_POR_CONTACTO } from '../components/tecnico/lead-utils'
+import type { Tecnico } from './types'
+
 export const COLORS = {
   pri: '#F26B21',
   priLight: '#FFF3EC',
@@ -337,11 +340,13 @@ export const URGENCIAS = [
 
 // Tiers SOLU V3.1: Bronce / Plata / Oro / Platino (cambio 2026: Diamante → Platino
 // para alinear con la web y el sistema de tiers loyalty en producción).
+// Cortes 0/10/50/200 = TIER_THRESHOLDS de la web: con Platino en 100 la app
+// mostraba un tier cuyo descuento el checkout no aplicaba.
 export const LEVELS = [
   { name: 'Bronce', emoji: '🥉', min: 0, color: '#CD7F32' },
   { name: 'Plata', emoji: '🥈', min: 10, color: '#C0C0C0' },
   { name: 'Oro', emoji: '🥇', min: 50, color: '#FFD700' },
-  { name: 'Platino', emoji: '💎', min: 100, color: '#6366F1' },
+  { name: 'Platino', emoji: '💎', min: 200, color: '#6366F1' },
 ]
 
 export function getTechLevel(servicios: number) {
@@ -359,35 +364,45 @@ export function getTechLevelProgress(servicios: number) {
   return (servicios - current.min) / (next.min - current.min)
 }
 
-export const ACHIEVEMENTS = [
-  { id: 'first', emoji: '🎉', name: 'Primera chamba', desc: 'Completaste tu primer servicio', check: (t: any) => t.servicios_completados >= 1 },
-  { id: 'streak', emoji: '🔥', name: 'En racha', desc: '5 servicios completados', check: (t: any) => t.servicios_completados >= 5 },
-  { id: 'unstoppable', emoji: '⚡', name: 'Imparable', desc: '10 servicios completados', check: (t: any) => t.servicios_completados >= 10 },
-  { id: 'master', emoji: '👑', name: 'Maestro', desc: '50 servicios completados', check: (t: any) => t.servicios_completados >= 50 },
-  { id: 'legend', emoji: '🏅', name: 'Leyenda', desc: '100 servicios completados', check: (t: any) => t.servicios_completados >= 100 },
-  { id: 'verified', emoji: '✅', name: 'Verificado', desc: 'DNI verificado', check: (t: any) => t.verificado },
-  { id: 'fivestar', emoji: '⭐', name: 'Cinco estrellas', desc: 'Calificación perfecta', check: (t: any) => t.calificacion >= 5.0 },
-  { id: 'highrated', emoji: '🌟', name: 'Top valorado', desc: 'Calificación 4.5+', check: (t: any) => t.calificacion >= 4.5 },
-  { id: 'popular', emoji: '💬', name: 'Popular', desc: '10+ reseñas', check: (t: any) => t.num_resenas >= 10 },
-  { id: 'viral', emoji: '📣', name: 'Viral', desc: '25+ reseñas', check: (t: any) => t.num_resenas >= 25 },
+// Tipado real en vez de `any`: un typo en un campo (num_resenas vs numResenas)
+// compilaba y el logro simplemente nunca se desbloqueaba.
+export const ACHIEVEMENTS: { id: string; emoji: string; name: string; desc: string; check: (t: Tecnico) => boolean }[] = [
+  { id: 'first', emoji: '🎉', name: 'Primera chamba', desc: 'Completaste tu primer servicio', check: (t) => t.servicios_completados >= 1 },
+  { id: 'streak', emoji: '🔥', name: 'En racha', desc: '5 servicios completados', check: (t) => t.servicios_completados >= 5 },
+  { id: 'unstoppable', emoji: '⚡', name: 'Imparable', desc: '10 servicios completados', check: (t) => t.servicios_completados >= 10 },
+  { id: 'master', emoji: '👑', name: 'Maestro', desc: '50 servicios completados', check: (t) => t.servicios_completados >= 50 },
+  { id: 'legend', emoji: '🏅', name: 'Leyenda', desc: '100 servicios completados', check: (t) => t.servicios_completados >= 100 },
+  { id: 'verified', emoji: '✅', name: 'Verificado', desc: 'DNI verificado', check: (t) => t.verificado },
+  { id: 'fivestar', emoji: '⭐', name: 'Cinco estrellas', desc: 'Calificación perfecta', check: (t) => t.calificacion >= 5.0 },
+  { id: 'highrated', emoji: '🌟', name: 'Top valorado', desc: 'Calificación 4.5+', check: (t) => t.calificacion >= 4.5 },
+  { id: 'popular', emoji: '💬', name: 'Popular', desc: '10+ reseñas', check: (t) => t.num_resenas >= 10 },
+  { id: 'viral', emoji: '📣', name: 'Viral', desc: '25+ reseñas', check: (t) => t.num_resenas >= 25 },
   // Achievements V3.1: ya no dependen de "plan mensual" (eliminado). Reemplazados
   // por tier loyalty real (Oro+) y por compra de paquete Coins.
-  { id: 'pro', emoji: '🏆', name: 'Top Pro', desc: '10+ servicios con calificación 4.5+', check: (t: any) => (t.servicios_completados ?? 0) >= 10 && (t.calificacion ?? 0) >= 4.5 },
-  { id: 'platino', emoji: '💎', name: 'Platino', desc: '100+ servicios completados', check: (t: any) => (t.servicios_completados ?? 0) >= 100 },
-  { id: 'gallery', emoji: '📸', name: 'Portafolio', desc: '5+ fotos de trabajos', check: (t: any) => t.galeria?.length >= 5 },
-  { id: 'multizone', emoji: '🗺️', name: 'Multi-zona', desc: '2+ zonas de cobertura', check: (t: any) => t.zonas?.length >= 2 },
+  { id: 'pro', emoji: '🏆', name: 'Top Pro', desc: '10+ servicios con calificación 4.5+', check: (t) => (t.servicios_completados ?? 0) >= 10 && (t.calificacion ?? 0) >= 4.5 },
+  // Umbral 200 = TIER_THRESHOLDS.platino de la web (con 100 la insignia mentía).
+  { id: 'platino', emoji: '💎', name: 'Platino', desc: '200+ servicios completados', check: (t) => (t.servicios_completados ?? 0) >= 200 },
+  { id: 'gallery', emoji: '📸', name: 'Portafolio', desc: '5+ fotos de trabajos', check: (t) => (t.galeria?.length ?? 0) >= 5 },
+  { id: 'multizone', emoji: '🗺️', name: 'Multi-zona', desc: '2+ zonas de cobertura', check: (t) => (t.zonas?.length ?? 0) >= 2 },
 ]
 
 // Modelo V3.1: paquetes de SoluCoins prepagos (reemplazan los planes mensuales
 // legacy profesional/premium/elite que ya no existen en producción). Espejado
 // con la tabla paquetes_creditos en Supabase. Precios en soles peruanos (PEN).
+// El rendimiento se calcula con COINS_POR_CONTACTO (el costo real del contacto
+// de hogar, el mismo de la barra de saldo): antes decía "≈ 10 leads" dividiendo
+// entre 600, un precio que ya no existe — la web retiró esa promesa a propósito.
+function contactosDe(coins: number): string {
+  return `≈ ${Math.floor(coins / COINS_POR_CONTACTO)} contactos de hogar`
+}
+
 export const COINS_PACKAGES = {
-  inicio_v31:       { name: 'Inicio',       price: 30,   coins: 6_000,   leads: '≈ 10 leads' },
-  estandar_v31:     { name: 'Estándar',     price: 75,   coins: 16_000,  leads: '≈ 26 leads' },
-  popular_v31:      { name: 'Popular',      price: 150,  coins: 36_000,  leads: '≈ 60 leads', destacado: true },
-  avanzado_v31:     { name: 'Avanzado',     price: 300,  coins: 78_000,  leads: '≈ 130 leads' },
-  profesional_v31:  { name: 'Profesional',  price: 600,  coins: 168_000, leads: '≈ 280 leads' },
-  empresarial_v31:  { name: 'Empresarial',  price: 1200, coins: 360_000, leads: '≈ 600 leads' },
+  inicio_v31:       { name: 'Inicio',       price: 30,   coins: 6_000,   contactos: contactosDe(6_000) },
+  estandar_v31:     { name: 'Estándar',     price: 75,   coins: 16_000,  contactos: contactosDe(16_000) },
+  popular_v31:      { name: 'Popular',      price: 150,  coins: 36_000,  contactos: contactosDe(36_000), destacado: true },
+  avanzado_v31:     { name: 'Avanzado',     price: 300,  coins: 78_000,  contactos: contactosDe(78_000) },
+  profesional_v31:  { name: 'Profesional',  price: 600,  coins: 168_000, contactos: contactosDe(168_000) },
+  empresarial_v31:  { name: 'Empresarial',  price: 1200, coins: 360_000, contactos: contactosDe(360_000) },
 } as const
 
 export function waLink(phone: string, msg: string): string {

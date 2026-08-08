@@ -99,16 +99,16 @@ export default function PrivacidadScreen() {
 
         <Text style={h}>8. Derechos del titular (ARCO)</Text>
         <Text style={p}>
-          De acuerdo con los artículos 18 al 27 de la Ley 29733, usted tiene derecho a:{'\n\n'}
-          • Acceso: Conocer qué datos personales tenemos sobre usted y cómo los tratamos{'\n'}
+          De acuerdo con los artículos 18 al 27 de la Ley 29733, tienes derecho a:{'\n\n'}
+          • Acceso: Conocer qué datos personales tenemos sobre ti y cómo los tratamos{'\n'}
           • Rectificación: Solicitar la corrección de datos inexactos o incompletos{'\n'}
-          • Cancelación: Solicitar la eliminación de sus datos cuando ya no sean necesarios{'\n'}
-          • Oposición: Oponerse al tratamiento de sus datos por motivos legítimos{'\n\n'}
-          Para ejercer estos derechos, envíe su solicitud a:{'\n'}
+          • Cancelación: Solicitar la eliminación de tus datos cuando ya no sean necesarios{'\n'}
+          • Oposición: Oponerte al tratamiento de tus datos por motivos legítimos{'\n\n'}
+          Para ejercer estos derechos, envía tu solicitud a:{'\n'}
           • Email: contacto@solu.pe{'\n'}
           • WhatsApp: +51 983835904{'\n'}
           • Función "Eliminar mi cuenta" dentro de la app{'\n\n'}
-          SOLU atenderá su solicitud dentro de los 10 días hábiles siguientes. Si no recibe respuesta, puede acudir a la Autoridad Nacional de Protección de Datos Personales (ANPDP).
+          SOLU atenderá tu solicitud dentro de los 10 días hábiles siguientes. Si no recibes respuesta, puedes acudir a la Autoridad Nacional de Protección de Datos Personales (ANPDP).
         </Text>
 
         <Text style={h}>9. Retención de datos</Text>
@@ -119,7 +119,7 @@ export default function PrivacidadScreen() {
           • Fotos de DNI: se eliminan 30 días después de la verificación exitosa{'\n'}
           • Registros de pagos: 5 años (obligación tributaria SUNAT){'\n'}
           • Mensajes del chat: 1 año desde el último mensaje{'\n\n'}
-          Al eliminar su cuenta, sus datos personales serán eliminados dentro de los 30 días siguientes, excepto aquellos que debamos conservar por obligación legal.
+          Al eliminar tu cuenta, tus datos personales serán eliminados dentro de los 30 días siguientes, excepto aquellos que debamos conservar por obligación legal.
         </Text>
 
         <Text style={h}>10. Cookies y tecnologías similares</Text>

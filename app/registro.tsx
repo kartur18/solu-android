@@ -16,7 +16,6 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { DISTRITOS } from '../src/lib/constants'
-import { supabase } from '../src/lib/supabase'
 import { logger } from '../src/lib/logger'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { verifyDNI } from '../src/lib/integrations'
@@ -111,15 +110,28 @@ export default function RegistroScreen() {
     }
   }
 
-  async function uploadDni(uri: string, side: string) {
+  // Sube la foto vía /api/upload-file (bucket privado, server-side), igual que
+  // la web. Antes iba directo a Storage con la key anon, cuyos permisos de
+  // escritura se revocaron en el endurecimiento: fallaba siempre y en silencio.
+  async function uploadDni(uri: string, side: string): Promise<string | null> {
     try {
-      const ext = uri.split('.').pop()
-      const safeDni = dni.replace(/[^0-9]/g, '')
-      const name = `dni/${Date.now()}_${side}_${safeDni}.${ext}`
-      const response = await fetch(uri)
-      const blob = await response.blob()
-      const { error } = await supabase.storage.from('fotos').upload(name, blob)
-      return error ? null : name
+      const ext = (uri.split('.').pop() || 'jpg').toLowerCase()
+      const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg'
+      const form = new FormData()
+      // En React Native el archivo va como { uri, name, type }: no hay Blob real.
+      form.append('file', { uri, name: `dni_${side}.${ext}`, type: mime } as unknown as Blob)
+      form.append('folder', 'dni')
+      const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/upload-file`, {
+        method: 'POST',
+        body: form,
+        timeout: 30000,
+      })
+      const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string }
+      if (!res.ok || !data.url) {
+        logger.warn('uploadDni: rechazado', data?.error ?? res.status)
+        return null
+      }
+      return data.url
     } catch (err) {
       logger.error('Upload error:', err)
       return null
@@ -197,12 +209,39 @@ export default function RegistroScreen() {
         )
       }
 
-      let dniFrenteUrl = null
-      let dniPosteriorUrl = null
+      let dniFrenteUrl: string | null = null
+      let dniPosteriorUrl: string | null = null
 
       if (dniFront) dniFrenteUrl = await uploadDni(dniFront, 'frente')
       if (dniBack) dniPosteriorUrl = await uploadDni(dniBack, 'posterior')
 
+      // El técnico eligió fotos pero no llegaron: seguir en silencio lo dejaba
+      // invisible (verificado exige ambas caras) creyendo que su DNI se envió.
+      if ((dniFront && !dniFrenteUrl) || (dniBack && !dniPosteriorUrl)) {
+        setLoading(false)
+        Alert.alert(
+          'No pudimos subir tu DNI',
+          'Las fotos no llegaron a SOLU y sin ellas no apareces en las búsquedas de clientes. Revisa tu conexión y vuelve a intentar, o crea la cuenta y sube tu DNI después desde tu panel.',
+          [
+            { text: 'Crear cuenta sin DNI', style: 'destructive', onPress: () => { void registrar(null, null) } },
+            { text: 'Reintentar', onPress: () => { void submit() } },
+          ],
+        )
+        return
+      }
+
+      await registrar(dniFrenteUrl, dniPosteriorUrl)
+    } catch {
+      Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
+      setLoading(false)
+    }
+  }
+
+  // POST final a register-tech, separado de submit() para poder reintentar o
+  // continuar sin fotos cuando el upload del DNI falla.
+  async function registrar(dniFrenteUrl: string | null, dniPosteriorUrl: string | null) {
+    setLoading(true)
+    try {
       // V3.1: no enviamos `plan` al backend (eliminado). El backend acredita
       // los 8,000 SoluCoins de bienvenida automáticamente al crear el técnico.
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/register-tech`, {
@@ -231,9 +270,10 @@ export default function RegistroScreen() {
         Alert.alert('Error', result.error || 'No se pudo completar el registro.')
       } else {
         haptics.success()
+        const sinFotos = !dniFrenteUrl || !dniPosteriorUrl
         Alert.alert(
           '¡Bienvenido a SOLU! 🎉',
-          'Tu cuenta está creada. Recibes 8,000 SoluCoins gratis para tus primeros leads. Inicia sesión desde Mi cuenta.',
+          `Tu cuenta está creada. Recibes 8,000 SoluCoins gratis para tus primeros leads: vencen en 30 días, aprovéchalos tu primer mes.${sinFotos ? ' Sube tu DNI desde tu panel para aparecer en las búsquedas.' : ''} Inicia sesión desde Mi cuenta.`,
           [{ text: 'Empezar', onPress: () => router.back() }]
         )
       }
@@ -295,7 +335,7 @@ export default function RegistroScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={{ ...THEME.font.h3, color: THEME.color.brandDark }}>8,000 SoluCoins gratis</Text>
                   <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 2 }}>
-                    Te llegan al crear tu cuenta. Alcanzan para tus primeros leads.
+                    Te llegan al crear tu cuenta y vencen en 30 días. Alcanzan para tus primeros leads: aprovéchalos tu primer mes.
                   </Text>
                 </View>
               </View>
