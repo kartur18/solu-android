@@ -19,6 +19,32 @@ export async function fetchServicioByCodigo(codigo: string): Promise<any | null>
   }
 }
 
+// Igual que arriba pero distinguiendo por qué no hay servicio: el tracking
+// mostraba "No encontramos ese código" también cuando se caía la red, y el
+// estado real de error de red era inalcanzable (siempre caía en "no existe").
+// El endpoint responde 404 solo cuando el código de verdad no existe; 5xx/429
+// y las fallas de fetch son 'error' (no pudimos preguntar).
+export type ResultadoServicio =
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fila dinámica de `clientes`
+  | { estado: 'ok'; servicio: any }
+  | { estado: 'no_existe' }
+  | { estado: 'error' }
+
+export async function fetchServicioByCodigoResult(codigo: string): Promise<ResultadoServicio> {
+  if (!codigo) return { estado: 'no_existe' }
+  try {
+    const res = await fetch(`${ENV.API_BASE_URL}/servicio/${encodeURIComponent(codigo)}`)
+    // 404 (no encontrado) y 400 (código inválido) = de verdad no existe.
+    if (res.status === 404 || res.status === 400) return { estado: 'no_existe' }
+    if (!res.ok) return { estado: 'error' }
+    const data = await res.json()
+    const servicio = data?.servicio ?? null
+    return servicio ? { estado: 'ok', servicio } : { estado: 'no_existe' }
+  } catch {
+    return { estado: 'error' }
+  }
+}
+
 // Todos los servicios de un cliente por su WhatsApp (historial, pendientes
 // de calificar, fidelidad).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- filas dinámicas de `clientes`

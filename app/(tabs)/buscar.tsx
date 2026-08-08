@@ -190,7 +190,9 @@ export default function BuscarScreen() {
         // cuentas de prueba e2e. Antes la app exponía técnicos que la web oculta.
         .is('deleted_at', null)
         .not('nombre', 'ilike', 'e2e-test%')
-        .order('plan', { ascending: false })
+        // Mérito, no plan pagado: la web ya eliminó el boost por comprar
+        // posición. Ordenamos igual que ella (verificado ya filtrado arriba →
+        // calidad). Antes `.order('plan')` empujaba al que pagaba, no al mejor.
         .order('calificacion', { ascending: false })
         .limit(30)
 
@@ -357,7 +359,7 @@ export default function BuscarScreen() {
               }}
             >
               <Text style={{ ...THEME.font.label, color: !distrito ? THEME.color.white : THEME.color.inkSoft }}>
-                Todos
+                Todo Lima
               </Text>
             </TouchableOpacity>
             {DISTRITOS.map((d) => (

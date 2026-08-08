@@ -19,6 +19,7 @@ import { sendPush } from '../../src/lib/integrations'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 import NotificationCenter from '../../src/components/NotificationCenter'
 import { THEME } from '../../src/lib/theme'
+import { APP_VERSION_LABEL } from '../../src/lib/appVersion'
 import { FadeInUp, PressableScale, haptics } from '../../src/components/ui/Motion'
 import { SaldoCoinsBar } from '../../src/components/tecnico/SaldoCoinsBar'
 import { ConfirmarCostoModal } from '../../src/components/tecnico/ConfirmarCostoModal'
@@ -123,12 +124,15 @@ export default function CuentaScreen() {
   // bandeja y el lead se enfría.
   const [chatsSinLeer, setChatsSinLeer] = useState(0)
   const [mensajesSinLeer, setMensajesSinLeer] = useState(0)
-  const [profileViews, setProfileViews] = useState(0)
   const [editOficios, setEditOficios] = useState<string[]>([])
   const [editZonas, setEditZonas] = useState<string[]>([])
   const [showOficiosPicker, setShowOficiosPicker] = useState(false)
   const [showZonasPicker, setShowZonasPicker] = useState(false)
   const [zonaSearch, setZonaSearch] = useState('')
+  // Modal de "Nueva promoción" con input real (reemplaza Alert.prompt, iOS-only).
+  const [promoModal, setPromoModal] = useState(false)
+  const [promoTitulo, setPromoTitulo] = useState('')
+  const [promoEnviando, setPromoEnviando] = useState(false)
   // true mientras se restaura la sesión guardada (evita el flash del login)
   const [restoring, setRestoring] = useState(true)
   // No se pudo PREGUNTAR por el perfil al restaurar (red caída, 5xx, 429). La
@@ -362,12 +366,10 @@ export default function CuentaScreen() {
           setMensajesSinLeer(chats.reduce((sum, c) => sum + c.mensajes_nuevos, 0))
         }
       } catch { /* la bandeja tiene su propio manejo de error */ }
-      // Load profile views count
-      try {
-        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
-        const { count } = await supabase.from('profile_views').select('id', { count: 'exact', head: true }).eq('tecnico_id', techId).gte('created_at', weekAgo)
-        setProfileViews(count || 0)
-      } catch { /* table might not exist */ }
+      // La métrica de "vistas al perfil" se quitó: consultaba la tabla
+      // profile_views, que no existe. supabase-js no lanza ante tabla
+      // inexistente (el error viaja en el objeto), así que el contador se
+      // quedaba en 0 en silencio y mostraba un dato falso al técnico.
     } catch {
       // silent
     }
@@ -1096,15 +1098,17 @@ export default function CuentaScreen() {
               </View>
               </FadeInUp>
 
-              {/* Profile views */}
+              {/* Compartir perfil. Antes esta tarjeta mostraba "Vistas a tu
+                  perfil" desde la tabla profile_views, que no existe: siempre
+                  decía 0. Se quitó la métrica falsa y quedó el CTA real. */}
               <FadeInUp delay={60}>
               <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, ...THEME.shadow.sm }}>
                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="eye-outline" size={22} color="#2563EB" />
+                  <Ionicons name="share-social-outline" size={22} color="#2563EB" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.dark }}>{profileViews}</Text>
-                  <Text style={{ fontSize: 11, color: COLORS.gray }}>Vistas a tu perfil esta semana</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Comparte tu perfil</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.gray }}>Difúndelo para conseguir más clientes</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}` })}
@@ -1230,38 +1234,12 @@ export default function CuentaScreen() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.dark }}>Mis promociones</Text>
                 <TouchableOpacity
-                  onPress={() => {
-                    // El insert anon fallaba doble: `promociones` está en
-                    // deny-all para anon Y se mandaba `tecnico_nombre`
-                    // (columna inexistente) omitiendo `titulo`, que es
-                    // obligatoria. Ahora va por el endpoint server-side.
-                    const crearPromocion = async (titulo: string) => {
-                      try {
-                        const res = await fetch(`${ENV.API_BASE_URL}/tecnico/promociones`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-                          },
-                          body: JSON.stringify({ titulo, descuento: 10 }),
-                        })
-                        if (!res.ok) {
-                          const body = await res.json().catch(() => ({}))
-                          Alert.alert('No se pudo crear', body?.error || 'Inténtalo de nuevo en un momento.')
-                          return
-                        }
-                        Alert.alert('Promoción creada', 'Tu promoción ya está visible para los clientes')
-                      } catch {
-                        Alert.alert('No se pudo crear', 'Revisa tu conexión e inténtalo de nuevo.')
-                      }
-                    }
-                    Alert.prompt ? Alert.prompt('Nueva promoción', 'Describe tu descuento (ej: 20% en gasfitería)', async (text) => {
-                      if (text) await crearPromocion(text)
-                    }) : Alert.alert('Crear promoción', 'Para crear una promoción, describe tu descuento y se publicará a los clientes.\n\nEjemplo: "20% de descuento en gasfitería esta semana"', [
-                      { text: 'Cancelar' },
-                      { text: 'Crear', onPress: () => crearPromocion(`Descuento especial de ${tech.nombre}`) },
-                    ])
-                  }}
+                  // Antes usaba Alert.prompt, que en Android NO existe (es
+                  // iOS-only): el técnico caía en un Alert sin campo de texto y
+                  // se publicaba "Descuento especial de <nombre>" fijo, aunque
+                  // el copy decía "describe tu descuento". Ahora abre un modal
+                  // con TextInput real, igual en ambas plataformas.
+                  onPress={() => { setPromoTitulo(''); setPromoModal(true) }}
                   accessibilityLabel="Crear una promoción nueva"
                   style={{ backgroundColor: THEME.color.brand, borderRadius: 10, paddingHorizontal: 14, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                 >
@@ -1515,9 +1493,11 @@ export default function CuentaScreen() {
                     <Text style={{ fontSize: 22, fontWeight: '900', color: '#2563EB' }}>S/{Math.round(completedLeads * (tech.precio_desde || 80) * 12 / Math.max(leads.length > 0 ? (new Set(leads.map(l => new Date(l.created_at).getMonth())).size) : 1, 1))}</Text>
                     <Text style={{ fontSize: 9, color: '#1E40AF', fontWeight: '600', marginTop: 2 }}>Proyección mensual</Text>
                   </View>
+                  {/* Antes "Vistas esta semana" desde profile_views (tabla
+                      inexistente): siempre 0. Reemplazado por un dato real. */}
                   <View style={{ flex: 1, backgroundColor: '#FEF3C7', borderRadius: 12, padding: 12, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#92400E' }}>{profileViews}</Text>
-                    <Text style={{ fontSize: 9, color: '#78350F', fontWeight: '600', marginTop: 2 }}>Vistas esta semana</Text>
+                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#92400E' }}>{tech.servicios_completados || 0}</Text>
+                    <Text style={{ fontSize: 9, color: '#78350F', fontWeight: '600', marginTop: 2 }}>Servicios completados</Text>
                   </View>
                 </View>
               </View>
@@ -2261,6 +2241,75 @@ export default function CuentaScreen() {
           router.push('/comprar-coins')
         }}
       />
+
+      {/* Modal "Nueva promoción" con input real (Android no tiene Alert.prompt) */}
+      <Modal visible={promoModal} transparent animationType="fade" onRequestClose={() => setPromoModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: THEME.space.xl }}>
+            <View accessibilityViewIsModal accessibilityLabel="Crear una promoción" style={{ backgroundColor: '#fff', borderRadius: THEME.radius.xl, padding: THEME.space.xl, ...THEME.shadow.lg }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.dark, marginBottom: 6 }}>Nueva promoción</Text>
+              <Text style={{ fontSize: 12, color: COLORS.gray, marginBottom: 14 }}>Describe tu descuento y se publicará a los clientes de tu zona.</Text>
+              <TextInput
+                value={promoTitulo}
+                onChangeText={setPromoTitulo}
+                placeholder="Ej: 20% en gasfitería esta semana"
+                placeholderTextColor={THEME.color.inkMuted}
+                maxLength={80}
+                autoFocus
+                editable={!promoEnviando}
+                style={{ backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.lg, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, fontSize: 15, color: THEME.color.ink, borderWidth: 1, borderColor: THEME.color.line }}
+              />
+              <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.lg }}>
+                <TouchableOpacity
+                  onPress={() => { if (!promoEnviando) setPromoModal(false) }}
+                  accessibilityLabel="Cancelar"
+                  style={{ flex: 1, minHeight: 44, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={promoEnviando || !promoTitulo.trim()}
+                  onPress={async () => {
+                    const titulo = promoTitulo.trim()
+                    if (!titulo) return
+                    setPromoEnviando(true)
+                    try {
+                      // El insert anon fallaba doble: `promociones` está en deny-all
+                      // para anon Y se mandaba `tecnico_nombre` (columna inexistente)
+                      // omitiendo `titulo`, que es obligatoria. Va por el endpoint.
+                      const res = await fetch(`${ENV.API_BASE_URL}/tecnico/promociones`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                        },
+                        body: JSON.stringify({ titulo, descuento: 10 }),
+                      })
+                      if (!res.ok) {
+                        const body = await res.json().catch(() => ({}))
+                        Alert.alert('No se pudo crear', body?.error || 'Inténtalo de nuevo en un momento.')
+                        return
+                      }
+                      setPromoModal(false)
+                      setPromoTitulo('')
+                      Alert.alert('Promoción creada', 'Tu promoción ya está visible para los clientes')
+                    } catch {
+                      Alert.alert('No se pudo crear', 'Revisa tu conexión e inténtalo de nuevo.')
+                    } finally {
+                      setPromoEnviando(false)
+                    }
+                  }}
+                  accessibilityLabel="Crear promoción"
+                  style={{ flex: 1, minHeight: 44, borderRadius: THEME.radius.lg, backgroundColor: (promoEnviando || !promoTitulo.trim()) ? THEME.color.lineSoft : THEME.color.brand, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}
+                >
+                  {promoEnviando && <ActivityIndicator size="small" color="#fff" />}
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: (promoEnviando || !promoTitulo.trim()) ? COLORS.gray : '#fff' }}>Crear</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   )
 }
@@ -2522,7 +2571,7 @@ function LegalSection({ router }: { router: any }) {
           )
         })}
         <View style={{ padding: THEME.space.lg, alignItems: 'center' }}>
-          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>SOLU v1.0.0 · CITYLAND GROUP E.I.R.L.</Text>
+          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>SOLU {APP_VERSION_LABEL} · CITYLAND GROUP E.I.R.L.</Text>
         </View>
       </View>
     </View>

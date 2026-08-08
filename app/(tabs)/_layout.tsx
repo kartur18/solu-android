@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Tabs, useRouter, useFocusEffect } from 'expo-router'
 import { View, Text } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTechToken, fetchNotifications } from '../../src/lib/notif-api'
-import { getTechSessionMeta } from '../../src/lib/tech-session'
+import { getTechSessionMeta, onTechSessionChange } from '../../src/lib/tech-session'
 import { fetchChatsResumen } from '../../src/components/tecnico/lead-api'
 import { logger } from '../../src/lib/logger'
 import { THEME } from '../../src/lib/theme'
@@ -71,50 +71,59 @@ export default function TabLayout() {
   const [esTecnico, setEsTecnico] = useState(false)
   const [mensajesNuevos, setMensajesNuevos] = useState(0)
 
+  // Ref de montaje para que las cargas asíncronas no seteen estado tras desmontar.
+  const montadoRef = useRef(true)
+  useEffect(() => {
+    montadoRef.current = true
+    return () => { montadoRef.current = false }
+  }, [])
+
   // Los técnicos se autentican con Bearer (no Supabase Auth) y la tabla
   // `notificaciones` está en deny-all para anon tras el lockdown RLS: por eso
   // el contador va contra el endpoint server-side autenticado, no a Supabase.
+  const fetchUnread = useCallback(async () => {
+    try {
+      const session = await getTechSessionMeta()
+      const token = await getTechToken()
+      if (!session?.id || !token) {
+        if (montadoRef.current) {
+          setEsTecnico(false)
+          setUnreadCount(0)
+          setMensajesNuevos(0)
+        }
+        return
+      }
+      if (montadoRef.current) setEsTecnico(true)
+
+      // Independientes: que fallen las notificaciones no debe dejar la
+      // bandeja sin badge (ni al revés).
+      const [notifs, chats] = await Promise.allSettled([
+        fetchNotifications(token, 50, session.id),
+        fetchChatsResumen(token),
+      ])
+      if (!montadoRef.current) return
+      if (notifs.status === 'fulfilled') {
+        setUnreadCount(notifs.value.filter((n) => !n.leido).length)
+      }
+      if (chats.status === 'fulfilled') {
+        setMensajesNuevos(chats.value.reduce((sum, c) => sum + c.mensajes_nuevos, 0))
+      }
+    } catch (err) {
+      logger.error('No se pudo cargar el contador de notificaciones:', err)
+    }
+  }, [])
+
   // Se refresca al volver al foco para reflejar lo leído en Mi Cuenta.
   useFocusEffect(
     useCallback(() => {
-      let activo = true
-      async function fetchUnread() {
-        try {
-          const session = await getTechSessionMeta()
-          const token = await getTechToken()
-          if (!session?.id || !token) {
-            if (activo) {
-              setEsTecnico(false)
-              setUnreadCount(0)
-              setMensajesNuevos(0)
-            }
-            return
-          }
-          if (activo) setEsTecnico(true)
-
-          // Independientes: que fallen las notificaciones no debe dejar la
-          // bandeja sin badge (ni al revés).
-          const [notifs, chats] = await Promise.allSettled([
-            fetchNotifications(token, 50, session.id),
-            fetchChatsResumen(token),
-          ])
-          if (!activo) return
-          if (notifs.status === 'fulfilled') {
-            setUnreadCount(notifs.value.filter((n) => !n.leido).length)
-          }
-          if (chats.status === 'fulfilled') {
-            setMensajesNuevos(chats.value.reduce((sum, c) => sum + c.mensajes_nuevos, 0))
-          }
-        } catch (err) {
-          logger.error('No se pudo cargar el contador de notificaciones:', err)
-        }
-      }
       fetchUnread()
-      return () => {
-        activo = false
-      }
-    }, []),
+    }, [fetchUnread]),
   )
+
+  // Y también apenas cambia la sesión (login/logout): antes la pestaña
+  // "Mensajes" no aparecía hasta reiniciar la app porque el estado solo se
+  // recalculaba al enfocar, y tras loguearse la barra ya estaba montada.
+  useEffect(() => onTechSessionChange(() => { void fetchUnread() }), [fetchUnread])
 
   return (
     <Tabs

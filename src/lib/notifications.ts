@@ -5,14 +5,11 @@ import { ENV, fetchWithTimeout } from './env'
 import { getTechToken } from './tech-session'
 import { logger } from './logger'
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  } as Notifications.NotificationBehavior),
-})
+// El handler de notificaciones en foreground se registra UNA sola vez en
+// app/_layout.tsx. Antes había un segundo setNotificationHandler acá que, según
+// el orden de import, pisaba al del layout y encima le faltaba shouldShowBanner
+// (SDK 55): en foreground no aparecía el banner. Se eliminó para dejar una sola
+// fuente.
 
 export async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) {

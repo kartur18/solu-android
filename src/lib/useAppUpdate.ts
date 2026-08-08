@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Alert, Linking } from 'react-native'
-import Constants from 'expo-constants'
 import { ENV } from './env'
+import { APP_VERSION } from './appVersion'
 
 interface VersionInfo {
   currentVersion: string
@@ -33,7 +33,7 @@ export function useAppUpdate() {
       if (!res.ok) return
 
       const info: VersionInfo = await res.json()
-      const appVersion = Constants.expoConfig?.version || '1.0.0'
+      const appVersion = APP_VERSION
 
       // Force update if below minimum
       if (compareVersions(appVersion, info.minimumVersion) < 0) {

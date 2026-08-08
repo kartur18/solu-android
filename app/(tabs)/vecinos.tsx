@@ -136,9 +136,12 @@ export default function VecinosScreen() {
                   <Text style={{ ...THEME.font.h1, color: THEME.color.ink }}>{grupo.miembros || 1}</Text>
                   <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>Miembros</Text>
                 </View>
+                {/* Antes prometía "10% Descuento", un beneficio que no existe
+                    (la web ya lo retiró). Mostramos el valor real del grupo:
+                    coordinar el pedido en conjunto. */}
                 <View style={{ flex: 1, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg, paddingVertical: THEME.space.lg, alignItems: 'center' }}>
-                  <Text style={{ ...THEME.font.h1, color: THEME.color.success }}>10%</Text>
-                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>Descuento</Text>
+                  <Ionicons name="people" size={26} color={THEME.color.success} />
+                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 4, textAlign: 'center' }}>Coordinen en grupo</Text>
                 </View>
               </View>
             </View>

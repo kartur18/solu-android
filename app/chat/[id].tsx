@@ -58,6 +58,9 @@ export default function ChatScreen() {
   const [loadError, setLoadError] = useState(false)
   const [sending, setSending] = useState(false)
   const [coinsError, setCoinsError] = useState<{ costo?: number; saldo?: number } | null>(null)
+  // Falla al enviar que NO es "sin coins" (402): antes se tragaba en silencio y
+  // el mensaje desaparecía sin explicación. Se muestra un aviso accionable.
+  const [sendError, setSendError] = useState<string | null>(null)
   const flatListRef = useRef<FlatList>(null)
   const techTokenRef = useRef<string | null>(null)
   // Scheduling del poll: delay actual + nro de polls "tranquilos" (sin novedad).
@@ -197,6 +200,7 @@ export default function ChatScreen() {
     setText('')
     setSending(true)
     setCoinsError(null)
+    setSendError(null)
     // Enviar reactiva el polling rápido (esperamos respuesta del otro lado).
     resetPollBackoff()
 
@@ -212,6 +216,14 @@ export default function ChatScreen() {
         setCoinsError({ costo: err.costo, saldo: err.saldoActual })
       } else {
         logger.warn('Error sending message:', err)
+        // Mensaje accionable según el tipo de error, en vez de tragarlo:
+        // el técnico/cliente ve que NO se envió y qué hacer.
+        const congelado = err instanceof ChatApiError && err.status === 403
+        setSendError(
+          congelado
+            ? 'Tu cuenta está temporalmente congelada. Escríbenos a soporte para revisarlo.'
+            : 'No se pudo enviar tu mensaje. Revisa tu conexión y toca para reintentar.',
+        )
       }
     } finally {
       setSending(false)
@@ -396,6 +408,23 @@ export default function ChatScreen() {
               <Ionicons name="close" size={18} color={THEME.color.inkMuted} />
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* Aviso de envío fallido (no-402): tocar reintenta con el texto que
+            quedó restaurado en la caja. */}
+        {sendError && (
+          <TouchableOpacity
+            onPress={() => { setSendError(null); if (text.trim()) void sendMessage() }}
+            accessibilityLabel="Reintentar enviar el mensaje"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, paddingHorizontal: THEME.space.lg, paddingVertical: THEME.space.md, backgroundColor: THEME.color.dangerBg, borderTopWidth: 1, borderTopColor: THEME.color.line }}
+          >
+            <Ionicons name="alert-circle" size={20} color={THEME.color.danger} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.danger }}>No se envió tu mensaje</Text>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 1 }}>{sendError}</Text>
+            </View>
+            <Ionicons name="refresh" size={18} color={THEME.color.danger} />
+          </TouchableOpacity>
         )}
 
         {/* Quick replies */}

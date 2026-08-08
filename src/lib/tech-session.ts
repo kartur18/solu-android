@@ -8,6 +8,24 @@ import * as SecureStore from 'expo-secure-store'
 const SESSION_KEY = 'solu_tech_session'
 const TOKEN_KEY = 'solu_tech_token'
 
+// Pub/sub de cambios de sesión. La barra de tabs decide con esto si muestra la
+// pestaña "Mensajes" (solo técnicos). Antes solo se recalculaba al enfocar la
+// pantalla, así que tras loguearse la pestaña no aparecía hasta reiniciar la
+// app o cambiar de tab. Ahora login/logout avisan y la barra se refresca sola.
+type SessionListener = () => void
+const sessionListeners = new Set<SessionListener>()
+
+export function onTechSessionChange(fn: SessionListener): () => void {
+  sessionListeners.add(fn)
+  return () => { sessionListeners.delete(fn) }
+}
+
+function emitTechSessionChange(): void {
+  for (const fn of [...sessionListeners]) {
+    try { fn() } catch { /* un listener no puede tumbar a los demás */ }
+  }
+}
+
 export interface TechSessionMeta {
   id?: number
   nombre?: string
@@ -23,6 +41,7 @@ export async function saveTechSession(meta: TechSessionMeta, token: string | nul
   } else {
     try { await SecureStore.deleteItemAsync(TOKEN_KEY) } catch {}
   }
+  emitTechSessionChange()
 }
 
 // Lee el token Bearer del técnico desde SecureStore. Si no está (p. ej. sesión
@@ -69,4 +88,5 @@ export async function getTechSessionMeta(): Promise<TechSessionMeta | null> {
 export async function clearTechSession(): Promise<void> {
   await AsyncStorage.removeItem(SESSION_KEY)
   try { await SecureStore.deleteItemAsync(TOKEN_KEY) } catch {}
+  emitTechSessionChange()
 }

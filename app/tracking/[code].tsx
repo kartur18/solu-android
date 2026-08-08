@@ -7,7 +7,7 @@ import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/components/ui/Motion'
 import { supabase } from '../../src/lib/supabase'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
-import { fetchServicioByCodigo } from '../../src/lib/servicios'
+import { fetchServicioByCodigoResult } from '../../src/lib/servicios'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
 import type { Cliente, Tecnico } from '../../src/lib/types'
@@ -40,9 +40,18 @@ export default function TrackingScreen() {
 
   const loadData = useCallback(async () => {
     // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
-    // El helper devuelve la fila o null (no distingue "no existe" de error de red).
-    const data = await fetchServicioByCodigo(code)
+    // Distinguimos "no existe" (404) de "no pude preguntar" (red/5xx): antes
+    // ambos caían en la pantalla "No encontramos ese código".
+    const res = await fetchServicioByCodigoResult(code)
+    if (res.estado === 'error') {
+      // No pudimos preguntar (red/5xx): mostramos "revisa tu conexión", no
+      // "no existe". El render solo saca esta pantalla si aún no había datos
+      // (`loadError && !service`), así que en polling no vacía lo ya cargado.
+      setLoadError(true)
+      return
+    }
     setLoadError(false)
+    const data = res.estado === 'ok' ? res.servicio : null
     setService(data)
 
     if (data?.tecnico_asignado) {

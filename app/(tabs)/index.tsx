@@ -17,6 +17,7 @@ import { useClientProfile } from '../../src/lib/useClientProfile'
 import { suggestServicios, detectServicio, detectUrgencia } from '../../src/lib/smartIntent'
 import { ENV } from '../../src/lib/env'
 import { THEME } from '../../src/lib/theme'
+import { APP_VERSION_LABEL } from '../../src/lib/appVersion'
 import { FadeInUp, PressableScale, PulseDot } from '../../src/components/ui/Motion'
 import { TECNICO_PUBLIC_SELECT } from '../../src/lib/tecnico-columns'
 
@@ -588,7 +589,7 @@ export default function HomeScreen() {
 
         {/* ── Footer ──────────────────────────────────────────────────── */}
         <View style={{ alignItems: 'center', paddingVertical: THEME.space.xxl, marginTop: THEME.space.sm }}>
-          <Text style={{ fontSize: 11, color: THEME.color.inkMuted, fontWeight: '600' }}>SOLU v2.2 · CITYLAND GROUP E.I.R.L.</Text>
+          <Text style={{ fontSize: 11, color: THEME.color.inkMuted, fontWeight: '600' }}>SOLU {APP_VERSION_LABEL} · CITYLAND GROUP E.I.R.L.</Text>
           <Text style={{ fontSize: 10, color: THEME.color.inkMuted, marginTop: 3 }}>Profesionales verificados en todo el Perú</Text>
         </View>
       </ScrollView>
