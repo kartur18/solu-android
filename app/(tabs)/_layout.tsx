@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Tabs, useRouter, useFocusEffect } from 'expo-router'
 import { View, Text } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getTechToken, fetchNotifications } from '../../src/lib/notif-api'
@@ -66,9 +67,10 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets()
   const bottomPad = Math.max(insets.bottom, 16)
   const [unreadCount, setUnreadCount] = useState(0)
-  // La bandeja solo tiene sentido con sesión de técnico: al cliente no se le
-  // muestra la pestaña.
+  // La bandeja es dual: técnico (leads que le escriben) o cliente (sus chats
+  // CONT-). Solo se oculta si no hay NINGUNA de las dos sesiones.
   const [esTecnico, setEsTecnico] = useState(false)
+  const [esCliente, setEsCliente] = useState(false)
   const [mensajesNuevos, setMensajesNuevos] = useState(0)
 
   // Ref de montaje para que las cargas asíncronas no seteen estado tras desmontar.
@@ -86,8 +88,12 @@ export default function TabLayout() {
       const session = await getTechSessionMeta()
       const token = await getTechToken()
       if (!session?.id || !token) {
+        // Sin sesión de técnico, la pestaña sigue viva si hay perfil de
+        // cliente guardado (sus chats CONT- se listan en modo cliente).
+        const perfilCliente = await AsyncStorage.getItem('solu_client_session').catch(() => null)
         if (montadoRef.current) {
           setEsTecnico(false)
+          setEsCliente(!!perfilCliente)
           setUnreadCount(0)
           setMensajesNuevos(0)
         }
@@ -171,8 +177,8 @@ export default function TabLayout() {
         options={{
           title: 'Mensajes',
           tabBarLabel: 'Mensajes',
-          // Sin sesión de técnico la pestaña no existe para el cliente.
-          href: esTecnico ? '/(tabs)/mensajes' : null,
+          // Visible con sesión de técnico O perfil de cliente; sin ninguna, no existe.
+          href: esTecnico || esCliente ? '/(tabs)/mensajes' : null,
           tabBarIcon: ({ focused }) => (
             <View>
               <TabIcon focused={focused} iconFilled="chatbubbles" iconOutline="chatbubbles-outline" />

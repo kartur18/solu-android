@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TextInput, Alert, Linking, StatusBar } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { waLink, SUPPORT_PHONE, ESTADOS } from '../src/lib/constants'
 import { supabase } from '../src/lib/supabase'
 import { fetchClienteServicios } from '../src/lib/servicios'
+import { useClientProfile } from '../src/lib/useClientProfile'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../src/components/ui/Motion'
 
@@ -65,14 +66,20 @@ function tierFor(points: number) {
 }
 
 export default function FidelidadScreen() {
+  const { profile } = useClientProfile()
   const [wa, setWa] = useState('')
   const [loading, setLoading] = useState(false)
   const [points, setPoints] = useState<number | null>(null)
   const [history, setHistory] = useState<{ type: string; pts: number; date: string }[]>([])
+  // Una sola auto-consulta por montaje: el reset ("otro número") no la re-dispara.
+  const autoConsultadoRef = useRef(false)
 
-  async function loadPoints() {
-    const waClean = wa.replace(/\D/g, '')
-    if (!waClean || waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) return Alert.alert('Número incompleto', 'Ingresa tu WhatsApp de 9 dígitos (empieza con 9)')
+  async function loadPoints(waInput?: string, opts?: { silencioso?: boolean }) {
+    const waClean = (waInput ?? wa).replace(/\D/g, '')
+    if (!waClean || waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
+      if (!opts?.silencioso) Alert.alert('Número incompleto', 'Ingresa tu WhatsApp de 9 dígitos (empieza con 9)')
+      return
+    }
     setLoading(true)
     try {
       // Consultar con el número sin espacios (el input sugiere "999 888 777")
@@ -114,11 +121,26 @@ export default function FidelidadScreen() {
       hist.sort((a, b) => b.date.localeCompare(a.date))
       setHistory(hist)
     } catch {
-      Alert.alert('No pudimos cargar tus puntos', 'Revisa tu internet e intenta de nuevo.')
+      // En la auto-consulta no molestamos con alertas: queda el formulario
+      // prefillado y un toque reintenta. El fallo manual sí se avisa.
+      if (!opts?.silencioso) Alert.alert('No pudimos cargar tus puntos', 'Revisa tu internet e intenta de nuevo.')
     } finally {
       setLoading(false)
     }
   }
+
+  // Con perfil guardado no se le pide el número que ya sabemos: prefill y
+  // consulta directa. El input queda solo para "consultar otro número".
+  useEffect(() => {
+    if (autoConsultadoRef.current) return
+    const waPerfil = profile?.whatsapp?.replace(/\D/g, '') ?? ''
+    if (/^9\d{8}$/.test(waPerfil)) {
+      autoConsultadoRef.current = true
+      setWa(waPerfil)
+      void loadPoints(waPerfil, { silencioso: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadPoints es estable a efectos de este disparo único
+  }, [profile?.whatsapp])
 
   const tier = points !== null ? tierFor(points) : null
   const progressPct = tier
@@ -197,7 +219,8 @@ export default function FidelidadScreen() {
                   placeholderTextColor={THEME.color.inkMuted}
                 />
                 <PressableScale
-                  onPress={loadPoints}
+                  // Sin handler directo: onPress pasa el evento y caería como waInput.
+                  onPress={() => { void loadPoints() }}
                   disabled={loading}
                   accessibilityLabel="Ver mis puntos"
                   style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.lg, minHeight: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: THEME.space.sm, ...THEME.shadow.brand }}

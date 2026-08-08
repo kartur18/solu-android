@@ -344,11 +344,16 @@ export default function HomeScreen() {
           </FadeInUp>
 
           {/* Fidelidad y Vecinos: ambas pantallas existían pero ninguna
-              entrada de navegación llevaba a ellas (eran inalcanzables). */}
+              entrada de navegación llevaba a ellas (eran inalcanzables).
+              "Mis puntos" dice lo que abre (/fidelidad NO es el historial);
+              el historial real solo aparece si hay sesión de cliente. */}
           <FadeInUp delay={200}>
             <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.sm }}>
               {[
-                { icon: 'gift' as const, titulo: 'Mi historial', sub: 'Historial y beneficios', ruta: '/fidelidad', label: 'Ver mi historial y beneficios' },
+                { icon: 'ribbon' as const, titulo: 'Mis puntos', sub: 'Niveles y beneficios', ruta: '/fidelidad', label: 'Ver mis puntos y beneficios' },
+                ...(profile?.whatsapp
+                  ? [{ icon: 'clipboard' as const, titulo: 'Mis servicios', sub: 'Historial y chats', ruta: '/(tabs)/servicios', label: 'Ver el historial de mis servicios' }]
+                  : []),
                 { icon: 'people' as const, titulo: 'Vecinos', sub: 'Tu edificio, un grupo', ruta: '/(tabs)/vecinos', label: 'Grupos de vecinos de tu edificio' },
               ].map((acceso) => (
                 <PressableScale
@@ -364,9 +369,9 @@ export default function HomeScreen() {
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name={acceso.icon} size={17} color={THEME.color.brand} />
-                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>{acceso.titulo}</Text>
+                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }} numberOfLines={1}>{acceso.titulo}</Text>
                   </View>
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 3 }}>{acceso.sub}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 3 }} numberOfLines={1}>{acceso.sub}</Text>
                 </PressableScale>
               ))}
             </View>

@@ -1,10 +1,15 @@
-import { useState } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, StatusBar } from 'react-native'
+import { useState, useEffect } from 'react'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Share, StatusBar } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, haptics } from '../../src/components/ui/Motion'
 import type { GrupoVecinos } from '../../src/lib/types'
+
+// La membresía vive en el dispositivo: sin esto, cada visita mostraba el
+// formulario y re-unirse inflaba el contador de miembros del backend.
+const GRUPO_KEY = 'solu_grupo_vecinos'
 
 export default function VecinosScreen() {
   const [tab, setTab] = useState<'join' | 'create'>('join')
@@ -14,6 +19,35 @@ export default function VecinosScreen() {
   const [whatsapp, setWhatsapp] = useState('')
   const [loading, setLoading] = useState(false)
   const [grupo, setGrupo] = useState<GrupoVecinos | null>(null)
+
+  // Restaura el grupo guardado al montar.
+  useEffect(() => {
+    AsyncStorage.getItem(GRUPO_KEY)
+      .then((stored) => {
+        if (!stored) return
+        try { setGrupo(JSON.parse(stored) as GrupoVecinos) } catch {}
+      })
+      .catch(() => {})
+  }, [])
+
+  async function guardarGrupo(g: GrupoVecinos) {
+    setGrupo(g)
+    try { await AsyncStorage.setItem(GRUPO_KEY, JSON.stringify(g)) } catch {}
+  }
+
+  async function salirDelGrupo() {
+    setGrupo(null)
+    try { await AsyncStorage.removeItem(GRUPO_KEY) } catch {}
+  }
+
+  async function compartirCodigo(g: GrupoVecinos) {
+    try {
+      await Share.share({
+        message: `🏢 Únete al grupo "${g.nombre}" de nuestro edificio en SOLU.\n\nCódigo: ${g.codigo}\n\nAbre la app, entra a Vecinos e ingresa el código para coordinar servicios juntos. https://www.solu.pe`,
+        title: `Grupo de vecinos: ${g.nombre}`,
+      })
+    } catch {}
+  }
 
   async function joinGroup() {
     if (!code) return Alert.alert('Error', 'Ingresa el código del grupo')
@@ -31,7 +65,7 @@ export default function VecinosScreen() {
         Alert.alert('Error', res.status === 404 ? 'Grupo no encontrado' : (body?.error || 'No se pudo unir'))
       } else {
         haptics.success()
-        setGrupo(body.grupo)
+        await guardarGrupo(body.grupo)
         Alert.alert('¡Listo!', `Te uniste al grupo "${body.grupo.nombre}". Ahora coordinas servicios con tus vecinos.`)
       }
     } catch {
@@ -60,7 +94,7 @@ export default function VecinosScreen() {
         Alert.alert('Error', body?.error || 'No se pudo crear el grupo')
       } else {
         haptics.success()
-        setGrupo(body.grupo)
+        await guardarGrupo(body.grupo)
         Alert.alert('¡Grupo creado!', `Código: ${body.grupo.codigo}\nComparte este código con tus vecinos para que se unan al grupo.`)
       }
     } catch {
@@ -144,6 +178,32 @@ export default function VecinosScreen() {
                   <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 4, textAlign: 'center' }}>Coordinen en grupo</Text>
                 </View>
               </View>
+
+              {/* El grupo crece compartiendo el código, no dictándolo. */}
+              <PressableScale
+                onPress={() => { void compartirCodigo(grupo) }}
+                accessibilityLabel="Compartir código del grupo por WhatsApp"
+                style={{
+                  marginTop: THEME.space.lg,
+                  backgroundColor: THEME.color.success,
+                  borderRadius: THEME.radius.lg,
+                  minHeight: 52,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm,
+                }}
+              >
+                <Ionicons name="logo-whatsapp" size={20} color={THEME.color.white} />
+                <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Compartir código por WhatsApp</Text>
+              </PressableScale>
+
+              {/* Solo borra la membresía local (para cambiar de edificio). */}
+              <PressableScale
+                onPress={() => { void salirDelGrupo() }}
+                haptic={false}
+                accessibilityLabel="Salir del grupo en este teléfono"
+                style={{ alignItems: 'center', justifyContent: 'center', marginTop: THEME.space.md, minHeight: 44 }}
+              >
+                <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkMuted }}>Cambiar de grupo</Text>
+              </PressableScale>
             </View>
           </FadeInUp>
         </View>

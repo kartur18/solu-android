@@ -15,7 +15,7 @@ import { saveTechSession, getTechToken, getTechSessionMeta, clearTechSession } f
 import { subirImagen } from '../../src/lib/subirImagen'
 import { registerSessionExpiredHandler, resetSessionExpired } from '../../src/lib/session-expired'
 import { supabase } from '../../src/lib/supabase'
-import { fetchMyTechProfile, fetchMyTechProfileResult, fetchMyTechDashboardResult, debeCerrarSesion } from '../../src/lib/tech-profile'
+import { fetchMyTechProfile, fetchMyTechProfileResult, fetchMyTechDashboardResult, debeCerrarSesion, type CitaAgenda } from '../../src/lib/tech-profile'
 import { registerForPushNotifications, savePushToken } from '../../src/lib/notifications'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from '../../src/lib/types'
 import NotificationCenter from '../../src/components/NotificationCenter'
@@ -68,6 +68,10 @@ export default function CuentaScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [tech, setTech] = useState<Tecnico | null>(null)
   const [leads, setLeads] = useState<Cliente[]>([])
+  // Agenda real del server. null = el deploy actual del server no manda el
+  // campo: la UI cae al modo leads sin inventar "no tienes citas".
+  const [citas, setCitas] = useState<CitaAgenda[] | null>(null)
+  const [calendarUrl, setCalendarUrl] = useState<string | null>(null)
   const [reviews, setReviews] = useState<Resena[]>([])
   const [openRequests, setOpenRequests] = useState<SolicitudAbierta[]>([])
   const [acceptingId, setAcceptingId] = useState<number | null>(null)
@@ -300,6 +304,17 @@ export default function CuentaScreen() {
       if (dash.ok) {
         setDashError(false)
         setLeads(dash.data.leads)
+        // Campos nuevos (agenda real + .ics firmado): el server los está
+        // ganando en paralelo; un deploy viejo no los manda y queda null.
+        const citasSrv = Array.isArray(dash.data.citas)
+          ? dash.data.citas
+          : Array.isArray(dash.data.agenda) ? dash.data.agenda : null
+        setCitas(citasSrv)
+        setCalendarUrl(
+          typeof dash.data.calendar_url === 'string' && dash.data.calendar_url.startsWith('http')
+            ? dash.data.calendar_url
+            : null,
+        )
         setReviews(dash.data.resenas)
         setOpenRequests(dash.data.openRequests)
         setNotifications(dash.data.notificaciones)
@@ -1011,6 +1026,8 @@ export default function CuentaScreen() {
             <PanelDashboard
               tech={tech}
               leads={leads}
+              citas={citas}
+              calendarUrl={calendarUrl}
               chatsSinLeer={chatsSinLeer}
               mensajesSinLeer={mensajesSinLeer}
               tierInfo={tierInfo}
@@ -1056,6 +1073,7 @@ export default function CuentaScreen() {
               tierInfo={tierInfo}
               pagos={pagos}
               dashError={dashError}
+              authToken={authToken}
               onReload={() => { void loadData(tech.id) }}
               onComprarCoins={() => router.push('/comprar-coins')}
             />

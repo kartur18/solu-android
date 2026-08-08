@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, StatusBar } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { THEME } from '../../src/lib/theme'
 import { getTechSessionMeta } from '../../src/lib/tech-session'
@@ -10,14 +11,18 @@ export default function MiCuentaScreen() {
   // true mientras se consulta la sesión guardada (evita el flash del selector)
   const [restaurando, setRestaurando] = useState(true)
 
-  // Con sesión de técnico guardada, el panel es su pantalla diaria: entrar
-  // directo en vez de hacerle tocar "Soy técnico" en cada arranque frío.
+  // Con sesión guardada se entra directo a su lado: técnico gana si hay
+  // ambas (el panel es su pantalla diaria); si solo hay sesión de cliente,
+  // va a sus servicios sin re-elegir. El selector queda para quien no tiene
+  // ninguna, y la VolverBar conserva el camino para cambiar de lado.
   useEffect(() => {
     let activo = true
     void (async () => {
       try {
         const session = await getTechSessionMeta()
-        if (activo && session?.id) setSelected('tecnico')
+        if (activo && session?.id) { setSelected('tecnico'); return }
+        const clienteGuardado = await AsyncStorage.getItem('solu_client_session').catch(() => null)
+        if (activo && clienteGuardado) setSelected('cliente')
       } finally {
         if (activo) setRestaurando(false)
       }

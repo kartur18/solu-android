@@ -10,6 +10,7 @@ import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { registerForPushNotifications, sendLocalNotification, getStatusNotification } from '../../src/lib/notifications'
 import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, haptics } from '../../src/components/ui/Motion'
+import { MisTecnicosConfianza } from '../../src/components/MisTecnicosConfianza'
 import type { Cliente, ClienteUser } from '../../src/lib/types'
 
 // Cada estado de servicio mapea a un color semántico del theme + ícono.
@@ -21,6 +22,8 @@ const STATUS_INFO: Record<string, { label: string; color: string; bg: string; ic
   Completado: { label: 'Completado', color: THEME.color.success, bg: THEME.color.successBg, icon: 'checkmark-circle' },
   Calificado: { label: 'Calificado', color: THEME.color.success, bg: THEME.color.successBg, icon: 'star' },
   Cancelado: { label: 'Cancelado', color: THEME.color.danger, bg: THEME.color.dangerBg, icon: 'close-circle' },
+  // Estado de los leads CONT- sin respuesta aún (antes caía al fallback gris).
+  'En espera': { label: 'Esperando respuesta', color: THEME.color.warning, bg: THEME.color.warningBg, icon: 'time' },
 }
 
 const SESSION_KEY = 'solu_client_session'
@@ -383,6 +386,10 @@ export default function MisServiciosScreen() {
           </PressableScale>
         </FadeInUp>
 
+        {/* Técnicos que ya atendieron a este cliente: re-contacto en un toque
+            (crea un lead nuevo vía /api/contactos, el flujo que monetiza). */}
+        <MisTecnicosConfianza whatsapp={user.whatsapp} />
+
         {/* Loading skeletons */}
         {loading && servicios.length === 0 && (
           <FadeInUp delay={120}>
@@ -491,8 +498,22 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
   const info = STATUS_INFO[s.estado] || { label: s.estado, color: THEME.color.inkSoft, bg: THEME.color.surfaceSunken, icon: 'help-circle' }
   const isActive = s.estado !== 'Completado' && s.estado !== 'Calificado' && s.estado !== 'Cancelado'
   const isCompleted = s.estado === 'Completado' || s.estado === 'Calificado'
+  // Los leads CONT- no existen en /tracking (respondía "No encontramos ese
+  // código"): su seguimiento ES el chat con el especialista.
+  const esContacto = s.origen === 'contacto' || s.codigo?.startsWith('CONT-')
   const date = new Date(s.created_at)
   const dateStr = date.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
+
+  const abrirChat = () => router.push({
+    pathname: '/chat/[id]',
+    params: {
+      id: esContacto ? s.codigo : s.id.toString(),
+      codigo: s.codigo,
+      techName: 'Tecnico',
+      clientName: user?.nombre ?? 'Cliente',
+      senderType: 'cliente',
+    },
+  })
 
   return (
     <View
@@ -505,8 +526,11 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
       }}
     >
       <PressableScale
-        onPress={() => router.push({ pathname: '/tracking/[code]', params: { code: s.codigo } })}
-        accessibilityLabel={`Ver seguimiento de ${s.servicio}`}
+        onPress={() => {
+          if (esContacto) { abrirChat(); return }
+          router.push({ pathname: '/tracking/[code]', params: { code: s.codigo } })
+        }}
+        accessibilityLabel={esContacto ? `Abrir chat de ${s.servicio}` : `Ver seguimiento de ${s.servicio}`}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
           <View style={{
@@ -542,18 +566,9 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
 
       {/* Action buttons */}
       <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.md }}>
-        {isActive && s.tecnico_asignado && user && (
+        {isActive && (esContacto || (s.tecnico_asignado && user)) && (
           <PressableScale
-            onPress={() => router.push({
-              pathname: '/chat/[id]',
-              params: {
-                id: s.id.toString(),
-                codigo: s.codigo,
-                techName: 'Tecnico',
-                clientName: user.nombre,
-                senderType: 'cliente',
-              },
-            })}
+            onPress={abrirChat}
             accessibilityLabel="Abrir chat con el técnico"
             style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: THEME.color.navy, borderRadius: THEME.radius.md, paddingVertical: 10, flex: 1, justifyContent: 'center' }}
           >
@@ -561,7 +576,7 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
             <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Chat</Text>
           </PressableScale>
         )}
-        {isActive && (
+        {isActive && !esContacto && (
           <PressableScale
             onPress={() => router.push({ pathname: '/tracking/[code]', params: { code: s.codigo } })}
             accessibilityLabel="Ver seguimiento"
@@ -573,7 +588,15 @@ function ServiceCard({ service: s, router, user }: { service: Cliente; router: a
         )}
         {isCompleted && (
           <PressableScale
-            onPress={() => router.push({ pathname: '/solicitar', params: { servicio: s.servicio, distrito: s.distrito } })}
+            // Con técnico conocido se re-agenda con ÉL (antes se descartaba y
+            // el flujo caía al formulario genérico).
+            onPress={() => {
+              if (s.tecnico_asignado) {
+                router.push({ pathname: '/agendar/[id]', params: { id: String(s.tecnico_asignado) } })
+              } else {
+                router.push({ pathname: '/solicitar', params: { servicio: s.servicio, distrito: s.distrito } })
+              }
+            }}
             accessibilityLabel="Re-agendar este servicio"
             style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.md, paddingVertical: 10, flex: 1, justifyContent: 'center' }}
           >

@@ -5,6 +5,7 @@ import {
   AppState,
 } from 'react-native'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { THEME } from '../../src/lib/theme'
@@ -48,9 +49,20 @@ export default function ChatScreen() {
   const [chatToken, setChatToken] = useState<string | undefined>(params.token)
   useEffect(() => {
     if (params.token) { setChatToken(params.token); return }
-    if (senderType === 'cliente' && codigo && profile?.whatsapp) {
-      fetchChatToken(codigo, profile.whatsapp).then((t) => { if (t) setChatToken(t) })
-    }
+    if (senderType !== 'cliente' || !codigo) return
+    let cancelado = false
+    void (async () => {
+      // Leads CONT-: el token no se puede reemitir (fetchChatToken los
+      // rechaza); se recupera el que persistió useContactLead al crear el lead.
+      const guardado = await AsyncStorage.getItem(`chatToken:${codigo}`).catch(() => null)
+      if (cancelado) return
+      if (guardado) { setChatToken(guardado); return }
+      if (profile?.whatsapp) {
+        const t = await fetchChatToken(codigo, profile.whatsapp)
+        if (!cancelado && t) setChatToken(t)
+      }
+    })()
+    return () => { cancelado = true }
   }, [codigo, params.token, senderType, profile?.whatsapp])
 
   const [messages, setMessages] = useState<Mensaje[]>([])

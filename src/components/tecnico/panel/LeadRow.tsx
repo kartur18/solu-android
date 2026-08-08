@@ -11,6 +11,7 @@ import { sendPush } from '../../../lib/integrations'
 import type { Cliente, Tecnico } from '../../../lib/types'
 import { THEME } from '../../../lib/theme'
 import { PressableScale, haptics } from '../../ui/Motion'
+import { BotonPedirResena, HojaTrabajoCompletado } from './HojaTrabajoCompletado'
 import type { Aviso } from './ToastAviso'
 
 export function LeadRow({
@@ -39,6 +40,10 @@ export function LeadRow({
   // In-flight: dos toques a "✓ COBRAR" disparaban dos POST y dos push al
   // cliente; también cubre Rechazar/Cancelar mientras el POST está en el aire.
   const [enviando, setEnviando] = useState(false)
+  // Hoja de éxito tras Completado. El refresh del panel se difiere a su
+  // cierre: refrescar antes desmonta esta fila (pasa a "historial") y la
+  // hoja moriría al instante.
+  const [hojaCompletado, setHojaCompletado] = useState<{ tierSubio: boolean } | null>(null)
 
   const NEXT_STATUS: Record<string, string> = {
     Asignado: 'En camino',
@@ -53,6 +58,7 @@ export function LeadRow({
       // Bearer del técnico desde SecureStore (este componente no recibe authToken por props).
       const token = await getTechToken()
       let ok = false
+      let tierSubio = false
       try {
         const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/tecnico/lead/${lead.id}/estado`, {
           method: 'POST',
@@ -60,6 +66,12 @@ export function LeadRow({
           body: JSON.stringify({ estado: newStatus }),
         })
         ok = res.ok
+        if (res.ok) {
+          // `tier_subio` es opcional (server viejo no lo manda): sin él la
+          // hoja igual funciona, solo no celebra la subida de nivel.
+          const data = (await res.json().catch(() => null)) as { tier_subio?: boolean } | null
+          tierSubio = data?.tier_subio === true
+        }
       } catch {
         ok = false
       }
@@ -82,8 +94,14 @@ export function LeadRow({
             stopLiveTracking()
           }
         } catch {}
-        onAviso?.({ tipo: 'ok', texto: `Estado cambiado a: ${newStatus}` })
-        onStatusChange?.()
+        if (newStatus === 'Completado') {
+          // La hoja reemplaza al toast: comunica que el cierre ya sumó al
+          // nivel y da el camino para que el cliente lo confirme calificando.
+          setHojaCompletado({ tierSubio })
+        } else {
+          onAviso?.({ tipo: 'ok', texto: `Estado cambiado a: ${newStatus}` })
+          onStatusChange?.()
+        }
       }
     } finally {
       setEnviando(false)
@@ -272,6 +290,15 @@ export function LeadRow({
           )}
         </View>
       )}
+
+      {/* Trabajo ya Completado sin calificación: un toque para pedirla. */}
+      <BotonPedirResena lead={lead} />
+
+      <HojaTrabajoCompletado
+        lead={hojaCompletado ? lead : null}
+        tierSubio={hojaCompletado?.tierSubio ?? false}
+        onCerrar={() => { setHojaCompletado(null); onStatusChange?.() }}
+      />
     </View>
   )
 }

@@ -48,6 +48,9 @@ export interface Cliente {
   estado: string
   tecnico_asignado?: number
   created_at: string
+  // 'contacto' = lead CONT- (tabla contactos, fusionado por /api/cliente/servicios).
+  // Su "seguimiento" es el chat del lead, no /tracking.
+  origen?: 'contacto'
 }
 
 export interface ClienteUser {

@@ -18,6 +18,8 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { View, Text, FlatList, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { getTechToken, getTechSessionMeta } from '../../src/lib/tech-session'
+import { useClientProfile } from '../../src/lib/useClientProfile'
+import { BandejaClienteChats } from '../../src/components/BandejaClienteChats'
 import { fetchMyTechProfile } from '../../src/lib/tech-profile'
 import { logger } from '../../src/lib/logger'
 import { THEME } from '../../src/lib/theme'
@@ -40,6 +42,10 @@ const LOTE_PRECIOS = 4
 
 export default function MensajesScreen() {
   const router = useRouter()
+  // Perfil de cliente guardado (solu_client_session): sin sesión de técnico,
+  // la bandeja pasa a modo cliente en vez de decirle "Inicia sesión como
+  // técnico" a alguien que tiene chats vivos con especialistas.
+  const { profile: perfilCliente, loaded: perfilClienteListo } = useClientProfile()
   const [chats, setChats] = useState<ChatResumen[]>([])
   const [precios, setPrecios] = useState<Record<string, PrecioLead | null>>({})
   const [saldo, setSaldo] = useState<number | null>(null)
@@ -211,12 +217,20 @@ export default function MensajesScreen() {
   const nuevos = chats.reduce((sum, c) => sum + c.mensajes_nuevos, 0)
 
   if (sinSesion) {
+    // Evita el flash de "inicia sesión" mientras se lee el perfil guardado.
+    if (!perfilClienteListo) {
+      return <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }} />
+    }
+    if (perfilCliente?.whatsapp || perfilCliente?.nombre) {
+      return <BandejaClienteChats nombre={perfilCliente?.nombre} whatsapp={perfilCliente?.whatsapp} />
+    }
     return (
       <EstadoVacio
         icono="log-in-outline"
-        titulo="Inicia sesión como técnico"
-        detalle="Tus clientes te escriben acá. Ingresa a tu cuenta para ver sus mensajes y responderles."
-        accion={{ texto: 'Ir a mi cuenta', onPress: () => router.push('/(tabs)/cuenta') }}
+        titulo="Inicia sesión para ver tus mensajes"
+        detalle="Si eres técnico, ingresa a tu cuenta. Si buscas un servicio, contacta a un especialista y tu chat aparecerá aquí."
+        accion={{ texto: 'Buscar un técnico', onPress: () => router.push('/(tabs)/buscar') }}
+        accionSecundaria={{ texto: 'Soy técnico — ir a mi cuenta', onPress: () => router.push('/(tabs)/cuenta') }}
       />
     )
   }

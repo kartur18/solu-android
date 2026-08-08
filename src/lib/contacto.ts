@@ -14,13 +14,21 @@ export interface LeadChat {
   chatToken: string
 }
 
+// Lo mínimo que necesita POST /api/contactos del técnico. Estructural para
+// que "Mis técnicos" (shape de /api/cliente/mis-tecnicos, con nulls) pueda
+// re-contactar sin inventar un Tecnico completo.
+export type TecnicoContactable = Pick<Tecnico, 'id'> & {
+  oficio?: string | null
+  distrito?: string | null
+}
+
 // Crea el lead vía POST /api/contactos (igual que la web): registra el
 // contacto, cobra el coin al técnico al primer mensaje y devuelve el
 // chatToken para abrir el chat in-app. Devuelve null si falla (sin red,
 // rate-limit, técnico inexistente). servicio_buscado = oficio del técnico;
 // distrito = el del cliente, con fallback al del técnico.
 export async function iniciarChatLead(
-  tech: Tecnico,
+  tech: TecnicoContactable,
   cliente: ClientProfile,
 ): Promise<LeadChat | null> {
   try {
@@ -31,8 +39,8 @@ export async function iniciarChatLead(
         tecnico_id: tech.id,
         cliente_whatsapp: cliente.whatsapp,
         cliente_nombre: cliente.nombre,
-        servicio_buscado: tech.oficio,
-        distrito: cliente.distrito || tech.distrito,
+        servicio_buscado: tech.oficio ?? undefined,
+        distrito: cliente.distrito || tech.distrito || undefined,
       }),
     })
     if (!res.ok) return null

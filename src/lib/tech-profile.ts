@@ -2,6 +2,21 @@ import { ENV, fetchWithTimeout } from './env'
 import { notifyIf401 } from './session-expired'
 import type { Tecnico, Cliente, Resena, Notificacion, Cotizacion } from './types'
 
+// Cita real de la agenda del técnico (tabla `citas`, próximos 7 días). Los
+// campos van laxos a propósito: el server se está extendiendo en paralelo y
+// las variantes de nombre (cliente vs cliente_nombre) no deben romper la UI.
+export interface CitaAgenda {
+  id?: number
+  fecha: string
+  hora_inicio: string
+  hora_fin?: string | null
+  estado?: string | null
+  cliente?: string | null
+  cliente_nombre?: string | null
+  cliente_whatsapp?: string | null
+  servicio?: string | null
+}
+
 export interface TechDashboardData {
   leads: Cliente[]
   resenas: Resena[]
@@ -11,6 +26,11 @@ export interface TechDashboardData {
   pagos: any[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ídem
   openRequests: any[]
+  // Campos nuevos del server (deploys viejos no los mandan): si faltan, la UI
+  // simplemente no muestra la sección — nunca un estado roto.
+  citas?: CitaAgenda[]
+  agenda?: CitaAgenda[]
+  calendar_url?: string
 }
 
 // Por qué existe este resultado y no alcanza con `null`: devolver `null` mezclaba

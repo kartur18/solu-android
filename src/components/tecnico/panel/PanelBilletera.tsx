@@ -2,19 +2,31 @@
 // del modelo mensual. Muestra el saldo real de SoluCoins, el tier loyalty y
 // el acceso a la pantalla de compra de paquetes.
 
+import { useEffect, useState } from 'react'
 import { Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { Tecnico } from '../../../lib/types'
 import { THEME } from '../../../lib/theme'
+import { fetchSaldoCoins, type SaldoCoins } from '../../../lib/creditos-api'
 import { FadeInUp, PressableScale } from '../../ui/Motion'
 import { ErrorDeCarga } from './ErrorDeCarga'
+import { MovimientosCoins } from './MovimientosCoins'
 import type { PagoCoins, TierInfo } from './panel-utils'
+
+// "vencen hoy" y no "en 0 días": el día del vencimiento es justo cuando el
+// countdown más tiene que empujar a usar el bono.
+function textoVencimiento(dias: number): string {
+  if (dias <= 0) return 'vencen HOY'
+  if (dias === 1) return 'vencen mañana'
+  return `vencen en ${dias} días`
+}
 
 export function PanelBilletera({
   tech,
   tierInfo,
   pagos,
   dashError,
+  authToken,
   onReload,
   onComprarCoins,
 }: {
@@ -22,9 +34,32 @@ export function PanelBilletera({
   tierInfo: TierInfo
   pagos: PagoCoins[]
   dashError: boolean
+  authToken: string | null
   onReload: () => void
   onComprarCoins: () => void
 }) {
+  // Desglose del bono (buckets + fecha de vencimiento). Si el server no lo
+  // da (fallo o endpoint aún sin Bearer), la billetera queda como estaba:
+  // saldo local de tech.coins_balance y ningún chip — sin falsas alarmas.
+  const [saldo, setSaldo] = useState<SaldoCoins | null>(null)
+
+  useEffect(() => {
+    let vivo = true
+    void fetchSaldoCoins(authToken).then((res) => {
+      if (vivo && res.ok) setSaldo(res.data)
+    })
+    return () => { vivo = false }
+  }, [authToken])
+
+  const bonoCoins = saldo && !saldo.ilimitado ? saldo.saldo_bonus_inicial : 0
+  const bonoDias = saldo?.dias_a_expirar_bonus ?? null
+  // dias -1 = ya expiró (el server lazy-expira el saldo): no hay nada que avisar.
+  const bonoVigente = bonoCoins > 0 && bonoDias !== null && bonoDias >= 0 && !!saldo?.fecha_expiracion_bonus
+  const bonoUrgente = bonoVigente && bonoDias !== null && bonoDias <= 7
+  const bonoFecha = bonoVigente && saldo?.fecha_expiracion_bonus
+    ? new Date(saldo.fecha_expiracion_bonus).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })
+    : ''
+
   return (
     <View style={{ gap: THEME.space.md }}>
       {/* Hero del wallet — saldo grande, tier, CTA comprar */}
@@ -60,6 +95,21 @@ export function PanelBilletera({
             : 'Completa 10 servicios y sube a Plata: 8% de descuento en cada paquete de SoluCoins.'}
         </Text>
 
+        {/* Desglose del bono: la parte del saldo que tiene fecha de muerte.
+            Sin esto, el saldo cayendo a 0 al día 31 parecía una estafa. */}
+        {bonoVigente && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+            backgroundColor: 'rgba(252,211,77,0.14)', borderRadius: THEME.radius.full,
+            paddingHorizontal: THEME.space.md, paddingVertical: 6, marginTop: THEME.space.md,
+          }}>
+            <Ionicons name="gift" size={13} color="#FCD34D" />
+            <Text style={{ ...THEME.font.caption, fontWeight: '700', color: '#FCD34D' }}>
+              De regalo: {bonoCoins.toLocaleString('es-PE')} coins — vencen el {bonoFecha} ({bonoDias === 0 ? 'hoy' : bonoDias === 1 ? '1 día' : `${bonoDias} días`})
+            </Text>
+          </View>
+        )}
+
         <PressableScale
           onPress={onComprarCoins}
           accessibilityLabel="Comprar SoluCoins"
@@ -77,6 +127,28 @@ export function PanelBilletera({
         </PressableScale>
       </View>
       </FadeInUp>
+
+      {/* Countdown urgente: a ≤7 días el bono ya no es un dato, es una
+          cuenta regresiva sobre plata que se esfuma. */}
+      {bonoUrgente && bonoDias !== null && (
+        <View
+          accessibilityRole="alert"
+          style={{
+            backgroundColor: THEME.color.warningBg, borderWidth: 1, borderColor: '#FDE68A',
+            borderRadius: THEME.radius.lg, padding: THEME.space.lg,
+            flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+          }}
+        >
+          <Text style={{ fontSize: 18 }}>⏳</Text>
+          <Text style={{ flex: 1, ...THEME.font.bodySm, fontWeight: '700', color: '#92400E', lineHeight: 19 }}>
+            Te quedan {bonoCoins.toLocaleString('es-PE')} coins de bono — {textoVencimiento(bonoDias)}. Úsalos en tus próximos leads.
+          </Text>
+        </View>
+      )}
+
+      {/* Últimos movimientos del ledger (carga y falla por su cuenta: un
+          error acá no toca el saldo ni el historial de pagos de siempre) */}
+      <MovimientosCoins authToken={authToken} />
 
       {/* Cómo funciona el modelo prepago */}
       <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg }}>

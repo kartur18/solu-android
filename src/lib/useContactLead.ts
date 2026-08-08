@@ -2,10 +2,9 @@ import { useState, useCallback } from 'react'
 import { Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { iniciarChatLead } from './contacto'
+import { iniciarChatLead, type TecnicoContactable } from './contacto'
 import { useClientProfile } from './useClientProfile'
 import { haptics } from '../components/ui/Motion'
-import type { Tecnico } from './types'
 
 // Orquesta el contacto PRIMARIO in-app: crea el lead vía POST /api/contactos
 // (cobra coin al técnico, queda registrado) y navega al chat del cliente.
@@ -18,12 +17,12 @@ export function useContactLead() {
   const router = useRouter()
   const { profile, save } = useClientProfile()
   // Técnico pendiente: si está seteado, el modal de perfil está abierto.
-  const [pendingTech, setPendingTech] = useState<Tecnico | null>(null)
+  const [pendingTech, setPendingTech] = useState<TecnicoContactable | null>(null)
   const [enviando, setEnviando] = useState(false)
 
   // Crea el lead y navega al chat. Si falla, ofrece WhatsApp de respaldo.
   const crearYNavegar = useCallback(
-    async (tech: Tecnico, nombre: string, whatsapp: string, distrito?: string) => {
+    async (tech: TecnicoContactable, nombre: string, whatsapp: string, distrito?: string) => {
       setEnviando(true)
       try {
         const lead = await iniciarChatLead(tech, { nombre, whatsapp, distrito })
@@ -56,7 +55,7 @@ export function useContactLead() {
   // Acción primaria "Contactar". Si el perfil está completo va directo;
   // si falta data abre el modal para capturarla.
   const contactar = useCallback(
-    (tech: Tecnico) => {
+    (tech: TecnicoContactable) => {
       const nombre = profile?.nombre?.trim()
       const whatsapp = profile?.whatsapp?.replace(/\D/g, '')
       if (nombre && whatsapp && WHATSAPP_RE.test(whatsapp)) {

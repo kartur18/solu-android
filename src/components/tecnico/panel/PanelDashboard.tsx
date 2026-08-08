@@ -1,13 +1,15 @@
 // Pestaña "Inicio" del panel del técnico: bandeja, resumen del mes, tier,
 // logros, agenda, últimas solicitudes, promociones y tarjeta digital.
 
-import { Image, Linking, Share, Text, TouchableOpacity, View } from 'react-native'
+import { Image, Share, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { useRouter } from 'expo-router'
 import { ACHIEVEMENTS } from '../../../lib/constants'
+import type { CitaAgenda } from '../../../lib/tech-profile'
 import type { Cliente, Tecnico } from '../../../lib/types'
 import { THEME } from '../../../lib/theme'
 import { FadeInUp, PressableScale } from '../../ui/Motion'
+import { AgendaHoy } from './AgendaHoy'
 import { LeadRow } from './LeadRow'
 import type { Aviso } from './ToastAviso'
 import type { TierInfo } from './panel-utils'
@@ -15,6 +17,8 @@ import type { TierInfo } from './panel-utils'
 export function PanelDashboard({
   tech,
   leads,
+  citas,
+  calendarUrl,
   chatsSinLeer,
   mensajesSinLeer,
   tierInfo,
@@ -27,6 +31,9 @@ export function PanelDashboard({
 }: {
   tech: Tecnico
   leads: Cliente[]
+  // null = el server aún no manda citas/calendar_url (deploy viejo)
+  citas: CitaAgenda[] | null
+  calendarUrl: string | null
   chatsSinLeer: number
   mensajesSinLeer: number
   tierInfo: TierInfo
@@ -135,11 +142,24 @@ export function PanelDashboard({
             <View style={{ height: '100%', backgroundColor: tierInfo.color, borderRadius: 4, width: `${Math.round(tierProgress * 100)}%` }} />
           </View>
           {tierNext ? (
-            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 6 }}>
-              {Math.max(tierNext.min - tech.servicios_completados, 0)} servicios más para {tierNext.emoji} {tierNext.name}
-            </Text>
+            <>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 6 }}>
+                {Math.max(tierNext.min - tech.servicios_completados, 0)} servicios más para {tierNext.emoji} {tierNext.name}
+              </Text>
+              {/* El tier SÍ afecta el precio: el server aplica este % al
+                  cobrar cada paquete (TIER_DESCUENTO_PAQUETES). Subir de
+                  nivel es plata concreta, no un badge decorativo. */}
+              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.brand, marginTop: 2 }}>
+                {tierNext.name} = {tierNext.descuento}% de descuento en cada paquete de SoluCoins
+              </Text>
+            </>
           ) : (
-            <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 6 }}>Nivel máximo alcanzado 🎉</Text>
+            <>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 6 }}>Nivel máximo alcanzado 🎉</Text>
+              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.brand, marginTop: 2 }}>
+                {tierInfo.name} = {tierInfo.descuento}% de descuento en cada paquete de SoluCoins
+              </Text>
+            </>
           )}
         </View>
         </FadeInUp>
@@ -165,50 +185,9 @@ export function PanelDashboard({
         </View>
         </FadeInUp>
 
-        {/* Today's calendar */}
+        {/* Agenda de hoy: citas reales del server + leads activos (AgendaHoy) */}
         <FadeInUp delay={240}>
-        <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg, ...THEME.shadow.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.md }}>
-            <Ionicons name="calendar" size={18} color={THEME.color.info} />
-            <Text style={{ fontSize: 14, fontWeight: '800', color: THEME.color.ink }}>Agenda de hoy</Text>
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`https://www.solu.pe/api/calendar-sync?tecnicoId=${tech.id}`)}
-              accessibilityLabel="Sincronizar mi agenda con mi calendario"
-              hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-            >
-              <Ionicons name="calendar-outline" size={14} color={THEME.color.info} />
-              <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.info }}>Sincronizar</Text>
-            </TouchableOpacity>
-          </View>
-          {(() => {
-            const today = new Date().toISOString().split('T')[0]
-            const todayLeads = leads.filter(l => {
-              const d = l.created_at?.split('T')[0]
-              return (l.estado === 'Asignado' || l.estado === 'En camino' || l.estado === 'En proceso') && d === today
-            })
-            if (todayLeads.length === 0) {
-              return (
-                <View style={{ alignItems: 'center', paddingVertical: THEME.space.lg }}>
-                  <Ionicons name="checkmark-circle-outline" size={32} color={THEME.color.success} />
-                  <Text style={{ ...THEME.font.bodySm, fontWeight: '600', color: THEME.color.ink, marginTop: THEME.space.sm }}>Sin citas para hoy</Text>
-                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 2 }}>Tu agenda está libre</Text>
-                </View>
-              )
-            }
-            return todayLeads.map(l => (
-              <View key={l.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: THEME.color.surfaceAlt, borderRadius: THEME.radius.md, padding: THEME.space.md, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: l.estado === 'En proceso' ? THEME.color.brand : l.estado === 'En camino' ? THEME.color.platino : THEME.color.info }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: THEME.color.ink }}>{l.nombre}</Text>
-                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft }}>{l.servicio} · {l.distrito}</Text>
-                </View>
-                <View style={{ backgroundColor: THEME.color.infoBg, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4 }}>
-                  <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.info }}>{l.estado}</Text>
-                </View>
-              </View>
-            ))
-          })()}
-        </View>
+          <AgendaHoy citas={citas} calendarUrl={calendarUrl} leads={leads} />
         </FadeInUp>
 
         {/* Recent leads preview */}

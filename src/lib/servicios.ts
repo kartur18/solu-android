@@ -59,3 +59,62 @@ export async function fetchClienteServicios(whatsapp: string): Promise<any[]> {
     return []
   }
 }
+
+// Variante que distingue "no tienes servicios" de "no pudimos preguntar":
+// la bandeja de mensajes del cliente no debe disfrazar un fallo de red de
+// bandeja vacía (mismo patrón que fetchServicioByCodigoResult).
+export type ResultadoServicios =
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- filas dinámicas de `clientes`
+  | { estado: 'ok'; servicios: any[] }
+  | { estado: 'error' }
+
+export async function fetchClienteServiciosResult(whatsapp: string): Promise<ResultadoServicios> {
+  if (!whatsapp) return { estado: 'ok', servicios: [] }
+  try {
+    const res = await fetch(`${ENV.API_BASE_URL}/cliente/servicios?whatsapp=${encodeURIComponent(whatsapp)}`)
+    if (!res.ok) return { estado: 'error' }
+    const data = await res.json()
+    return { estado: 'ok', servicios: data?.servicios ?? [] }
+  } catch {
+    return { estado: 'error' }
+  }
+}
+
+// Espejo del item de GET /api/cliente/mis-tecnicos (web): datos públicos de
+// tarjeta + agregado de cuántas veces atendió a ESTE cliente.
+export interface TecnicoConfianza {
+  id: number
+  nombre: string
+  oficio: string | null
+  distrito: string | null
+  foto_url: string | null
+  calificacion: number | null
+  num_resenas: number | null
+  servicios_completados: number | null
+  verificado: boolean | null
+  disponible: boolean | null
+  veces: number
+  servicios: number
+  ultimo_servicio_at: string
+  ultimo_servicio: string | null
+  ultimo_distrito: string | null
+  tiene_servicio_activo: boolean
+}
+
+export type ResultadoMisTecnicos =
+  | { estado: 'ok'; tecnicos: TecnicoConfianza[] }
+  | { estado: 'error' }
+
+// "Tus técnicos de confianza": quiénes ya atendieron a este cliente. El
+// re-contacto desde esta lista pasa por /api/contactos (cobra el lead).
+export async function fetchMisTecnicos(whatsapp: string): Promise<ResultadoMisTecnicos> {
+  if (!whatsapp) return { estado: 'ok', tecnicos: [] }
+  try {
+    const res = await fetch(`${ENV.API_BASE_URL}/cliente/mis-tecnicos?whatsapp=${encodeURIComponent(whatsapp)}`)
+    if (!res.ok) return { estado: 'error' }
+    const data = await res.json()
+    return { estado: 'ok', tecnicos: data?.tecnicos ?? [] }
+  } catch {
+    return { estado: 'error' }
+  }
+}
