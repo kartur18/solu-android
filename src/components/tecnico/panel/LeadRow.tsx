@@ -7,7 +7,6 @@ import { Ionicons } from '@expo/vector-icons'
 import type { useRouter } from 'expo-router'
 import { ENV, fetchWithTimeout } from '../../../lib/env'
 import { getTechToken } from '../../../lib/tech-session'
-import { sendPush } from '../../../lib/integrations'
 import type { Cliente, Tecnico } from '../../../lib/types'
 import { THEME } from '../../../lib/theme'
 import { PressableScale, haptics } from '../../ui/Motion'
@@ -78,13 +77,13 @@ export function LeadRow({
       if (!ok) {
         onAviso?.({ tipo: 'error', texto: 'No se pudo actualizar el estado. Revisa tu conexión e inténtalo de nuevo.' })
       } else {
-        try {
-          const msgs: Record<string, string> = { 'En camino': 'Tu técnico está en camino', 'En proceso': 'El técnico está trabajando', Completado: '¡Servicio completado!' }
-          const waClean = (lead.whatsapp || '').replace(/\D/g, '')
-          if (waClean) {
-            sendPush('cliente', waClean, `Servicio ${newStatus}`, msgs[newStatus] || `Estado: ${newStatus}`).catch(() => {})
-          }
-        } catch {}
+        // El push al cliente lo manda el SERVER en /api/tecnico/lead/[id]/estado
+        // (pushToClienteByWhatsapp, cubre En camino/En proceso/Completado/
+        // Cancelado). El sendPush cliente-side de acá pegaba a /api/send-push
+        // con targetId=whatsapp y SIEMPRE daba 404 (ese endpoint no resuelve
+        // 'cliente' por whatsapp): era redundante y roto. Se quita para no
+        // arriesgar doble-push y no gastar requests. La fuente de verdad del
+        // aviso de estado al cliente es el server.
         // Live GPS streaming: on "En camino" start, on "En proceso"/"Completado" stop
         try {
           const { startLiveTracking, stopLiveTracking } = await import('../../../lib/liveTracking')
