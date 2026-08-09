@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Image, Share } from 'react-native'
+import { View, Text, TouchableOpacity, Image, Share, Platform } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
@@ -9,7 +9,11 @@ import { THEME } from '../lib/theme'
 import { PressableScale, PulseDot } from './ui/Motion'
 import { optimizeUrl } from '../lib/cloudinary'
 import { tierFromServicios } from '../lib/tecnico-columns'
+import { codigoDeTecnico } from '../lib/codigo-tecnico'
 import type { Tecnico } from '../lib/types'
+
+// Fuente monoespaciada para el código público (look de "número de serie").
+const MONO_FONT: string = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }) ?? 'monospace'
 
 type Props = {
   tech: Tecnico
@@ -40,6 +44,8 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
   const router = useRouter()
   // Flujo de contacto primario in-app (crea lead + abre chat).
   const lead = useContactLead()
+  // Código público estable derivado del id (coincide con web y con el perfil).
+  const codigo = codigoDeTecnico(tech.id)
   const avatarGradient = AVATAR_GRADIENTS[(tech.id || 0) % AVATAR_GRADIENTS.length]
   // Tier derivado de servicios_completados (no es columna). Bronce = base, sin badge.
   const tier = tierFromServicios(tech.servicios_completados)
@@ -149,6 +155,10 @@ export const TechCard = React.memo(function TechCard({ tech, onToggleFavorite, i
             </Text>
             <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 2 }} numberOfLines={1}>
               {tech.oficio}
+            </Text>
+            {/* Código público discreto: mismo string que el perfil y la web. */}
+            <Text style={{ fontFamily: MONO_FONT, fontSize: 10, fontWeight: '600', letterSpacing: 0.8, color: THEME.color.inkMuted, marginTop: 2 }} numberOfLines={1}>
+              {codigo}
             </Text>
 
             {/* Rating + distancia/distrito */}

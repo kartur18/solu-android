@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Linking, Image, Modal, FlatList, Dimensions, Share, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Linking, Image, Modal, FlatList, Dimensions, Share, Alert, Platform } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { getTechLevel } from '../../src/lib/constants'
+import { codigoDeTecnico } from '../../src/lib/codigo-tecnico'
 import { useContactLead } from '../../src/lib/useContactLead'
 import { ContactLeadModal } from '../../src/components/ContactLeadModal'
 import { supabase } from '../../src/lib/supabase'
@@ -28,6 +29,9 @@ const TIER_LABEL: Record<string, string> = {
   oro: 'Oro',
   platino: 'Platino',
 }
+
+// Fuente monoespaciada para el código público (look de "número de serie").
+const MONO_FONT: string = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }) ?? 'monospace'
 
 function capitalizar(nombre?: string): string {
   if (!nombre) return ''
@@ -107,6 +111,9 @@ export default function TecnicoScreen() {
   const tier = tierFromServicios(tech.servicios_completados)
   const tierColor = tier !== 'bronce' ? THEME.color[tier] : null
   const level = getTechLevel(tech.servicios_completados || 0)
+  // Código público estable: se deriva del id (sin fetch) y coincide con la web.
+  // El cliente lo usa para confirmar que el técnico que llegó es el del perfil.
+  const codigo = codigoDeTecnico(tech.id)
 
   return (
     <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
@@ -182,12 +189,33 @@ export default function TecnicoScreen() {
               )}
             </View>
 
+            {/* Código público (mono/discreto): estable y copiable. `selectable`
+                deja al cliente copiarlo para comparar con el que le dé el técnico. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: THEME.space.sm }}>
+              <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.55)' }}>Código</Text>
+              <Text
+                selectable
+                accessibilityLabel={`Código del técnico ${codigo}`}
+                style={{ fontFamily: MONO_FONT, fontSize: 12, fontWeight: '700', letterSpacing: 1.5, color: 'rgba(255,255,255,0.9)', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', borderRadius: THEME.radius.full, paddingHorizontal: 10, paddingVertical: 3, overflow: 'hidden' }}
+              >
+                {codigo}
+              </Text>
+            </View>
+
             {/* Badges hero */}
             <View style={{ flexDirection: 'row', gap: THEME.space.xs, marginTop: THEME.space.md, flexWrap: 'wrap', justifyContent: 'center' }}>
               {tech.verificado && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(22,163,74,0.18)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: 5 }}>
                   <Ionicons name="shield-checkmark" size={13} color={THEME.color.success} />
                   <Text style={{ ...THEME.font.caption, fontWeight: '700', color: '#4ADE80' }}>DNI verificado</Text>
+                </View>
+              )}
+              {/* Antecedentes/certificados revisados por SOLU. Solo el flag público
+                  (documentos_verificados) — el detalle por-documento vive server-side. */}
+              {tech.documentos_verificados && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(22,163,74,0.18)', borderRadius: THEME.radius.full, paddingHorizontal: THEME.space.md, paddingVertical: 5 }}>
+                  <Ionicons name="document-text" size={13} color={THEME.color.success} />
+                  <Text style={{ ...THEME.font.caption, fontWeight: '700', color: '#4ADE80' }}>Documentos verificados</Text>
                 </View>
               )}
               {tierColor && (

@@ -8,6 +8,7 @@ import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/
 import { supabase } from '../../src/lib/supabase'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
 import { fetchServicioByCodigoResult } from '../../src/lib/servicios'
+import { useClientProfile } from '../../src/lib/useClientProfile'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
 import type { Cliente, Tecnico } from '../../src/lib/types'
@@ -37,6 +38,9 @@ export default function TrackingScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  // Identidad del cliente invitado (AsyncStorage): su whatsapp es la referencia
+  // para pedir el cancelToken. El whatsapp del servicio ya viene null (PII cerrada).
+  const { profile } = useClientProfile()
 
   const loadData = useCallback(async () => {
     // Lectura de `clientes` migrada a endpoint server-side (anon cerrado por PII).
@@ -169,9 +173,20 @@ export default function TrackingScreen() {
             // Cancelación server-side: el endpoint cambia el estado y notifica
             // al técnico (push + BD). El insert/update anon quedó cerrado por
             // el lockdown. La app no tiene cookie de sesión, así que probamos
-            // ownership con el whatsapp del servicio: pedimos un cancelToken
-            // (HMAC del código) y con él cancelamos.
-            const whatsapp = (snapshot.whatsapp || '').replace(/\D/g, '')
+            // ownership con el whatsapp del CLIENTE (AsyncStorage): antes se leía
+            // snapshot.whatsapp, que ahora viene null (PII cerrada) → el server
+            // no podía verificar y devolvía 403. Pedimos un cancelToken (HMAC
+            // del código) con ese número y con él cancelamos.
+            const whatsapp = (profile?.whatsapp || '').replace(/\D/g, '')
+            if (!whatsapp) {
+              // Sin el número con el que pidió el servicio no podemos probar que
+              // es suyo (evita que cualquiera con el código cancele pedidos ajenos).
+              Alert.alert(
+                'No pudimos verificar tu identidad',
+                'Para cancelar necesitamos el número con el que pediste el servicio. Escríbenos por WhatsApp de soporte y lo cancelamos.',
+              )
+              return
+            }
             try {
               const tokRes = await fetchWithTimeout(`${ENV.API_BASE_URL}/pedidos/${encodeURIComponent(snapshot.codigo)}/cancel-token`, {
                 method: 'POST',

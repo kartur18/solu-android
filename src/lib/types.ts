@@ -19,6 +19,9 @@ export interface Tecnico {
   tier?: 'bronce' | 'plata' | 'oro' | 'platino'
   disponible: boolean
   verificado: boolean
+  // DNI/antecedentes al día según el flujo de verificación manual. Viene en el
+  // SELECT público (tecnico-columns) y alimenta el badge "Documentos verificados".
+  documentos_verificados?: boolean
   calificacion: number
   num_resenas: number
   servicios_completados: number

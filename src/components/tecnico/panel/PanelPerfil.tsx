@@ -4,9 +4,10 @@
 // todo lo tocable mide 44px o más.
 
 import { useState } from 'react'
-import { ActivityIndicator, Alert, Image, ScrollView, Share, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Platform, ScrollView, Share, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
+import { codigoDeTecnico } from '../../../lib/codigo-tecnico'
 import { DISTRITOS, OFICIOS_LIST } from '../../../lib/constants'
 import { ENV, fetchWithTimeout } from '../../../lib/env'
 import { getTechAuthToken } from '../../../lib/tech-auth'
@@ -25,6 +26,9 @@ type TecnicoConDocs = Tecnico & {
 }
 
 type TipoDoc = 'antecedentes_penales' | 'antecedentes_policiales' | 'certificado_estudios'
+
+// Fuente monoespaciada para el código público (look de "número de serie").
+const MONO_FONT: string = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }) ?? 'monospace'
 
 export function PanelPerfil({
   tech,
@@ -87,6 +91,8 @@ export function PanelPerfil({
   const [showZonasPicker, setShowZonasPicker] = useState(false)
   const [zonaSearch, setZonaSearch] = useState('')
   const docsTech = tech as TecnicoConDocs
+  // Código público estable derivado del id (coincide con web y perfil del cliente).
+  const codigo = codigoDeTecnico(tech.id)
 
   // Subida rápida de documento desde el modo edición (sin allowsEditing:
   // el certificado se manda entero, no recortado).
@@ -143,6 +149,18 @@ export function PanelPerfil({
             <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.info }}>Cambiar foto de perfil</Text>
           </View>
         </TouchableOpacity>
+        {/* Código público del técnico: mono/discreto y copiable. Es el mismo que
+            ve el cliente en el perfil; sirve para que confirme identidad. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: THEME.space.sm }}>
+          <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>Tu código</Text>
+          <Text
+            selectable
+            accessibilityLabel={`Tu código de técnico ${codigo}`}
+            style={{ fontFamily: MONO_FONT, fontSize: 12, fontWeight: '700', letterSpacing: 1.5, color: THEME.color.ink, backgroundColor: THEME.color.surfaceAlt, borderWidth: 1, borderColor: THEME.color.line, borderRadius: THEME.radius.full, paddingHorizontal: 10, paddingVertical: 3, overflow: 'hidden' }}
+          >
+            {codigo}
+          </Text>
+        </View>
       </View>
 
       <View style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.lg, padding: THEME.space.lg }}>

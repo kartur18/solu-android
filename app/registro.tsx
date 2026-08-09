@@ -11,7 +11,7 @@
 // ni zonas (el límite real lo da el saldo de SoluCoins, no un plan mensual).
 
 import { useState } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Image } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
@@ -19,6 +19,7 @@ import { DISTRITOS } from '../src/lib/constants'
 import { logger } from '../src/lib/logger'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { verifyDNI } from '../src/lib/integrations'
+import { subirImagen } from '../src/lib/subirImagen'
 import { compressDNIPhoto } from '../src/lib/imageCompress'
 import { validarPassword, PASSWORD_MIN_LENGTH } from '../src/lib/password-policy'
 import { THEME } from '../src/lib/theme'
@@ -88,6 +89,9 @@ export default function RegistroScreen() {
   const [whatsapp, setWhatsapp] = useState('')
   const [email, setEmail] = useState('')
   const [dni, setDni] = useState('')
+  // Foto de perfil (pública, opcional): sin foto los clientes no eligen al
+  // técnico. Se guarda la URI local acá y se sube al enviar (no bloquea el alta).
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -124,6 +128,25 @@ export default function RegistroScreen() {
     if (!result.canceled) {
       const compressed = await compressDNIPhoto(result.assets[0].uri)
       setter(compressed)
+    }
+  }
+
+  // Foto de perfil: recorte cuadrado (mismo patrón que cuenta.tsx). Solo se
+  // guarda la URI; la subida ocurre al enviar el registro.
+  async function pickFotoPerfil() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para tu foto de perfil')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    })
+    if (!result.canceled && result.assets?.[0]) {
+      setFotoPerfil(result.assets[0].uri)
     }
   }
 
@@ -226,6 +249,14 @@ export default function RegistroScreen() {
         )
       }
 
+      // Foto de perfil (pública): la subimos a Cloudinary vía /upload-image.
+      // Va a la carpeta anónima 'solicitudes' porque en el alta aún no hay
+      // sesión y 'perfil' exige token; la URL igual queda pública y permanente
+      // (Cloudinary), que es lo que necesita foto_url. No bloquea el alta: si
+      // falla, seguimos sin foto y el técnico la sube luego desde su panel.
+      let fotoPerfilUrl: string | null = null
+      if (fotoPerfil) fotoPerfilUrl = await subirImagen(fotoPerfil, 'solicitudes')
+
       let dniFrenteUrl: string | null = null
       let dniPosteriorUrl: string | null = null
 
@@ -240,14 +271,14 @@ export default function RegistroScreen() {
           'No pudimos subir tu DNI',
           'Las fotos no llegaron a SOLU y sin ellas no apareces en las búsquedas de clientes. Revisa tu conexión y vuelve a intentar, o crea la cuenta y sube tu DNI después desde tu panel.',
           [
-            { text: 'Crear cuenta sin DNI', style: 'destructive', onPress: () => { void registrar(null, null) } },
+            { text: 'Crear cuenta sin DNI', style: 'destructive', onPress: () => { void registrar(null, null, fotoPerfilUrl) } },
             { text: 'Reintentar', onPress: () => { void submit() } },
           ],
         )
         return
       }
 
-      await registrar(dniFrenteUrl, dniPosteriorUrl)
+      await registrar(dniFrenteUrl, dniPosteriorUrl, fotoPerfilUrl)
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.')
       setLoading(false)
@@ -256,7 +287,7 @@ export default function RegistroScreen() {
 
   // POST final a register-tech, separado de submit() para poder reintentar o
   // continuar sin fotos cuando el upload del DNI falla.
-  async function registrar(dniFrenteUrl: string | null, dniPosteriorUrl: string | null) {
+  async function registrar(dniFrenteUrl: string | null, dniPosteriorUrl: string | null, fotoPerfilUrl: string | null) {
     setLoading(true)
     try {
       // V3.1: no enviamos `plan` al backend (eliminado). El backend acredita
@@ -277,6 +308,7 @@ export default function RegistroScreen() {
           precio_desde: precio ? parseInt(precio) : undefined,
           experiencia: experiencia || undefined,
           descripcion: descripcion || undefined,
+          foto_url: fotoPerfilUrl || undefined,
           dni_frente_url: dniFrenteUrl,
           dni_posterior_url: dniPosteriorUrl,
         }),
@@ -362,6 +394,36 @@ export default function RegistroScreen() {
                     Te llegan al crear tu cuenta y vencen en 30 días. Alcanzan para tus primeros leads: aprovéchalos tu primer mes.
                   </Text>
                 </View>
+              </View>
+            </FadeInUp>
+
+            {/* Foto de perfil (opcional pero clave): sin foto los clientes casi
+                no eligen al técnico. No bloquea el alta — se sube al enviar. */}
+            <FadeInUp delay={90}>
+              <View style={{ alignItems: 'center', marginBottom: THEME.space.xl }}>
+                <TouchableOpacity
+                  onPress={() => { void pickFotoPerfil() }}
+                  accessibilityLabel={fotoPerfil ? 'Cambiar tu foto de perfil' : 'Agregar tu foto de perfil'}
+                  activeOpacity={0.8}
+                  style={{ alignItems: 'center' }}
+                >
+                  <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, borderColor: fotoPerfil ? THEME.color.success : THEME.color.brandSoft }}>
+                    {fotoPerfil ? (
+                      <Image source={{ uri: fotoPerfil }} style={{ width: 96, height: 96 }} />
+                    ) : (
+                      <Ionicons name="camera" size={30} color={THEME.color.brand} />
+                    )}
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: THEME.space.sm }}>
+                    <Ionicons name={fotoPerfil ? 'checkmark-circle' : 'add-circle'} size={15} color={fotoPerfil ? THEME.color.success : THEME.color.brand} />
+                    <Text style={{ ...THEME.font.label, fontWeight: '700', color: fotoPerfil ? THEME.color.success : THEME.color.brand }}>
+                      {fotoPerfil ? 'Foto lista · toca para cambiar' : 'Agrega tu foto de perfil'}
+                    </Text>
+                  </View>
+                  <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 4, textAlign: 'center', maxWidth: 260 }}>
+                    Es opcional, pero sin foto los clientes casi no te eligen. Muestra tu cara y genera confianza.
+                  </Text>
+                </TouchableOpacity>
               </View>
             </FadeInUp>
 
