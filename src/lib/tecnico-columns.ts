@@ -27,7 +27,10 @@ export const TECNICO_PUBLIC_COLUMNS = [
   'disponible',
   'estado_disponibilidad',
   'ocupado_hasta',
-  'last_seen_at',
+  // 'last_seen_at' REMOVIDO: la web ya lo quitó de su lista espejo y su REVOKE
+  // anon (2026-08-07-revoke-anon-last-seen.sql) está listo; en cuanto se aplique,
+  // seguir pidiéndola tiraba permission denied en TODA lectura anon de `tecnicos`
+  // (buscar/home/perfil de la app). No se usa en la app (no hay badge Activo HOY).
   'precio_desde',
   'descripcion',
   'experiencia',
