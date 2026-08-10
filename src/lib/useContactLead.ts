@@ -13,19 +13,24 @@ import { haptics } from '../components/ui/Motion'
 
 const WHATSAPP_RE = /^9\d{8}$/
 
+// Técnico pendiente + el primer mensaje que el cliente ya quería mandar: se
+// guardan juntos para que, si el perfil está incompleto y abrimos el modal de
+// datos, no se pierda lo que iba a escribir.
+type Pending = { tech: TecnicoContactable; primerMensaje?: string }
+
 export function useContactLead() {
   const router = useRouter()
   const { profile, save } = useClientProfile()
-  // Técnico pendiente: si está seteado, el modal de perfil está abierto.
-  const [pendingTech, setPendingTech] = useState<TecnicoContactable | null>(null)
+  // Si está seteado, el modal de perfil está abierto.
+  const [pending, setPending] = useState<Pending | null>(null)
   const [enviando, setEnviando] = useState(false)
 
   // Crea el lead y navega al chat. Si falla, ofrece WhatsApp de respaldo.
   const crearYNavegar = useCallback(
-    async (tech: TecnicoContactable, nombre: string, whatsapp: string, distrito?: string) => {
+    async (tech: TecnicoContactable, nombre: string, whatsapp: string, distrito?: string, primerMensaje?: string) => {
       setEnviando(true)
       try {
-        const lead = await iniciarChatLead(tech, { nombre, whatsapp, distrito })
+        const lead = await iniciarChatLead(tech, { nombre, whatsapp, distrito }, primerMensaje)
         if (!lead) {
           // NO ofrecer WhatsApp directo de respaldo: revelaba el número del
           // técnico sin cobrar el coin (saltaba la monetización). Si el lead
@@ -53,39 +58,42 @@ export function useContactLead() {
   )
 
   // Acción primaria "Contactar". Si el perfil está completo va directo;
-  // si falta data abre el modal para capturarla.
+  // si falta data abre el modal para capturarla. `primerMensaje` es opcional:
+  // hoy los callers no lo pasan (no hay composer en la card), pero queda el
+  // canal listo para cuando exista, sin romper `contactar(tech)`.
   const contactar = useCallback(
-    (tech: TecnicoContactable) => {
+    (tech: TecnicoContactable, primerMensaje?: string) => {
       const nombre = profile?.nombre?.trim()
       const whatsapp = profile?.whatsapp?.replace(/\D/g, '')
       if (nombre && whatsapp && WHATSAPP_RE.test(whatsapp)) {
-        void crearYNavegar(tech, nombre, whatsapp, profile?.distrito)
+        void crearYNavegar(tech, nombre, whatsapp, profile?.distrito, primerMensaje)
         return
       }
-      setPendingTech(tech)
+      setPending({ tech, primerMensaje })
     },
     [profile, crearYNavegar],
   )
 
-  // Confirmación del modal: guarda el perfil y continúa con el lead.
+  // Confirmación del modal: guarda el perfil y continúa con el lead, reusando
+  // el primer mensaje que se hubiera capturado antes de abrir el modal.
   const confirmarModal = useCallback(
     async (nombre: string, whatsapp: string) => {
-      const tech = pendingTech
-      if (!tech) return
+      const p = pending
+      if (!p) return
       const wa = whatsapp.replace(/\D/g, '')
       await save({ nombre: nombre.trim(), whatsapp: wa })
-      setPendingTech(null)
-      await crearYNavegar(tech, nombre.trim(), wa, profile?.distrito)
+      setPending(null)
+      await crearYNavegar(p.tech, nombre.trim(), wa, profile?.distrito, p.primerMensaje)
     },
-    [pendingTech, save, crearYNavegar, profile?.distrito],
+    [pending, save, crearYNavegar, profile?.distrito],
   )
 
-  const cerrarModal = useCallback(() => setPendingTech(null), [])
+  const cerrarModal = useCallback(() => setPending(null), [])
 
   return {
     contactar,
     enviando,
-    modalVisible: pendingTech !== null,
+    modalVisible: pending !== null,
     confirmarModal,
     cerrarModal,
     // Pre-llenado del modal desde el perfil existente.

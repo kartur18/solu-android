@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, StatusBar, Animated } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { supabase } from '../src/lib/supabase'
 import { ENV, fetchWithTimeout } from '../src/lib/env'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale, PulseDot } from '../src/components/ui/Motion'
@@ -91,13 +90,15 @@ export default function SoporteScreen() {
       const reply = data.reply || 'Lo siento, no pude procesar tu consulta. Intenta de nuevo.'
       setMessages([...newMessages, { role: 'assistant', content: reply }])
 
-      // Save to soporte table for admin visibility
+      // Persistimos la conversación server-side (service_role): el insert anon
+      // directo murió con el revoke de escritura (2026-06-21) y encima apuntaba
+      // a columnas inexistentes (asunto/respuesta_ia), así que el soporte se
+      // perdía en silencio. Best-effort: si falla, no rompemos el chat.
       try {
-        await supabase.from('soporte').insert({
-          asunto: userMsg.slice(0, 50),
-          mensaje: userMsg,
-          respuesta_ia: reply,
-          whatsapp: 'app',
+        await fetchWithTimeout(`${ENV.API_BASE_URL}/soporte/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mensaje: userMsg, respuesta_ia: reply }),
         })
       } catch {}
     } catch {

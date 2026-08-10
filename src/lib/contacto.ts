@@ -30,6 +30,7 @@ export type TecnicoContactable = Pick<Tecnico, 'id'> & {
 export async function iniciarChatLead(
   tech: TecnicoContactable,
   cliente: ClientProfile,
+  primerMensaje?: string,
 ): Promise<LeadChat | null> {
   try {
     const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/contactos`, {
@@ -41,6 +42,11 @@ export async function iniciarChatLead(
         cliente_nombre: cliente.nombre,
         servicio_buscado: tech.oficio ?? undefined,
         distrito: cliente.distrito || tech.distrito || undefined,
+        // El primer mensaje del cliente evita el lead vacío que el backend ya
+        // bloquea ("Nuevo cliente interesado" en blanco): mismo motivo que el
+        // ComposerContacto de la web. undefined si no se capturó, para respetar
+        // el .min(1) del Zod de /api/contactos (un string vacío daría 400).
+        primer_mensaje: primerMensaje?.trim() || undefined,
       }),
     })
     if (!res.ok) return null
