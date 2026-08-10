@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, Linking, RefreshControl, Alert, Share } from 'react-native'
+import { View, Text, ScrollView, Image, Linking, RefreshControl, Alert, Share } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { waLink, SUPPORT_PHONE } from '../../src/lib/constants'
@@ -7,11 +7,44 @@ import { THEME } from '../../src/lib/theme'
 import { FadeInUp, PressableScale, Shimmer, PulseDot, haptics } from '../../src/components/ui/Motion'
 import { supabase } from '../../src/lib/supabase'
 import { ENV, fetchWithTimeout } from '../../src/lib/env'
-import { fetchServicioByCodigoResult } from '../../src/lib/servicios'
+import { fetchServicioByCodigoResult, type TecnicoTracking } from '../../src/lib/servicios'
+import { codigoDeTecnico } from '../../src/lib/codigo-tecnico'
 import { useClientProfile } from '../../src/lib/useClientProfile'
 import { OfflineBanner } from '../../src/components/OfflineBanner'
 import { LiveTechMap } from '../../src/components/LiveTechMap'
-import type { Cliente, Tecnico } from '../../src/lib/types'
+import type { Cliente } from '../../src/lib/types'
+
+// Tarjeta del técnico en el tracking: normalmente viene del endpoint (con
+// num_resenas/verificado/antecedentes). Si el server no lo resuelve
+// (fail-closed) degradamos al select público mínimo, donde esas señales no
+// están — por eso son opcionales acá.
+type TechCard = {
+  id: number
+  nombre: string | null
+  oficio: string | null
+  foto_url: string | null
+  calificacion: number | null
+  num_resenas?: number | null
+  verificado?: boolean | null
+  antecedentes?: boolean | null
+}
+
+// Minutos restantes según el ETA que reportó el técnico (portado verbatim de
+// la web): parte de cuando dijo "voy en camino" y descuenta lo transcurrido.
+// Sin en_camino_at (o inválido) cae al valor crudo. null si no hay ETA. El
+// ETA lo reporta el técnico a mano, no es GPS.
+function etaRestanteMin(
+  enCaminoAt: string | null,
+  etaMinutos: number | null,
+  ahora: number = Date.now(),
+): number | null {
+  if (!etaMinutos || etaMinutos <= 0) return null
+  if (!enCaminoAt) return etaMinutos
+  const inicio = new Date(enCaminoAt).getTime()
+  if (Number.isNaN(inicio)) return etaMinutos
+  const llegada = inicio + etaMinutos * 60_000
+  return Math.round((llegada - ahora) / 60_000)
+}
 
 const STEPS = [
   { key: 'Nuevo', label: 'Solicitud registrada', icon: 'document-text' as const, desc: 'Tu solicitud fue recibida' },
@@ -31,10 +64,10 @@ const URGENCIA_COLOR: Record<string, string> = {
 export default function TrackingScreen() {
   const { code } = useLocalSearchParams<{ code: string }>()
   const router = useRouter()
-  const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null }) | null>(null)
+  const [service, setService] = useState<(Cliente & { tecnico_lat?: number | null; tecnico_lng?: number | null; tecnico_gps_updated_at?: string | null; eta_minutos?: number | null; en_camino_at?: string | null }) | null>(null)
   // whatsapp ya NO se lee desde anon (PII cerrada por el lockdown): se pide
   // de a uno al endpoint server-side cuando el usuario toca "WhatsApp".
-  const [tech, setTech] = useState<Pick<Tecnico, 'id' | 'nombre' | 'oficio' | 'foto_url' | 'calificacion'> | null>(null)
+  const [tech, setTech] = useState<TechCard | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -58,15 +91,19 @@ export default function TrackingScreen() {
     const data = res.estado === 'ok' ? res.servicio : null
     setService(data)
 
-    if (data?.tecnico_asignado) {
-      // Solo campos de display (no PII): el whatsapp se resuelve aparte vía
-      // endpoint server-side al contactar (ver botón de WhatsApp más abajo).
+    if (res.estado === 'ok' && res.tecnico) {
+      // El endpoint ya devuelve la tarjeta pública completa (mismo builder que
+      // la web): num_resenas + señales de confianza para los badges.
+      setTech(res.tecnico)
+    } else if (data?.tecnico_asignado) {
+      // Degradación fail-closed: el server no resolvió al técnico. Caemos al
+      // select público mínimo (sin badges) para no dejar la tarjeta vacía.
       const { data: techData } = await supabase
         .from('tecnicos')
         .select('id, nombre, oficio, foto_url, calificacion')
         .eq('id', data.tecnico_asignado)
         .single()
-      setTech(techData)
+      setTech(techData as TechCard | null)
     }
   }, [code])
 
@@ -99,6 +136,19 @@ export default function TrackingScreen() {
       clearInterval(intervalId)
     }
   }, [service?.id, estadoActual, loadData])
+
+  // Ticker del ETA: el técnico reporta el tiempo a mano (no GPS) y el polling
+  // de 15s no basta para descontar minuto a minuto, así que refrescamos el
+  // conteo local cada 30s mientras vaya en camino y haya ETA. Se limpia en
+  // unmount / al cambiar de estado.
+  const [ahora, setAhora] = useState(() => Date.now())
+  const etaMin = service?.eta_minutos ?? null
+  const vaEnCamino = estadoActual === 'En camino'
+  useEffect(() => {
+    if (!vaEnCamino || !etaMin || etaMin <= 0) return
+    const t = setInterval(() => setAhora(Date.now()), 30_000)
+    return () => clearInterval(t)
+  }, [vaEnCamino, etaMin])
 
   if (loading) return (
     <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
@@ -157,6 +207,21 @@ export default function TrackingScreen() {
   const isCompleted = service.estado === 'Completado'
   const canCancel = service.estado === 'Nuevo' || service.estado === 'Asignado'
   const enCamino = service.estado === 'En camino'
+
+  // Copy del ETA (mismo que la web): con minutos restantes → "llega en ~N min";
+  // vencido → "está por llegar"; sin ETA → "En camino a tu ubicación". Nunca
+  // muestra minutos negativos.
+  const etaRestante = etaRestanteMin(service.en_camino_at ?? null, service.eta_minutos ?? null, ahora)
+  const etaTitulo =
+    etaRestante === null
+      ? 'En camino a tu ubicación'
+      : etaRestante > 0
+        ? `En camino · llega en ~${etaRestante} min`
+        : 'En camino · está por llegar'
+  const etaSubtitulo =
+    etaRestante === null
+      ? 'Tu técnico ya está yendo. Te avisaremos por WhatsApp cuando llegue.'
+      : 'Tiempo estimado por el técnico. Te avisaremos por WhatsApp cuando llegue.'
 
   async function handleCancel() {
     const snapshot = service
@@ -266,6 +331,22 @@ export default function TrackingScreen() {
         </View>
       </FadeInUp>
 
+      {/* Banner de ETA — el técnico reporta el tiempo a mano (no GPS), por eso
+          el subtítulo lo aclara y, si venció, degrada a "está por llegar". */}
+      {enCamino && (
+        <FadeInUp delay={40}>
+          <View style={{ marginHorizontal: THEME.space.lg, marginTop: THEME.space.lg, backgroundColor: THEME.color.brandLight, borderRadius: THEME.radius.xl, padding: THEME.space.lg, borderWidth: 1, borderColor: THEME.color.brandSoft, flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
+            <View style={{ width: 44, height: 44, borderRadius: THEME.radius.full, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', ...THEME.shadow.brand }}>
+              <Ionicons name="navigate" size={20} color={THEME.color.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>{etaTitulo}</Text>
+              <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft, marginTop: 2 }}>{etaSubtitulo}</Text>
+            </View>
+          </View>
+        </FadeInUp>
+      )}
+
       {/* Live GPS map (solo cuando tecnico en camino y tiene coords) */}
       {service.estado === 'En camino' && service.tecnico_lat != null && service.tecnico_lng != null ? (
         <FadeInUp delay={60}>
@@ -274,7 +355,7 @@ export default function TrackingScreen() {
               lat={service.tecnico_lat}
               lng={service.tecnico_lng}
               updatedAt={service.tecnico_gps_updated_at}
-              techNombre={tech?.nombre}
+              techNombre={tech?.nombre ?? undefined}
             />
           </View>
         </FadeInUp>
@@ -286,20 +367,61 @@ export default function TrackingScreen() {
           <View style={{ marginHorizontal: THEME.space.lg, marginTop: THEME.space.lg, backgroundColor: THEME.color.surface, borderRadius: THEME.radius.xl, padding: THEME.space.lg, ...THEME.shadow.md }}>
             <Text style={{ ...THEME.font.label, color: THEME.color.inkMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: THEME.space.md }}>Tu técnico asignado</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
-              <View style={{ width: 52, height: 52, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.navy, alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="person" size={24} color={THEME.color.white} />
-              </View>
+              {tech.foto_url ? (
+                <Image
+                  source={{ uri: tech.foto_url }}
+                  style={{ width: 52, height: 52, borderRadius: THEME.radius.lg, borderWidth: 1, borderColor: THEME.color.line }}
+                />
+              ) : (
+                <View style={{ width: 52, height: 52, borderRadius: THEME.radius.lg, backgroundColor: THEME.color.navy, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="person" size={24} color={THEME.color.white} />
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={{ ...THEME.font.h3, color: THEME.color.ink }}>{tech.nombre}</Text>
-                <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 1 }}>{tech.oficio}</Text>
-                {tech.calificacion > 0 && (
+                {tech.oficio ? (
+                  <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 1 }}>{tech.oficio}</Text>
+                ) : null}
+                {/* Código público — mismo string estable que el perfil y la web. */}
+                <Text style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: '600', letterSpacing: 0.8, color: THEME.color.inkMuted, marginTop: 2 }}>
+                  {codigoDeTecnico(tech.id)}
+                </Text>
+                {/* Rating o "Nuevo": no inventamos nota si aún no tiene reseñas.
+                    En la degradación (sin num_resenas) caemos a calificacion>0. */}
+                {(tech.num_resenas != null ? tech.num_resenas > 0 : (tech.calificacion ?? 0) > 0) ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                     <Ionicons name="star" size={13} color={THEME.color.warning} />
-                    <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>{tech.calificacion.toFixed(1)}</Text>
+                    <Text style={{ ...THEME.font.label, color: THEME.color.ink }}>{(tech.calificacion ?? 0).toFixed(1)}</Text>
+                    {tech.num_resenas != null && tech.num_resenas > 0 ? (
+                      <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted }}>({tech.num_resenas})</Text>
+                    ) : null}
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                    <Ionicons name="sparkles" size={12} color={THEME.color.brand} />
+                    <Text style={{ ...THEME.font.label, color: THEME.color.brand }}>Nuevo</Text>
                   </View>
                 )}
               </View>
             </View>
+            {/* Señales de confianza — coherentes con los badges del perfil.
+                Solo booleanos: nunca el documento ni datos sensibles. */}
+            {(tech.verificado === true || tech.antecedentes === true) && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: THEME.space.xs, marginTop: THEME.space.md }}>
+                {tech.verificado === true && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4 }}>
+                    <Ionicons name="checkmark-circle" size={13} color={THEME.color.success} />
+                    <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.success }}>Verificado</Text>
+                  </View>
+                )}
+                {tech.antecedentes === true && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.sm, paddingHorizontal: THEME.space.sm, paddingVertical: 4 }}>
+                    <Ionicons name="shield-checkmark" size={13} color={THEME.color.success} />
+                    <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.success }}>Antecedentes</Text>
+                  </View>
+                )}
+              </View>
+            )}
             <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: THEME.space.lg }}>
               <PressableScale
                 onPress={() => router.push({ pathname: '/chat-pedido/[code]', params: { code: service.codigo, as: 'cliente' } })}

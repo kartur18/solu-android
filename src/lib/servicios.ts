@@ -19,6 +19,22 @@ export async function fetchServicioByCodigo(codigo: string): Promise<any | null>
   }
 }
 
+// Tarjeta pública del técnico asignado que el endpoint devuelve como HERMANO
+// de `servicio` (mismo builder que el SSE de la web): datos de display +
+// señales de confianza. Nunca trae PII. `null` si no hay técnico o si el
+// server no pudo resolverlo (fail-closed) — la pantalla degrada al select
+// público mínimo en ese caso.
+export interface TecnicoTracking {
+  id: number
+  nombre: string | null
+  oficio: string | null
+  foto_url: string | null
+  calificacion: number | null
+  num_resenas: number | null
+  verificado: boolean
+  antecedentes: boolean
+}
+
 // Igual que arriba pero distinguiendo por qué no hay servicio: el tracking
 // mostraba "No encontramos ese código" también cuando se caía la red, y el
 // estado real de error de red era inalcanzable (siempre caía en "no existe").
@@ -26,7 +42,7 @@ export async function fetchServicioByCodigo(codigo: string): Promise<any | null>
 // y las fallas de fetch son 'error' (no pudimos preguntar).
 export type ResultadoServicio =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fila dinámica de `clientes`
-  | { estado: 'ok'; servicio: any }
+  | { estado: 'ok'; servicio: any; tecnico: TecnicoTracking | null }
   | { estado: 'no_existe' }
   | { estado: 'error' }
 
@@ -39,7 +55,8 @@ export async function fetchServicioByCodigoResult(codigo: string): Promise<Resul
     if (!res.ok) return { estado: 'error' }
     const data = await res.json()
     const servicio = data?.servicio ?? null
-    return servicio ? { estado: 'ok', servicio } : { estado: 'no_existe' }
+    const tecnico = (data?.tecnico ?? null) as TecnicoTracking | null
+    return servicio ? { estado: 'ok', servicio, tecnico } : { estado: 'no_existe' }
   } catch {
     return { estado: 'error' }
   }
