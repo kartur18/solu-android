@@ -163,7 +163,7 @@ export function PanelBilletera({
           // La web lo dice en /planes y /registro-tecnico; la app callaba
           // el vencimiento del mismo dinero y el saldo en 0 al día 35
           // parecía una estafa.
-          { icon: 'gift-outline' as const, text: 'Tus 5,000 SoluCoins de bienvenida vencen a los 60 días de crear tu cuenta: aprovéchalos.' },
+          { icon: 'gift-outline' as const, text: 'Tus 5,000 SoluCoins de bienvenida no vencen: los usas cuando te lleguen clientes.' },
         ].map((item, i, arr) => (
           <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: i < arr.length - 1 ? 10 : 0 }}>
             <Ionicons name={item.icon} size={18} color={THEME.color.brand} style={{ marginTop: 1 }} />

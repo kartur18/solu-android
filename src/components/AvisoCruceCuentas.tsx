@@ -80,8 +80,8 @@ export function AvisoCruceCuentas({ visible, sinFotos, onCerrar }: {
             >
               <Text style={{ fontSize: 18 }}>🎁</Text>
               <Text style={{ flex: 1, ...THEME.font.bodySm, color: THEME.color.inkSoft, lineHeight: 20 }}>
-                Recibes 5,000 SoluCoins gratis para tus primeros leads: vencen en 60 días,
-                aprovéchalos tu primer mes.
+                Recibes 5,000 SoluCoins gratis para tus primeros leads, sin fecha de vencimiento:
+                los usas cuando te lleguen clientes.
               </Text>
             </View>
 
