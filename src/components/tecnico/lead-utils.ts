@@ -37,11 +37,11 @@ export const COIN_EN_SOLES = 0.005
 // Espejo de LEAD_COINS_HOGAR (web): el contacto del oficio core, urgencia
 // normal, distrito sin recargo. Sirve para decirle al técnico cuántos
 // contactos más le entran en el saldo, que es lo único que le importa.
-export const COINS_POR_CONTACTO = 600
+export const COINS_POR_CONTACTO = 400
 
 // Espejo de SALDO_BAJO_COINS de la web (= 3 × LEAD_COINS_HOGAR). Tiene que
 // ser el MISMO número: el cron `low-balance-notif` le manda "saldo bajo" al
-// técnico con menos de 1.800, y si la app avisaba recién en otro número, abría la
+// técnico con menos de 1.200, y si la app avisaba recién en otro número, abría la
 // notificación y encontraba una barra que decía que estaba todo bien.
 export const UMBRAL_SALDO_BAJO = 3 * COINS_POR_CONTACTO
 
