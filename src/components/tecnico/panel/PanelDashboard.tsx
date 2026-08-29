@@ -240,21 +240,21 @@ export function PanelDashboard({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 16, fontWeight: '900', color: THEME.color.white }}>{tech.nombre}</Text>
-            <Text style={{ ...THEME.font.label, fontWeight: '500', color: 'rgba(255,255,255,0.5)' }}>{tech.oficio} · {tech.distrito}</Text>
+            <Text style={{ ...THEME.font.label, fontWeight: '500', color: 'rgba(255,255,255,0.6)' }}>{tech.oficio} · {tech.distrito}</Text>
           </View>
           {tech.verificado && <Ionicons name="checkmark-circle" size={20} color={THEME.color.success} />}
         </View>
         <View style={{ flexDirection: 'row', gap: THEME.space.md, marginBottom: THEME.space.lg }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.4)' }}>WhatsApp</Text>
+            <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.6)' }}>WhatsApp</Text>
             <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: THEME.color.white }}>{tech.whatsapp}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.4)' }}>Precio desde</Text>
+            <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.6)' }}>Precio desde</Text>
             <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: THEME.color.brand }}>S/{tech.precio_desde || '—'}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.4)' }}>Rating</Text>
+            <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.6)' }}>Rating</Text>
             <Text style={{ ...THEME.font.bodySm, fontWeight: '700', color: THEME.color.warning }}>★ {tech.calificacion?.toFixed(1) || '0.0'}</Text>
           </View>
         </View>

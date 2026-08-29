@@ -15,19 +15,24 @@ export const THEME = {
     brandSoft: '#FFE0CC',
 
     // Navy — color de soporte (headers oscuros, dashboards)
+    // Estos 3 + los 6 neutros de abajo corregidos el 29-ago-2026: la escala
+    // completa venía de valores slate/gray de Tailwind (fríos) en vez de la
+    // familia cálida real de la marca (ver src/app/globals.css del repo web
+    // solu-app-clone — misma marca, mismo sistema). navy500 en particular
+    // era literalmente slate-600 (#334155), ni siquiera un navy de verdad.
     navy: '#0F1B2D',
     navy700: '#1E2A3F',
-    navy500: '#334155',
+    navy500: '#3B5F8A', // antes #334155 (slate-600) — navy-500 real de la web
 
-    // Neutros — base de toda la UI
-    ink: '#0F172A', // texto principal
-    inkSoft: '#475569', // texto secundario
-    inkMuted: '#94A3B8', // texto terciario / placeholder
-    line: '#E9EDF2', // bordes / divisores
-    lineSoft: '#F1F5F9',
+    // Neutros — base de toda la UI (familia cálida, no slate)
+    ink: '#0C1F3A', // texto principal — antes #0F172A (slate-900)
+    inkSoft: '#443E37', // texto secundario — antes #475569 (slate-600)
+    inkMuted: '#A8A29B', // texto terciario / placeholder — antes #94A3B8 (slate-400)
+    line: '#F3E8DE', // bordes / divisores — antes #E9EDF2 (frío)
+    lineSoft: '#FFF4EC', // antes #F1F5F9 (slate-100)
     surface: '#FFFFFF', // cards
-    surfaceAlt: '#F7F9FC', // fondo de pantalla
-    surfaceSunken: '#EEF2F7',
+    surfaceAlt: '#FFF4EC', // fondo de pantalla — antes #F7F9FC (slate-50, azulado). Este es el que más se ve: está en casi toda pantalla de la app.
+    surfaceSunken: '#F3E8DE', // antes #EEF2F7 (frío)
 
     // Semánticos
     success: '#16A34A',

@@ -404,7 +404,7 @@ export default function HomeScreen() {
                   borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 19, fontWeight: '900' }}>{stat.value}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '700', marginTop: 3 }}>{stat.label}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '700', marginTop: 3 }}>{stat.label}</Text>
                 </View>
               ))}
             </View>

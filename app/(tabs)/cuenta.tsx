@@ -749,7 +749,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
                 <Text style={{ fontSize: 32, fontWeight: '900', color: THEME.color.white }}>S</Text>
               </View>
               <Text style={{ ...THEME.font.h1, color: THEME.color.white, textAlign: 'center', marginBottom: THEME.space.xs }}>Bienvenido, técnico</Text>
-              <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginBottom: THEME.space.xxl }}>Ingresa para gestionar tus servicios</Text>
+              <Text style={{ ...THEME.font.bodySm, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginBottom: THEME.space.xxl }}>Ingresa para gestionar tus servicios</Text>
 
               <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.7)', marginBottom: THEME.space.sm }}>Email o WhatsApp</Text>
               <TextInput
@@ -800,7 +800,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
                 <Text style={{ color: THEME.color.white, fontWeight: '900', fontSize: 16, letterSpacing: 0.5 }}>{loading ? 'Verificando...' : 'INGRESAR'}</Text>
               </PressableScale>
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: THEME.space.lg, gap: THEME.space.xs }}>
-                <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.5)' }}>¿No tienes cuenta?</Text>
+                <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.6)' }}>¿No tienes cuenta?</Text>
                 <TouchableOpacity onPress={() => router.push('/registro')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.brand }}>Crear cuenta</Text>
                 </TouchableOpacity>
@@ -851,7 +851,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
                 )}
               </PressableScale>
               <View>
-                <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.4)' }}>Bienvenido</Text>
+                <Text style={{ ...THEME.font.label, color: 'rgba(255,255,255,0.6)' }}>Bienvenido</Text>
                 <Text style={{ ...THEME.font.h2, color: THEME.color.white }}>{tech.nombre}</Text>
               </View>
             </View>
@@ -1288,7 +1288,7 @@ function StatCard({ value, label, highlight, onPress }: { value: string; label: 
       }}
     >
       <Text style={{ fontSize: 18, fontWeight: '900', color: THEME.color.white }}>{value}</Text>
-      <Text style={{ fontSize: 10, color: highlight ? '#FDBA74' : 'rgba(255,255,255,0.4)', fontWeight: '700', marginTop: 3 }}>{label}</Text>
+      <Text style={{ fontSize: 10, color: highlight ? '#FDBA74' : 'rgba(255,255,255,0.6)', fontWeight: '700', marginTop: 3 }}>{label}</Text>
     </PressableScale>
   )
 }
