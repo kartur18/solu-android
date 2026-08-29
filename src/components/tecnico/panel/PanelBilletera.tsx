@@ -140,7 +140,7 @@ export function PanelBilletera({
           }}
         >
           <Text style={{ fontSize: 18 }}>⏳</Text>
-          <Text style={{ flex: 1, ...THEME.font.bodySm, fontWeight: '700', color: '#92400E', lineHeight: 19 }}>
+          <Text style={{ flex: 1, ...THEME.font.bodySm, fontWeight: '700', color: '#F59E0B', lineHeight: 19 }}>
             Te quedan {bonoCoins.toLocaleString('es-PE')} coins de bono — {textoVencimiento(bonoDias)}. Úsalos en tus próximos leads.
           </Text>
         </View>

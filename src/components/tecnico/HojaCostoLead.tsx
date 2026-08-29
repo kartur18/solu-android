@@ -139,7 +139,7 @@ export function HojaCostoLead({
 
             {precio?.congelado && (
               <View style={{ backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.md, padding: THEME.space.md, marginTop: THEME.space.md }}>
-                <Text style={{ ...THEME.font.bodySm, color: '#92400E' }}>
+                <Text style={{ ...THEME.font.bodySm, color: '#F59E0B' }}>
                   Tu saldo está retenido temporalmente. Escríbenos por soporte para revisarlo.
                 </Text>
               </View>

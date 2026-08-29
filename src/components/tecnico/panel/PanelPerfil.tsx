@@ -504,7 +504,7 @@ export function PanelPerfil({
         })}
 
         <View style={{ backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.sm, padding: 10, marginTop: THEME.space.sm }}>
-          <Text style={{ ...THEME.font.caption, color: '#065F46', lineHeight: 14 }}>
+          <Text style={{ ...THEME.font.caption, color: '#16A34A', lineHeight: 14 }}>
             🔒 Tus documentos son revisados manualmente por el equipo de SOLU antes de mostrarse. Los clientes solo ven los badges de verificación, no el documento.
           </Text>
         </View>

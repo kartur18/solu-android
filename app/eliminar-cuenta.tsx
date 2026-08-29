@@ -105,8 +105,8 @@ export default function EliminarCuentaScreen() {
           <View style={{ flexDirection: 'row', gap: THEME.space.md, backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.lg }}>
             <Ionicons name="alert-circle" size={22} color={THEME.color.danger} style={{ marginTop: 1 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ ...THEME.font.h3, color: '#991B1B' }}>Acción irreversible</Text>
-              <Text style={{ ...THEME.font.bodySm, color: '#991B1B', marginTop: 2, lineHeight: 19 }}>
+              <Text style={{ ...THEME.font.h3, color: '#EF4444' }}>Acción irreversible</Text>
+              <Text style={{ ...THEME.font.bodySm, color: '#EF4444', marginTop: 2, lineHeight: 19 }}>
                 Una vez confirmada, no podrás recuperar tu cuenta, perfil ni fotos.
               </Text>
             </View>

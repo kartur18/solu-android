@@ -13,15 +13,15 @@ export function OfflineBanner() {
 
   return (
     <View style={{
-      backgroundColor: '#FEF3C7',
+      backgroundColor: '#FFFBEB',
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 10,
       gap: 8,
     }}>
-      <Ionicons name="cloud-offline" size={18} color="#92400E" />
-      <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#92400E' }}>
+      <Ionicons name="cloud-offline" size={18} color="#F59E0B" />
+      <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#F59E0B' }}>
         Sin conexión a internet
       </Text>
     </View>

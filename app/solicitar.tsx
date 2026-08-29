@@ -699,10 +699,10 @@ function SuccessScreen({ result, nombre, servicio, distrito, whatsapp, router }:
         {!result.techName && (
           <View style={{ backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginTop: THEME.space.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.xs }}>
-              <Ionicons name="time" size={18} color="#92400E" />
-              <Text style={{ ...THEME.font.h3, color: '#92400E' }}>Buscando técnico...</Text>
+              <Ionicons name="time" size={18} color="#F59E0B" />
+              <Text style={{ ...THEME.font.h3, color: '#F59E0B' }}>Buscando técnico...</Text>
             </View>
-            <Text style={{ ...THEME.font.bodySm, color: '#92400E', lineHeight: 19 }}>
+            <Text style={{ ...THEME.font.bodySm, color: '#F59E0B', lineHeight: 19 }}>
               No encontramos un técnico disponible en {distrito} ahora mismo. Tu solicitud quedó registrada y te contactaremos pronto por WhatsApp al {whatsapp}.
             </Text>
           </View>

@@ -46,7 +46,7 @@ export function PanelIngresos({ tech, leads }: { tech: Tecnico; leads: Cliente[]
         <View style={{ flexDirection: 'row', gap: THEME.space.md }}>
           <View style={{ flex: 1, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.md, padding: THEME.space.md, alignItems: 'center' }}>
             <Text style={{ fontSize: 22, fontWeight: '900', color: THEME.color.success }}>{leads.length > 0 ? Math.round((completedLeads / leads.length) * 100) : 0}%</Text>
-            <Text style={{ ...THEME.font.caption, color: '#065F46', fontWeight: '600', marginTop: 2, textAlign: 'center' }}>Tasa de conversión</Text>
+            <Text style={{ ...THEME.font.caption, color: '#16A34A', fontWeight: '600', marginTop: 2, textAlign: 'center' }}>Tasa de conversión</Text>
           </View>
           <View style={{ flex: 1, backgroundColor: THEME.color.infoBg, borderRadius: THEME.radius.md, padding: THEME.space.md, alignItems: 'center' }}>
             {/* Promedio real de completados por mes con actividad. La
@@ -61,7 +61,7 @@ export function PanelIngresos({ tech, leads }: { tech: Tecnico; leads: Cliente[]
           {/* Antes "Vistas esta semana" desde profile_views (tabla
               inexistente): siempre 0. Reemplazado por un dato real. */}
           <View style={{ flex: 1, backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.md, padding: THEME.space.md, alignItems: 'center' }}>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: '#92400E' }}>{tech.servicios_completados || 0}</Text>
+            <Text style={{ fontSize: 22, fontWeight: '900', color: '#F59E0B' }}>{tech.servicios_completados || 0}</Text>
             <Text style={{ ...THEME.font.caption, color: '#78350F', fontWeight: '600', marginTop: 2, textAlign: 'center' }}>Servicios completados</Text>
           </View>
         </View>

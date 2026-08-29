@@ -153,7 +153,7 @@ export function BandejaClienteChats({ nombre, whatsapp }: { nombre?: string; wha
     <View style={{ flex: 1, backgroundColor: THEME.color.surfaceAlt }}>
       {error && (
         <View style={{ margin: THEME.space.lg, marginBottom: 0, backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.md, padding: THEME.space.md }}>
-          <Text style={{ ...THEME.font.bodySm, color: '#991B1B' }}>
+          <Text style={{ ...THEME.font.bodySm, color: '#EF4444' }}>
             No pudimos actualizar tus conversaciones. Desliza para reintentar.
           </Text>
         </View>

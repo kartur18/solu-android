@@ -695,7 +695,7 @@ export default function RegistroScreen() {
                 }}
               >
                 <Ionicons name="lock-closed" size={18} color={THEME.color.success} style={{ marginTop: 1 }} />
-                <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#065F46', lineHeight: 19 }}>
+                <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#16A34A', lineHeight: 19 }}>
                   Tus fotos solo se usan para verificar tu identidad y darte el badge ✅ Verificado. Los clientes nunca las ven.
                 </Text>
               </View>
@@ -713,7 +713,7 @@ export default function RegistroScreen() {
                   }}
                 >
                   <Ionicons name="alert-circle" size={18} color={THEME.color.warning} style={{ marginTop: 1 }} />
-                  <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#92400E', lineHeight: 19 }}>
+                  <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#F59E0B', lineHeight: 19 }}>
                     Sin las fotos de tu DNI no validamos tu identidad y no apareces en las búsquedas de clientes. Súbelas para empezar a recibir trabajos.
                   </Text>
                 </View>

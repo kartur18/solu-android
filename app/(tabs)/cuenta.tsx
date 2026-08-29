@@ -941,7 +941,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
               accessibilityRole="alert"
               style={{
                 marginHorizontal: THEME.space.lg, marginTop: THEME.space.lg,
-                backgroundColor: dniCompleto ? '#FEF3C7' : '#FEE2E2',
+                backgroundColor: dniCompleto ? '#FFFBEB' : '#FEF2F2',
                 borderRadius: 16, padding: 14,
                 borderWidth: 1, borderColor: dniCompleto ? '#FDE68A' : '#FECACA',
               }}
@@ -949,10 +949,10 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                 <Ionicons name={dniCompleto ? 'time' : 'alert-circle'} size={20} color={dniCompleto ? '#B45309' : '#DC2626'} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: dniCompleto ? '#92400E' : '#991B1B' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: dniCompleto ? '#F59E0B' : '#EF4444' }}>
                     {dniCompleto ? 'Tu DNI está en revisión' : 'Sin tu DNI no apareces en las búsquedas'}
                   </Text>
-                  <Text style={{ fontSize: 11, color: dniCompleto ? '#92400E' : '#B91C1C', marginTop: 2, lineHeight: 16 }}>
+                  <Text style={{ fontSize: 11, color: dniCompleto ? '#F59E0B' : '#EF4444', marginTop: 2, lineHeight: 16 }}>
                     {dniCompleto
                       ? 'Ya tenemos las dos caras. Te activamos apenas lo validemos.'
                       : 'Los clientes no pueden encontrarte ni puedes aceptar trabajos. Sube las dos caras de tu DNI y te activamos.'}
@@ -1028,7 +1028,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
         {dashError && (
           <View
             accessibilityRole="alert"
-            style={{ marginHorizontal: THEME.space.lg, marginTop: 4, backgroundColor: '#FEF3C7', borderRadius: THEME.radius.md, padding: THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+            style={{ marginHorizontal: THEME.space.lg, marginTop: 4, backgroundColor: '#FFFBEB', borderRadius: THEME.radius.md, padding: THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: 10 }}
           >
             <Ionicons name="cloud-offline-outline" size={20} color="#B45309" />
             <Text style={{ flex: 1, ...THEME.font.label, fontWeight: '700', color: '#B45309', lineHeight: 17 }}>

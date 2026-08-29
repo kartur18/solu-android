@@ -262,7 +262,7 @@ export default function MensajesScreen() {
 
       {error && (
         <View style={{ margin: THEME.space.lg, marginBottom: 0, backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.md, padding: THEME.space.md }}>
-          <Text style={{ ...THEME.font.bodySm, color: '#991B1B' }}>{error}</Text>
+          <Text style={{ ...THEME.font.bodySm, color: '#EF4444' }}>{error}</Text>
         </View>
       )}
 

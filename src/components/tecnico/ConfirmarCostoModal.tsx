@@ -77,7 +77,7 @@ export function ConfirmarCostoModal({
                   </Text>
                 </>
               ) : congelado ? (
-                <Text style={{ ...THEME.font.bodySm, color: '#991B1B' }}>
+                <Text style={{ ...THEME.font.bodySm, color: '#EF4444' }}>
                   Tu saldo está retenido temporalmente y no puedes tomar trabajos.
                   Escríbenos por soporte para revisarlo.
                 </Text>

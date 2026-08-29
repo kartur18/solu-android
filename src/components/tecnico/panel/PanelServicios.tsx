@@ -55,9 +55,9 @@ export function PanelServicios({
               <Text style={{ ...THEME.font.caption, fontWeight: '800', color: THEME.color.white }}>{openRequests.length}</Text>
             </View>
           </View>
-          <Text style={{ ...THEME.font.caption, color: '#065F46', marginBottom: THEME.space.md }}>Acepta rápido — el primero se lo queda</Text>
+          <Text style={{ ...THEME.font.caption, color: '#16A34A', marginBottom: THEME.space.md }}>Acepta rápido — el primero se lo queda</Text>
           {openRequests.map((s) => (
-            <View key={s.id} style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.md, padding: 14, marginBottom: THEME.space.sm, borderWidth: 1, borderColor: '#D1FAE5' }}>
+            <View key={s.id} style={{ backgroundColor: THEME.color.surface, borderRadius: THEME.radius.md, padding: 14, marginBottom: THEME.space.sm, borderWidth: 1, borderColor: '#ECFDF5' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: THEME.space.sm, marginBottom: THEME.space.sm }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                   <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: THEME.color.successBg, alignItems: 'center', justifyContent: 'center' }}>

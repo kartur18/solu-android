@@ -197,7 +197,7 @@ export default function HomeScreen() {
           style={{ backgroundColor: THEME.color.warningBg, paddingVertical: THEME.space.md, paddingHorizontal: THEME.space.lg, minHeight: 44, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm }}
         >
           <Ionicons name="cloud-offline-outline" size={15} color={THEME.color.warning} />
-          <Text style={{ color: '#92400E', ...THEME.font.label }}>Sin conexión · toca para reintentar</Text>
+          <Text style={{ color: '#F59E0B', ...THEME.font.label }}>Sin conexión · toca para reintentar</Text>
         </TouchableOpacity>
       )}
       <ScrollView
@@ -420,13 +420,13 @@ export default function HomeScreen() {
               style={{ marginHorizontal: THEME.space.lg, marginTop: -THEME.space.lg, marginBottom: THEME.space.sm, backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.lg, padding: THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, ...THEME.shadow.sm }}
             >
               <View style={{ width: 40, height: 40, borderRadius: THEME.radius.md, backgroundColor: '#FDE68A', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="star" size={19} color="#92400E" />
+                <Ionicons name="star" size={19} color="#F59E0B" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: '#92400E' }}>¿Cómo te fue con {pendingRating.servicio}?</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#F59E0B' }}>¿Cómo te fue con {pendingRating.servicio}?</Text>
                 <Text style={{ fontSize: 12, color: '#78350F', marginTop: 1 }}>Toca para calificar · ayuda a otros vecinos</Text>
               </View>
-              <Ionicons name="chevron-forward" size={17} color="#92400E" />
+              <Ionicons name="chevron-forward" size={17} color="#F59E0B" />
             </PressableScale>
           </FadeInUp>
         ) : null}
@@ -434,12 +434,12 @@ export default function HomeScreen() {
         {/* ── Trust strip — verificación RENIEC (copy NO se toca) ──────── */}
         <FadeInUp delay={pendingRating ? 100 : 60}>
           <View style={{ marginHorizontal: THEME.space.lg, marginTop: pendingRating ? 0 : -THEME.space.lg, marginBottom: THEME.space.md, backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg, padding: THEME.space.md, flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, ...THEME.shadow.sm }}>
-            <View style={{ width: 40, height: 40, borderRadius: THEME.radius.md, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 40, height: 40, borderRadius: THEME.radius.md, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="shield-checkmark" size={19} color={THEME.color.success} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#065F46' }}>Identidad verificada</Text>
-              <Text style={{ fontSize: 12, color: '#047857', marginTop: 1 }}>Cada técnico valida su DNI con RENIEC antes de aparecer</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#16A34A' }}>Identidad verificada</Text>
+              <Text style={{ fontSize: 12, color: '#16A34A', marginTop: 1 }}>Cada técnico valida su DNI con RENIEC antes de aparecer</Text>
             </View>
           </View>
         </FadeInUp>

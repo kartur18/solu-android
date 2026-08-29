@@ -135,15 +135,15 @@ export default function UrgenciasScreen() {
             <View style={{ width: '100%', backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.xl }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginBottom: THEME.space.xs }}>
                 <PulseDot color={THEME.color.success} size={8} />
-                <Text style={{ ...THEME.font.h3, color: '#065F46' }}>{assignedTech.nombre}</Text>
+                <Text style={{ ...THEME.font.h3, color: '#16A34A' }}>{assignedTech.nombre}</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginTop: THEME.space.xs }}>
-                <Ionicons name="construct-outline" size={14} color="#047857" />
-                <Text style={{ ...THEME.font.bodySm, color: '#065F46' }}>Especialidad: {assignedTech.oficio}</Text>
+                <Ionicons name="construct-outline" size={14} color="#16A34A" />
+                <Text style={{ ...THEME.font.bodySm, color: '#16A34A' }}>Especialidad: {assignedTech.oficio}</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, marginTop: THEME.space.xs }}>
-                <Ionicons name="location-outline" size={14} color="#047857" />
-                <Text style={{ ...THEME.font.bodySm, color: '#065F46' }}>Ubicación actual: {assignedTech.distrito}</Text>
+                <Ionicons name="location-outline" size={14} color="#16A34A" />
+                <Text style={{ ...THEME.font.bodySm, color: '#16A34A' }}>Ubicación actual: {assignedTech.distrito}</Text>
               </View>
             </View>
 
@@ -242,7 +242,7 @@ export default function UrgenciasScreen() {
           <FadeInUp distance={8}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm, backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.md, padding: THEME.space.md, marginBottom: THEME.space.md }}>
               <Ionicons name="alert-circle" size={18} color={THEME.color.danger} />
-              <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#991B1B', fontWeight: '600' }}>{errorMsg}</Text>
+              <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#EF4444', fontWeight: '600' }}>{errorMsg}</Text>
             </View>
           </FadeInUp>
         ) : null}

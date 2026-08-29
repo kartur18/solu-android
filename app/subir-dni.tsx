@@ -197,21 +197,21 @@ export default function SubirDniScreen() {
         {verificado ? (
           <View style={{ flexDirection: 'row', gap: THEME.space.md, alignItems: 'flex-start', backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.xl }}>
             <Ionicons name="checkmark-circle" size={18} color={THEME.color.success} style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#065F46', lineHeight: 19 }}>
+            <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#16A34A', lineHeight: 19 }}>
               Ya estás verificado ✅. Solo sube fotos nuevas si necesitas actualizar tu documento.
             </Text>
           </View>
         ) : completo ? (
           <View style={{ flexDirection: 'row', gap: THEME.space.md, alignItems: 'flex-start', backgroundColor: THEME.color.warningBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.xl }}>
             <Ionicons name="time" size={18} color={THEME.color.warning} style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#92400E', lineHeight: 19 }}>
+            <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#F59E0B', lineHeight: 19 }}>
               Ya tenemos las dos caras de tu DNI. Lo estamos revisando: te activamos apenas lo validemos.
             </Text>
           </View>
         ) : (
           <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: THEME.space.md, alignItems: 'flex-start', backgroundColor: THEME.color.dangerBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.xl }}>
             <Ionicons name="alert-circle" size={18} color={THEME.color.danger} style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#991B1B', lineHeight: 19 }}>
+            <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#EF4444', lineHeight: 19 }}>
               Sin tu DNI no apareces en las búsquedas y no puedes recibir trabajos. Sube las dos caras y te activamos.
             </Text>
           </View>
@@ -220,7 +220,7 @@ export default function SubirDniScreen() {
         {/* Nota de confianza: mismo copy que el registro. */}
         <View style={{ flexDirection: 'row', gap: THEME.space.md, alignItems: 'flex-start', backgroundColor: THEME.color.successBg, borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.xl }}>
           <Ionicons name="lock-closed" size={18} color={THEME.color.success} style={{ marginTop: 1 }} />
-          <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#065F46', lineHeight: 19 }}>
+          <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#16A34A', lineHeight: 19 }}>
             Tus fotos solo se usan para verificar tu identidad y darte el badge ✅ Verificado. Los clientes nunca las ven.
           </Text>
         </View>

@@ -94,7 +94,7 @@ export function AvisoCruceCuentas({ visible, sinFotos, onCerrar }: {
                 }}
               >
                 <Ionicons name="alert-circle" size={18} color={THEME.color.warning} style={{ marginTop: 1 }} />
-                <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#92400E', lineHeight: 20 }}>
+                <Text style={{ flex: 1, ...THEME.font.bodySm, color: '#F59E0B', lineHeight: 20 }}>
                   Sube tu DNI desde tu panel para aparecer en las búsquedas de clientes.
                 </Text>
               </View>

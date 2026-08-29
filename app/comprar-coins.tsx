@@ -144,7 +144,7 @@ export default function ComprarCoinsScreen() {
             style={{ backgroundColor: THEME.color.warningBg, borderWidth: 1, borderColor: '#FDE68A', borderRadius: THEME.radius.lg, padding: THEME.space.lg, marginBottom: THEME.space.md, flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}
           >
             <Ionicons name="time-outline" size={18} color="#B45309" style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, ...THEME.font.bodySm, fontWeight: '700', color: '#92400E', lineHeight: 19 }}>
+            <Text style={{ flex: 1, ...THEME.font.bodySm, fontWeight: '700', color: '#F59E0B', lineHeight: 19 }}>
               La compra de paquetes está deshabilitada por el momento. Vuelve a intentarlo más tarde.
             </Text>
           </View>
