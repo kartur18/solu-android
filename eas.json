@@ -10,10 +10,12 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "android": { "buildType": "apk" },
       "ios": { "simulator": false }
     },
     "apk-prod": {
+      "channel": "production",
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
@@ -22,6 +24,7 @@
       }
     },
     "production": {
+      "channel": "production",
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
