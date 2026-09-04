@@ -10,6 +10,7 @@ import type { Cliente, Tecnico } from '../../../lib/types'
 import { THEME } from '../../../lib/theme'
 import { FadeInUp, PressableScale } from '../../ui/Motion'
 import { AgendaHoy } from './AgendaHoy'
+import { InvitacionPlayTester } from './InvitacionPlayTester'
 import { LeadRow } from './LeadRow'
 import type { Aviso } from './ToastAviso'
 import type { TierInfo } from './panel-utils'
@@ -103,6 +104,15 @@ export function PanelDashboard({
             <QuickStat icon="time" color={THEME.color.brand} value={String(activeLeads)} label="Activos" />
           </View>
         </View>
+        </FadeInUp>
+
+        {/* Testing cerrado de Play Store: va acá, debajo del resumen y encima
+            de las tarjetas de crecimiento, para que se vea sin empujar ni la
+            bandeja de mensajes ni las últimas solicitudes. El reclutamiento
+            tiene reloj (14 días seguidos con 12 testers), así que no puede
+            quedar al fondo del panel. */}
+        <FadeInUp delay={40}>
+          <InvitacionPlayTester emailGuardado={tech.play_tester_email} emailSugerido={tech.email} />
         </FadeInUp>
 
         {/* Compartir perfil. Antes esta tarjeta mostraba "Vistas a tu

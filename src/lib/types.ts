@@ -36,6 +36,11 @@ export interface Tecnico {
   lng?: number
   galeria?: string[]
   zonas?: string[]
+  // Cuenta de Google que el técnico ofreció para el testing cerrado de Play
+  // Store. Opcionales: la migración todavía no se aplicó en prod y
+  // /api/tecnico/me hace select('*'), así que hasta entonces no llegan.
+  play_tester_email?: string | null
+  play_tester_at?: string | null
   created_at: string
 }
 
