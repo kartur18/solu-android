@@ -38,7 +38,7 @@
     },
     "android": {
       "package": "pe.solu.app",
-      "versionCode": 37,
+      "versionCode": 38,
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
