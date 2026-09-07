@@ -8,6 +8,10 @@ import { getTechToken, clearTechSession } from '../src/lib/tech-session'
 import { THEME } from '../src/lib/theme'
 import { FadeInUp, PressableScale } from '../src/components/ui/Motion'
 
+// Baja sin sesión: manda un código al correo o WhatsApp registrado y borra
+// sola. Reemplaza al mailto a contacto@solu.pe, que no lo atiende nadie.
+const URL_BAJA_WEB = 'https://www.solu.pe/eliminar-cuenta'
+
 export default function EliminarCuentaScreen() {
   const router = useRouter()
   const [deleting, setDeleting] = useState(false)
@@ -54,10 +58,11 @@ export default function EliminarCuentaScreen() {
                 await AsyncStorage.removeItem('solu_client_session')
               }
 
-              // Solo se ofrece el correo si el borrado automático NO salió.
-              // Antes se abría SIEMPRE, incluso cuando la cuenta ya estaba
-              // eliminada: el usuario creía que faltaba un trámite y
-              // terminaba escribiéndole por WhatsApp al soporte.
+              // Si el borrado automático NO salió (sesión vencida, sin token),
+              // acá se abría un mailto a contacto@solu.pe prometiendo "15 días
+              // hábiles". Ese buzón no lo atiende nadie: el 6-sep-2026 un
+              // técnico escribió y quedó días esperando. Ahora va a la página
+              // que le manda un código a su contacto registrado y borra sola.
               if (borradoAutomatico) {
                 Alert.alert(
                   'Cuenta eliminada',
@@ -65,15 +70,24 @@ export default function EliminarCuentaScreen() {
                   [{ text: 'OK', onPress: () => router.dismiss() }],
                 )
               } else {
-                Linking.openURL('mailto:contacto@solu.pe?subject=Solicitud de eliminación de cuenta y datos&body=Solicito la eliminación total de mi cuenta y mis datos personales en SOLU.')
                 Alert.alert(
-                  'Solicitud enviada',
-                  'Cerramos tu sesión y abrimos tu correo para completar la solicitud. Procesamos la eliminación en máximo 15 días hábiles.',
-                  [{ text: 'OK', onPress: () => router.dismiss() }],
+                  'Termina desde la web',
+                  'Tu sesión ya no está activa, así que desde acá no podemos comprobar quién eres. Te llevamos a una página donde recibes un código en tu correo o WhatsApp y eliminas tu cuenta al instante.',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Continuar', onPress: () => Linking.openURL(URL_BAJA_WEB) },
+                  ],
                 )
               }
             } catch {
-              Alert.alert('Error', 'No se pudo procesar. Envía un email a contacto@solu.pe')
+              Alert.alert(
+                'No se pudo procesar',
+                'Puedes eliminar tu cuenta desde la web con un código a tu correo o WhatsApp.',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Ir a la web', onPress: () => Linking.openURL(URL_BAJA_WEB) },
+                ],
+              )
             } finally {
               setDeleting(false)
             }
@@ -134,16 +148,16 @@ export default function EliminarCuentaScreen() {
 
             <Text style={h}>1. Cómo solicitar la eliminación</Text>
             <Text style={p}>
-              Puedes eliminar tu cuenta directamente con el botón de arriba, o enviar un correo a contacto@solu.pe.
+              Con el botón de arriba se borra al instante. Si tu sesión ya venció, desde la web recibes un código en tu correo o WhatsApp y la eliminas igual, sin esperar a nadie.
             </Text>
 
             <PressableScale
-              onPress={() => Linking.openURL('mailto:contacto@solu.pe?subject=Eliminación de cuenta')}
-              accessibilityLabel="Enviar solicitud por email"
+              onPress={() => Linking.openURL(URL_BAJA_WEB)}
+              accessibilityLabel="Eliminar con un código desde la web"
               style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, minHeight: 48, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: THEME.space.sm, marginTop: THEME.space.md, marginBottom: THEME.space.xs, ...THEME.shadow.brand }}
             >
-              <Ionicons name="mail-outline" size={18} color={THEME.color.white} />
-              <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Enviar solicitud por email</Text>
+              <Ionicons name="key-outline" size={18} color={THEME.color.white} />
+              <Text style={{ ...THEME.font.label, fontWeight: '700', color: THEME.color.white }}>Eliminar con un código</Text>
             </PressableScale>
 
             <Text style={h}>2. Datos que se eliminan</Text>
@@ -167,7 +181,7 @@ export default function EliminarCuentaScreen() {
 
             <Text style={h}>4. Plazo de eliminación</Text>
             <Text style={p}>
-              Tu solicitud será procesada en un plazo máximo de 15 días hábiles. Recibirás una confirmación por WhatsApp o correo electrónico una vez completada.
+              La eliminación es inmediata: apenas confirmas, tu cuenta queda dada de baja y dejas de aparecer. Tus datos personales se anonimizan a los 30 días.
             </Text>
 
             <Text style={h}>5. Consecuencias de la eliminación</Text>
