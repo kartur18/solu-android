@@ -30,6 +30,7 @@ import { EstadoVacio } from '../../src/components/tecnico/EstadoVacio'
 import { SaldoCoinsBar } from '../../src/components/tecnico/SaldoCoinsBar'
 import { ResumenPendientes } from '../../src/components/tecnico/ResumenPendientes'
 import { fetchChatsResumen, fetchPrecioLead } from '../../src/components/tecnico/lead-api'
+import { PUEDE_COMPRAR_EN_APP } from '../../src/lib/compras-app'
 import {
   contarPendientes, nombreCliente, ordenarChats,
   type ChatResumen, type PrecioLead,
@@ -186,9 +187,11 @@ export default function MensajesScreen() {
     })
   }
 
+  // En iOS no hay recarga dentro del app (Apple 3.1.1): se cierra el aviso y
+  // el técnico recarga desde solu.pe por su cuenta. Ver src/lib/compras-app.ts.
   function irAComprar() {
     setSeleccionado(null)
-    router.push('/comprar-coins')
+    if (PUEDE_COMPRAR_EN_APP) router.push('/comprar-coins')
   }
 
   // Leer es gratis; escribir cobra. Solo se entra derecho al chat cuando

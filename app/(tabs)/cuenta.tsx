@@ -22,6 +22,7 @@ import NotificationCenter from '../../src/components/NotificationCenter'
 import { CambiarModo } from '../../src/components/CambiarModo'
 import { useOtroModoDisponible } from '../../src/lib/modo-sesion'
 import { THEME } from '../../src/lib/theme'
+import { PUEDE_COMPRAR_EN_APP } from '../../src/lib/compras-app'
 import { FadeInUp, PressableScale } from '../../src/components/ui/Motion'
 import { SaldoCoinsBar } from '../../src/components/tecnico/SaldoCoinsBar'
 import { ConfirmarCostoModal } from '../../src/components/tecnico/ConfirmarCostoModal'
@@ -983,7 +984,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
             <View style={{ marginHorizontal: THEME.space.lg, marginTop: THEME.space.lg }}>
               <SaldoCoinsBar
                 saldo={tech.coins_balance}
-                onComprar={() => router.push('/comprar-coins')}
+                {...(PUEDE_COMPRAR_EN_APP ? { onComprar: () => router.push('/comprar-coins') } : {})}
               />
             </View>
           </FadeInUp>
@@ -1098,7 +1099,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
               dashError={dashError}
               authToken={authToken}
               onReload={() => { void loadData(tech.id) }}
-              onComprarCoins={() => router.push('/comprar-coins')}
+              {...(PUEDE_COMPRAR_EN_APP ? { onComprarCoins: () => router.push('/comprar-coins') } : {})}
             />
           )}
 
@@ -1171,11 +1172,15 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
         precio={precioConfirmar}
         onCancelar={() => { confirmandoRef.current = null; setSolicitudConfirmar(null) }}
         onConfirmar={() => { if (solicitudConfirmar) void aceptarTrabajo(solicitudConfirmar) }}
-        onComprarCoins={() => {
-          confirmandoRef.current = null
-          setSolicitudConfirmar(null)
-          router.push('/comprar-coins')
-        }}
+        {...(PUEDE_COMPRAR_EN_APP
+          ? {
+              onComprarCoins: () => {
+                confirmandoRef.current = null
+                setSolicitudConfirmar(null)
+                router.push('/comprar-coins')
+              },
+            }
+          : {})}
       />
 
       {/* Modal "Nueva promoción" con input real (Android no tiene Alert.prompt) */}

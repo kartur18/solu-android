@@ -15,7 +15,9 @@ interface Props {
   saldo: number | null
   ilimitado?: boolean
   congelado?: boolean
-  onComprar: () => void
+  /** Ausente en iOS: Apple prohíbe el botón que lleva a pagar fuera de su
+   *  sistema, así que ahí no se pinta. Ver src/lib/compras-app.ts. */
+  onComprar?: () => void
 }
 
 interface Estilo {
@@ -154,7 +156,7 @@ export function SaldoCoinsBar({ saldo, ilimitado, congelado, onComprar }: Props)
             ancho. Compartiendo renglón le dejaba ~100px al monto y con
             numberOfLines=1 se comía justo el número que decide si puede
             responder. */}
-        {e.cta && !e.ctaPlena && (
+        {e.cta && !e.ctaPlena && onComprar && (
           <PressableScale
             onPress={onComprar}
             accessibilityLabel="Comprar SoluCoins"
@@ -180,7 +182,7 @@ export function SaldoCoinsBar({ saldo, ilimitado, congelado, onComprar }: Props)
         </Text>
       )}
 
-      {e.cta && e.ctaPlena && (
+      {e.cta && e.ctaPlena && onComprar && (
         <PressableScale
           onPress={onComprar}
           accessibilityLabel="Comprar SoluCoins"

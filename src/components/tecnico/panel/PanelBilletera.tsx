@@ -7,6 +7,7 @@ import { Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { Tecnico } from '../../../lib/types'
 import { THEME } from '../../../lib/theme'
+import { PUEDE_COMPRAR_EN_APP } from '../../../lib/compras-app'
 import { fetchSaldoCoins, type SaldoCoins } from '../../../lib/creditos-api'
 import { FadeInUp, PressableScale } from '../../ui/Motion'
 import { ErrorDeCarga } from './ErrorDeCarga'
@@ -36,7 +37,9 @@ export function PanelBilletera({
   dashError: boolean
   authToken: string | null
   onReload: () => void
-  onComprarCoins: () => void
+  /** Ausente en iOS: Apple prohíbe el botón que lleva a pagar fuera de su
+   *  sistema, así que ahí no se pinta. Ver src/lib/compras-app.ts. */
+  onComprarCoins?: () => void
 }) {
   // Desglose del bono (buckets + fecha de vencimiento). Si el server no lo
   // da (fallo o endpoint aún sin Bearer), la billetera queda como estaba:
@@ -110,6 +113,7 @@ export function PanelBilletera({
           </View>
         )}
 
+        {onComprarCoins && (
         <PressableScale
           onPress={onComprarCoins}
           accessibilityLabel="Comprar SoluCoins"
@@ -125,6 +129,7 @@ export function PanelBilletera({
             Comprar SoluCoins
           </Text>
         </PressableScale>
+        )}
       </View>
       </FadeInUp>
 
@@ -156,10 +161,20 @@ export function PanelBilletera({
           ¿Cómo funcionan los SoluCoins?
         </Text>
         {[
-          { icon: 'flash-outline' as const, text: 'Compras un paquete una vez. No hay suscripción.' },
+          // En iOS se omiten las líneas que hablan de COMPRAR: Apple rechazó la
+          // v2.3.1 por "references to coins" sin In-App Purchase, y describir
+          // la compra de paquetes es justo lo que mira. Cómo se GASTA el saldo
+          // sí se explica — eso es el estado de su cuenta, no una oferta.
+          ...(PUEDE_COMPRAR_EN_APP
+            ? [{ icon: 'flash-outline' as const, text: 'Compras un paquete una vez. No hay suscripción.' }]
+            : []),
           { icon: 'chatbubble-ellipses-outline' as const, text: 'Cuando un cliente te escribe y respondes, descontamos coins según el oficio y distrito.' },
-          { icon: 'receipt-outline' as const, text: 'Recibes tu boleta SUNAT automática por cada compra.' },
-          { icon: 'trending-up-outline' as const, text: 'Cuanto más grande el paquete, mejor el precio por lead.' },
+          ...(PUEDE_COMPRAR_EN_APP
+            ? [
+                { icon: 'receipt-outline' as const, text: 'Recibes tu boleta SUNAT automática por cada compra.' },
+                { icon: 'trending-up-outline' as const, text: 'Cuanto más grande el paquete, mejor el precio por lead.' },
+              ]
+            : []),
           // La web lo dice en /planes y /registro-tecnico; la app callaba
           // el vencimiento del mismo dinero y el saldo en 0 al día 35
           // parecía una estafa.

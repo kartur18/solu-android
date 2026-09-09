@@ -29,7 +29,9 @@ export function ConfirmarCostoModal({
   precio: PrecioLead | null | undefined
   onCancelar: () => void
   onConfirmar: () => void
-  onComprarCoins: () => void
+  /** Ausente en iOS: Apple prohíbe el botón que lleva a pagar fuera de su
+   *  sistema, así que ahí no se pinta. Ver src/lib/compras-app.ts. */
+  onComprarCoins?: () => void
 }) {
   if (!trabajo) return null
 
@@ -119,7 +121,7 @@ export function ConfirmarCostoModal({
               <PressableScale onPress={onConfirmar} accessibilityLabel="Tomar el trabajo" style={botonPrimario}>
                 <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Tomar trabajo</Text>
               </PressableScale>
-            ) : congelado ? null : (
+            ) : congelado || !onComprarCoins ? null : (
               <PressableScale onPress={onComprarCoins} accessibilityLabel="Comprar SoluCoins" style={botonPrimario}>
                 <Text style={{ ...THEME.font.h3, color: THEME.color.white }}>Comprar SoluCoins</Text>
               </PressableScale>

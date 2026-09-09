@@ -16,6 +16,7 @@ import {
 } from '../../src/lib/chat-api'
 import { useClientProfile } from '../../src/lib/useClientProfile'
 import { logger } from '../../src/lib/logger'
+import { PUEDE_COMPRAR_EN_APP } from '../../src/lib/compras-app'
 
 const POLL_MS = 3000
 // Backoff: tras MAX_QUIET_POLLS polls sin mensajes nuevos subimos a POLL_MS_MAX
@@ -423,14 +424,18 @@ export default function ChatScreen() {
               </TouchableOpacity>
             </View>
             {/* Camino directo a recargar en el momento de máxima intención:
-                antes solo se podía cerrar el aviso y navegar a mano. */}
-            <PressableScale
-              onPress={() => router.push('/comprar-coins')}
-              accessibilityLabel="Comprar SoluCoins"
-              style={{ minHeight: 44, marginTop: THEME.space.sm, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.color.brand, ...THEME.shadow.brand }}
-            >
-              <Text style={{ ...THEME.font.bodySm, fontWeight: '800', color: THEME.color.white }}>Comprar SoluCoins</Text>
-            </PressableScale>
+                antes solo se podía cerrar el aviso y navegar a mano.
+                En iOS no se pinta: Apple prohíbe el botón que lleva a pagar
+                fuera de su sistema (ver src/lib/compras-app.ts). */}
+            {PUEDE_COMPRAR_EN_APP && (
+              <PressableScale
+                onPress={() => router.push('/comprar-coins')}
+                accessibilityLabel="Comprar SoluCoins"
+                style={{ minHeight: 44, marginTop: THEME.space.sm, borderRadius: THEME.radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: THEME.color.brand, ...THEME.shadow.brand }}
+              >
+                <Text style={{ ...THEME.font.bodySm, fontWeight: '800', color: THEME.color.white }}>Comprar SoluCoins</Text>
+              </PressableScale>
+            )}
           </View>
         )}
 

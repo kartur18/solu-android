@@ -14,6 +14,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { Ionicons } from '@expo/vector-icons'
 import { COINS_PACKAGES } from '../src/lib/constants'
 import { THEME } from '../src/lib/theme'
+import { PUEDE_COMPRAR_EN_APP } from '../src/lib/compras-app'
 import { getTechToken } from '../src/lib/tech-session'
 import { fetchMyTechProfileResult } from '../src/lib/tech-profile'
 import { tierFromServicios } from '../src/lib/tecnico-columns'
@@ -49,6 +50,15 @@ const CARDS_LOCALES: CardPaquete[] = Object.entries(COINS_PACKAGES).map(([slug, 
 
 export default function ComprarCoinsScreen() {
   const router = useRouter()
+
+  // En iOS esta pantalla no existe. Apple rechazó la v2.3.1 por mostrar los
+  // paquetes con precio y mandar a pagar afuera (ver src/lib/compras-app.ts).
+  // Se sale antes de pintar nada: ni precios, ni botón, ni enlace a /planes.
+  useEffect(() => {
+    if (!PUEDE_COMPRAR_EN_APP) router.replace('/(tabs)/cuenta')
+  }, [router])
+  if (!PUEDE_COMPRAR_EN_APP) return null
+
   const [selected, setSelected] = useState<string | null>(null)
   // Catálogo real del server (precio final del tier + rendimiento por zona).
   const [catalogo, setCatalogo] = useState<CatalogoPaquetes | null>(null)
