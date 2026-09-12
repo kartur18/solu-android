@@ -257,7 +257,16 @@ export default function MensajesScreen() {
       {/* Saldo siempre a la vista: es lo que decide si puede responder. */}
       {(saldo !== null || !saldoConsultado) && (
         <View style={{ paddingHorizontal: THEME.space.lg, paddingTop: THEME.space.md }}>
-          <SaldoCoinsBar saldo={saldo} ilimitado={ilimitado} congelado={congelado} onComprar={irAComprar} />
+          {/* Sin `onComprar` en iOS el botón "Comprar SoluCoins" ni se pinta.
+              Se me escapó en el primer arreglo: guardé la NAVEGACIÓN pero seguí
+              pasando el prop, así que el botón quedaba a la vista y sin hacer
+              nada. Apple volvió a rechazar por "references to purchases". */}
+          <SaldoCoinsBar
+            saldo={saldo}
+            ilimitado={ilimitado}
+            congelado={congelado}
+            {...(PUEDE_COMPRAR_EN_APP ? { onComprar: irAComprar } : {})}
+          />
         </View>
       )}
 
