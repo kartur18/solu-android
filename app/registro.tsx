@@ -85,7 +85,14 @@ export default function RegistroScreen() {
   const [focused, setFocused] = useState<string | null>(null)
 
   // Step 1
-  const [nombre, setNombre] = useState('')
+  // Tres campos separados (11-sep-2026): acá solo se pedía que el nombre no
+  // estuviera vacío, y por esta puerta entró "Leonard" —una sola palabra— que
+  // llegó verificado y visible en las búsquedas. Con DNI peruano todos tienen
+  // apellido paterno y materno.
+  const [nombres, setNombres] = useState('')
+  const [apePaterno, setApePaterno] = useState('')
+  const [apeMaterno, setApeMaterno] = useState('')
+  const nombre = [nombres, apePaterno, apeMaterno].map((x) => x.trim()).filter(Boolean).join(' ')
   const [whatsapp, setWhatsapp] = useState('')
   const [email, setEmail] = useState('')
   const [dni, setDni] = useState('')
@@ -179,7 +186,16 @@ export default function RegistroScreen() {
   }
 
   function validateStep1() {
-    if (!nombre.trim()) { Alert.alert('Error', 'Ingresa tu nombre completo'); return false }
+    // Los tres campos. Acá solo se pedía que el nombre no estuviera vacío, y por
+    // esta puerta entró "Leonard" —una sola palabra— que llegó verificado y
+    // visible en las búsquedas (11-sep-2026). El cliente decide si le abre la
+    // puerta de su casa a esta persona: merece leer un nombre completo.
+    // Bloquear acá no pierde a nadie — el técnico está en la pantalla y lo
+    // corrige al toque.
+    if (!nombres.trim() || !apePaterno.trim() || !apeMaterno.trim()) {
+      Alert.alert('Faltan tus apellidos', 'Escribe tus nombres y tus dos apellidos, como figuran en tu DNI.')
+      return false
+    }
     const waClean = whatsapp.replace(/\D/g, '')
     if (waClean.length !== 9 || !/^9\d{8}$/.test(waClean)) {
       Alert.alert('Error', 'Ingresa un número de WhatsApp válido (9 dígitos, empieza con 9)')
@@ -429,10 +445,22 @@ export default function RegistroScreen() {
 
             <FadeInUp delay={120}>
               <View style={styles.card}>
-                <Text style={styles.label}>Nombre completo *</Text>
+                <Text style={styles.label}>Nombres *</Text>
                 <View style={styles.inputWrap(focused === 'nombre')}>
                   <Ionicons name="person-outline" size={18} color={focused === 'nombre' ? THEME.color.brand : THEME.color.inkMuted} />
-                  <TextInput placeholder="Juan Pérez López" value={nombre} onChangeText={setNombre} onFocus={() => setFocused('nombre')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                  <TextInput placeholder="Juan Carlos" value={nombres} onChangeText={setNombres} onFocus={() => setFocused('nombre')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
+
+                <Text style={styles.label}>Apellido paterno *</Text>
+                <View style={styles.inputWrap(focused === 'apePaterno')}>
+                  <Ionicons name="person-outline" size={18} color={focused === 'apePaterno' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="Pérez" value={apePaterno} onChangeText={setApePaterno} onFocus={() => setFocused('apePaterno')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
+                </View>
+
+                <Text style={styles.label}>Apellido materno *</Text>
+                <View style={styles.inputWrap(focused === 'apeMaterno')}>
+                  <Ionicons name="person-outline" size={18} color={focused === 'apeMaterno' ? THEME.color.brand : THEME.color.inkMuted} />
+                  <TextInput placeholder="López" value={apeMaterno} onChangeText={setApeMaterno} onFocus={() => setFocused('apeMaterno')} onBlur={() => setFocused(null)} style={styles.inputField} placeholderTextColor={THEME.color.inkMuted} />
                 </View>
 
                 <Text style={styles.label}>WhatsApp *</Text>
