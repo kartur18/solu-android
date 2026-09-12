@@ -21,7 +21,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "pe.solu.app",
-      "buildNumber": "10",
+      "buildNumber": "11",
       "associatedDomains": [
         "applinks:www.solu.pe",
         "webcredentials:www.solu.pe"
