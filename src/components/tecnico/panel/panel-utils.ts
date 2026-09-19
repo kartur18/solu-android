@@ -18,11 +18,14 @@ export interface SolicitudAbierta {
 
 // Fila de `pagos` del dashboard (compras de SoluCoins). El endpoint no tiene
 // tipo fuerte en la app; acá se declara lo que la billetera realmente lee.
+// `amount`, no `monto`: así es como GET /api/tecnico/dashboard nombra la
+// columna (ver route.ts del web) — con `monto` el historial siempre caía al
+// fallback S/0 aunque el técnico sí pagó.
 export interface PagoCoins {
   id: number
   plan?: string | null
   metodo?: string | null
-  monto?: number | string | null
+  amount?: number | string | null
   created_at: string
 }
 

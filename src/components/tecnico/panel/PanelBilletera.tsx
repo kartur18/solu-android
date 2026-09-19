@@ -220,7 +220,7 @@ export function PanelBilletera({
                     {new Date(pago.created_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })} · {pago.metodo || 'N/A'}
                   </Text>
                 </View>
-                <Text style={{ ...THEME.font.body, fontWeight: '800', color: THEME.color.success }}>S/{pago.monto || '0'}</Text>
+                <Text style={{ ...THEME.font.body, fontWeight: '800', color: THEME.color.success }}>S/{pago.amount || '0'}</Text>
               </View>
             )
           })
