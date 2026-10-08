@@ -197,6 +197,18 @@ export function LeadRow({
         </View>
       ) : null}
 
+      {/* La dirección es OPCIONAL al pedir el servicio: la mayoría de
+          clientes no la escriben. Sin esto el técnico aceptaba el trabajo y
+          no tenía forma de saber a dónde ir (reportado por un técnico real
+          el 7-oct-2026) — el botón de WhatsApp de abajo ya le pide la
+          dirección cuando falta, acá se la mostramos si ya la tenemos. */}
+      {lead.direccion ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+          <Ionicons name="location" size={14} color={THEME.color.inkSoft} />
+          <Text style={{ ...THEME.font.label, fontWeight: '600', color: THEME.color.ink, flex: 1 }}>{lead.direccion}</Text>
+        </View>
+      ) : null}
+
       {/* Action buttons Premium */}
       {isActive && (
         <View style={{ flexDirection: 'row', gap: THEME.space.sm, marginTop: 14 }}>
@@ -207,7 +219,9 @@ export function LeadRow({
           {lead.whatsapp ? (
           <PressableScale
             onPress={() => {
-              const msg = `Hola ${lead.nombre}, soy tu técnico de SOLU. Sobre tu solicitud de ${lead.servicio} (${lead.codigo}).`
+              const msg = lead.direccion
+                ? `Hola ${lead.nombre}, soy tu técnico de SOLU. Sobre tu solicitud de ${lead.servicio} (${lead.codigo}).`
+                : `Hola ${lead.nombre}, soy tu técnico de SOLU para "${lead.servicio}" (${lead.codigo}). ¿Me confirmas la dirección exacta para llegar?`
               Linking.openURL(`https://wa.me/51${lead.whatsapp}?text=${encodeURIComponent(msg)}`)
             }}
             accessibilityLabel="Contactar por WhatsApp"

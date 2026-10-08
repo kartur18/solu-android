@@ -52,6 +52,7 @@ export interface Cliente {
   distrito: string
   urgencia: string
   descripcion?: string
+  direccion?: string | null
   codigo: string
   estado: string
   tecnico_asignado?: number
