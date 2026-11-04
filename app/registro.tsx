@@ -310,7 +310,8 @@ export default function RegistroScreen() {
       // los 8,000 SoluCoins de bienvenida automáticamente al crear el técnico.
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/register-tech`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Sin este header el backend exige el captcha web, que la app no puede mostrar.
+        headers: { 'Content-Type': 'application/json', 'x-solu-client': 'app' },
         body: JSON.stringify({
           nombre,
           whatsapp: whatsapp.replace(/\D/g, ''),

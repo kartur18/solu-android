@@ -10,6 +10,7 @@ import type { Cliente, Tecnico } from '../../../lib/types'
 import { THEME } from '../../../lib/theme'
 import { FadeInUp, PressableScale } from '../../ui/Motion'
 import { AgendaHoy } from './AgendaHoy'
+import { mensajeCompartirPerfil, mensajeTarjetaDigital } from './compartir-perfil'
 import { InvitacionPlayTester } from './InvitacionPlayTester'
 import { LeadRow } from './LeadRow'
 import type { Aviso } from './ToastAviso'
@@ -128,7 +129,7 @@ export function PanelDashboard({
             <Text style={{ ...THEME.font.caption, color: THEME.color.inkSoft }}>Difúndelo para conseguir más clientes</Text>
           </View>
           <TouchableOpacity
-            onPress={() => Share.share({ message: `Soy ${tech.nombre}, ${tech.oficio} verificado en SOLU. Mira mi perfil: https://www.solu.pe/tecnico/${tech.id}` })}
+            onPress={() => Share.share({ message: mensajeCompartirPerfil(tech) })}
             accessibilityLabel="Compartir mi perfil"
             style={{ backgroundColor: THEME.color.infoBg, borderRadius: THEME.radius.sm, paddingHorizontal: 14, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
           >
@@ -270,7 +271,7 @@ export function PanelDashboard({
         </View>
         <PressableScale
           onPress={() => Share.share({
-            message: `🔧 ${tech.nombre}\n${tech.oficio} verificado en SOLU\n\n📍 ${tech.distrito}\n💰 Desde S/${tech.precio_desde || '—'}\n⭐ ${tech.calificacion?.toFixed(1) || '0.0'} estrellas\n📱 ${tech.whatsapp}\n\n👉 Ver perfil: https://www.solu.pe/tecnico/${tech.id}`,
+            message: mensajeTarjetaDigital(tech),
           })}
           accessibilityLabel="Compartir mi tarjeta digital"
           style={{ backgroundColor: THEME.color.brand, borderRadius: THEME.radius.md, minHeight: 44, padding: THEME.space.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: THEME.space.sm, ...THEME.shadow.brand }}
