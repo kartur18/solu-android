@@ -6,7 +6,7 @@
 //   3. Verificación DNI (frente + posterior)
 //
 // CAMBIO V3.1: eliminado el selector de plan (profesional/premium/elite).
-// Todos los técnicos arrancan con 8,000 SoluCoins de bienvenida y pueden
+// Los técnicos reciben 5,000 SoluCoins de bienvenida al verificar su DNI y pueden
 // comprar paquetes después desde su perfil. Sin gates por plan en oficios
 // ni zonas (el límite real lo da el saldo de SoluCoins, no un plan mensual).
 
@@ -252,7 +252,7 @@ export default function RegistroScreen() {
         setLoading(false)
         return Alert.alert(
           'DNI no verificado',
-          reniec.error || 'No pudimos verificar tu DNI en RENIEC. Revisa que esté bien escrito.',
+          reniec.error || 'No pudimos validar tu DNI. Revisa que esté bien escrito.',
         )
       }
       if (reniec.nameMatches === false) {

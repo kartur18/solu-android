@@ -30,7 +30,7 @@ const BENEFICIOS = [
     emoji: '🔄',
   },
   {
-    label: 'Técnicos verificados con RENIEC',
+    label: 'Técnicos con DNI y selfie verificados',
     desc: 'Cada especialista pasa validación de identidad antes de aparecer',
     emoji: '🛡️',
   },

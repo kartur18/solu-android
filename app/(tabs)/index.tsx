@@ -439,7 +439,7 @@ export default function HomeScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: '#16A34A' }}>Identidad verificada</Text>
-              <Text style={{ fontSize: 12, color: '#16A34A', marginTop: 1 }}>Cada técnico valida su DNI con RENIEC antes de aparecer</Text>
+              <Text style={{ fontSize: 12, color: '#16A34A', marginTop: 1 }}>Cada técnico valida su DNI y su selfie antes de aparecer</Text>
             </View>
           </View>
         </FadeInUp>
@@ -505,7 +505,7 @@ export default function HomeScreen() {
               ...THEME.shadow.md,
             }}>
               {[
-                { icon: 'shield-checkmark' as const, color: THEME.color.brand, title: 'Profesionales verificados', desc: 'Identidad validada con DNI en RENIEC' },
+                { icon: 'shield-checkmark' as const, color: THEME.color.brand, title: 'Profesionales verificados', desc: 'Identidad validada con DNI y selfie' },
                 { icon: 'time' as const, color: THEME.color.info, title: 'Respuesta rápida', desc: 'Un técnico en tu puerta en minutos' },
                 { icon: 'wallet' as const, color: THEME.color.success, title: 'Pagas al técnico directo', desc: 'Yape, Plin o efectivo · sin cobros extra' },
               ].map((item, i) => (
@@ -527,11 +527,11 @@ export default function HomeScreen() {
           </View>
         </FadeInUp>
 
-        {/* ── Banner técnico — 8,000 SoluCoins GRATIS (navy + gradiente) ── */}
+        {/* ── Banner técnico — 5,000 SoluCoins al verificar (navy + gradiente) ── */}
         <FadeInUp delay={240}>
           <PressableScale
             onPress={() => router.push('/registro')}
-            accessibilityLabel="Regístrate como técnico y recibe 8,000 SoluCoins gratis"
+            accessibilityLabel="Regístrate como técnico y recibe 5,000 SoluCoins de regalo al verificar tu DNI"
             style={{ marginHorizontal: THEME.space.lg, marginBottom: THEME.space.md, borderRadius: THEME.radius.xl, overflow: 'hidden', ...THEME.shadow.md }}
           >
             <LinearGradient
@@ -543,8 +543,8 @@ export default function HomeScreen() {
                 <Ionicons name="gift" size={25} color="#FFD700" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>¿Eres técnico? 8,000 SoluCoins GRATIS</Text>
-                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3 }}>Regístrate con tu DNI y empieza a recibir clientes hoy</Text>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff' }}>¿Eres técnico? 5,000 SoluCoins de regalo</Text>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3 }}>Verifica tu DNI y empieza a recibir clientes</Text>
               </View>
               <Ionicons name="chevron-forward" size={17} color="rgba(255,255,255,0.6)" />
             </LinearGradient>

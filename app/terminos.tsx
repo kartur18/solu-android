@@ -15,7 +15,7 @@ export default function TerminosScreen() {
 
         <Text style={h}>2. Registro y cuentas</Text>
         <Text style={p}>
-          2.1 Técnicos: Deben proporcionar nombre completo, DNI, WhatsApp y crear una contraseña. SOLU verifica la identidad del técnico a través de RENIEC. El técnico es un profesional independiente, no un empleado de SOLU.{'\n\n'}
+          2.1 Técnicos: Deben proporcionar nombre completo, DNI, WhatsApp y crear una contraseña. SOLU verifica la identidad del técnico comparando su selfie con la foto de su DNI. El técnico es un profesional independiente, no un empleado de SOLU.{'\n\n'}
           2.2 Clientes: Deben registrarse con nombre, WhatsApp y contraseña. Cada persona puede tener solo una cuenta. El uso de datos falsos resultará en la suspensión de la cuenta.{'\n\n'}
           2.3 Cada cuenta está vinculada a un DNI y WhatsApp único. Crear múltiples cuentas para obtener beneficios está prohibido y resultará en la suspensión permanente.
         </Text>
@@ -23,8 +23,8 @@ export default function TerminosScreen() {
         <Text style={h}>3. SoluCoins y precios</Text>
         <Text style={p}>
           3.1 SOLU funciona con SoluCoins, créditos prepagos que el técnico usa para responder solicitudes de clientes (leads). No hay suscripciones ni pagos mensuales obligatorios.{'\n\n'}
-          3.2 Al registrarse y verificar su DNI con RENIEC, el técnico recibe 8,000 SoluCoins de bienvenida sin costo.{'\n\n'}
-          3.3 SOLU ofrece paquetes de SoluCoins desde S/30 hasta S/1,200. Cuanto más grande el paquete, más SoluCoins por sol. Los SoluCoins comprados no tienen fecha de vencimiento.{'\n\n'}
+          3.2 Al verificar su identidad (DNI y selfie), el técnico recibe 5,000 SoluCoins de bienvenida sin costo.{'\n\n'}
+          3.3 SOLU ofrece paquetes prepagos de SoluCoins; los paquetes disponibles se consultan en solu.pe. Los SoluCoins comprados no tienen fecha de vencimiento.{'\n\n'}
           3.4 El costo en SoluCoins de cada lead varía según el distrito y la urgencia del servicio, y se muestra antes de aceptar.{'\n\n'}
           3.5 El servicio para clientes (buscar y solicitar técnicos) es completamente gratuito.
         </Text>

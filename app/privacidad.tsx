@@ -52,7 +52,7 @@ export default function PrivacidadScreen() {
           Los datos personales son tratados exclusivamente para las siguientes finalidades:{'\n\n'}
           • Crear y gestionar cuentas de usuarios (clientes y técnicos){'\n'}
           • Conectar clientes con técnicos disponibles en su zona{'\n'}
-          • Verificar la identidad de los técnicos mediante RENIEC{'\n'}
+          • Verificar la identidad de los técnicos comparando su selfie con la foto de su DNI{'\n'}
           • Procesar la compra de paquetes de SoluCoins a través de Culqi{'\n'}
           • Enviar notificaciones sobre el estado de los servicios{'\n'}
           • Facilitar la comunicación entre cliente y técnico (chat interno y WhatsApp){'\n'}
@@ -83,7 +83,6 @@ export default function PrivacidadScreen() {
         <Text style={p}>
           SOLU no vende, alquila ni comercializa datos personales. Los datos pueden ser compartidos únicamente con:{'\n\n'}
           • Culqi (pasarela de pagos peruana, Niubiz Group, certificada PCI-DSS): para procesar la compra de SoluCoins{'\n'}
-          • RENIEC: para verificar la identidad de técnicos{'\n'}
           • Cloudinary: para optimización de imágenes de perfil{'\n'}
           • Mixpanel: para analíticas anónimas de uso{'\n'}
           • Firebase/Google: para notificaciones push{'\n'}
