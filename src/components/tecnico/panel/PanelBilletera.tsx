@@ -95,7 +95,7 @@ export function PanelBilletera({
         <Text style={{ ...THEME.font.caption, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>
           {tierInfo.descuento > 0
             ? `Tu tier te da ${tierInfo.descuento}% de descuento en cada paquete de SoluCoins.`
-            : 'Completa 10 servicios y sube a Plata: 8% de descuento en cada paquete de SoluCoins.'}
+            : 'Sube de nivel cerrando servicios: recibes un bono de SoluCoins y apareces mejor en las búsquedas.'}
         </Text>
 
         {/* Desglose del bono: la parte del saldo que tiene fecha de muerte.

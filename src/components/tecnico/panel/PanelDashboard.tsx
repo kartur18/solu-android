@@ -161,14 +161,14 @@ export function PanelDashboard({
                   cobrar cada paquete (TIER_DESCUENTO_PAQUETES). Subir de
                   nivel es plata concreta, no un badge decorativo. */}
               <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.brand, marginTop: 2 }}>
-                {tierNext.name} = {tierNext.descuento}% de descuento en cada paquete de SoluCoins
+                Al subir a {tierNext.name} recibes un bono de SoluCoins y apareces mejor en las búsquedas
               </Text>
             </>
           ) : (
             <>
               <Text style={{ ...THEME.font.caption, color: THEME.color.inkMuted, marginTop: 6 }}>Nivel máximo alcanzado 🎉</Text>
               <Text style={{ ...THEME.font.caption, fontWeight: '700', color: THEME.color.brand, marginTop: 2 }}>
-                {tierInfo.name} = {tierInfo.descuento}% de descuento en cada paquete de SoluCoins
+                Tu nivel {tierInfo.name} te ubica mejor en las búsquedas
               </Text>
             </>
           )}
