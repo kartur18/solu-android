@@ -6,7 +6,7 @@
 //   3. Verificación DNI (frente + posterior)
 //
 // CAMBIO V3.1: eliminado el selector de plan (profesional/premium/elite).
-// Los técnicos reciben 5,000 SoluCoins de bienvenida al verificar su DNI y pueden
+// Los técnicos reciben 3,000 SoluCoins de bienvenida al verificar su DNI y pueden
 // comprar paquetes después desde su perfil. Sin gates por plan en oficios
 // ni zonas (el límite real lo da el saldo de SoluCoins, no un plan mensual).
 
@@ -307,7 +307,7 @@ export default function RegistroScreen() {
     setLoading(true)
     try {
       // V3.1: no enviamos `plan` al backend (eliminado). El backend acredita
-      // los 8,000 SoluCoins de bienvenida automáticamente al crear el técnico.
+      // los 3,000 SoluCoins de bienvenida cuando el técnico verifica su identidad (DNI y selfie).
       const res = await fetchWithTimeout(`${ENV.API_BASE_URL}/register-tech`, {
         method: 'POST',
         // Sin este header el backend exige el captcha web, que la app no puede mostrar.
@@ -345,7 +345,7 @@ export default function RegistroScreen() {
         }
         Alert.alert(
           '¡Bienvenido a SOLU! 🎉',
-          `Tu cuenta está creada. Recibes 8,000 SoluCoins gratis para tus primeros leads: vencen en 30 días, aprovéchalos tu primer mes.${sinFotos ? ' Sube tu DNI desde tu panel para aparecer en las búsquedas.' : ''} Inicia sesión desde Mi cuenta.`,
+          `Tu cuenta está creada. Al verificar tu DNI y selfie recibes 3,000 SoluCoins gratis para tus primeros leads, sin fecha de vencimiento.${sinFotos ? ' Sube tu DNI desde tu panel para aparecer en las búsquedas.' : ''} Inicia sesión desde Mi cuenta.`,
           [{ text: 'Empezar', onPress: () => router.back() }]
         )
       }
@@ -394,7 +394,7 @@ export default function RegistroScreen() {
               <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginBottom: THEME.space.lg }}>
                 Los campos con * son obligatorios
               </Text>
-              {/* Banner bienvenida — anuncia los 8,000 SoluCoins gratis antes de empezar */}
+              {/* Banner bienvenida — anuncia los 3,000 SoluCoins de regalo al verificar */}
               <View
                 style={{
                   flexDirection: 'row', gap: THEME.space.md, alignItems: 'center',
@@ -406,9 +406,9 @@ export default function RegistroScreen() {
                   <Text style={{ fontSize: 22 }}>🎁</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ ...THEME.font.h3, color: THEME.color.brandDark }}>8,000 SoluCoins gratis</Text>
+                  <Text style={{ ...THEME.font.h3, color: THEME.color.brandDark }}>3,000 SoluCoins de regalo</Text>
                   <Text style={{ ...THEME.font.bodySm, color: THEME.color.inkSoft, marginTop: 2 }}>
-                    Te llegan al crear tu cuenta y vencen en 30 días. Alcanzan para tus primeros leads: aprovéchalos tu primer mes.
+                    Te llegan al verificar tu DNI y selfie, y no vencen. Alcanzan para tus primeros leads.
                   </Text>
                 </View>
               </View>
