@@ -340,13 +340,15 @@ export const URGENCIAS = [
 
 // Tiers SOLU V3.1: Bronce / Plata / Oro / Platino (cambio 2026: Diamante → Platino
 // para alinear con la web y el sistema de tiers loyalty en producción).
-// Cortes 0/10/50/200 = TIER_THRESHOLDS de la web: con Platino en 100 la app
-// mostraba un tier cuyo descuento el checkout no aplicaba.
+// Cortes 0/75/200/500/1.000/2.000 = TIER_THRESHOLDS de la web (escala del 10-nov-2026:
+// seis medallas y más trabajos). La web tiene un test que compara estos cortes.
 export const LEVELS = [
   { name: 'Bronce', emoji: '🥉', min: 0, color: '#CD7F32' },
-  { name: 'Plata', emoji: '🥈', min: 10, color: '#C0C0C0' },
-  { name: 'Oro', emoji: '🥇', min: 50, color: '#FFD700' },
-  { name: 'Platino', emoji: '💎', min: 200, color: '#6366F1' },
+  { name: 'Plata', emoji: '🥈', min: 75, color: '#C0C0C0' },
+  { name: 'Oro', emoji: '🥇', min: 200, color: '#FFD700' },
+  { name: 'Platino', emoji: '💎', min: 500, color: '#6366F1' },
+  { name: 'Diamante', emoji: '🔷', min: 1000, color: '#0891B2' },
+  { name: 'Leyenda', emoji: '🏆', min: 2000, color: '#E11D48' },
 ]
 
 export function getTechLevel(servicios: number) {
@@ -371,7 +373,7 @@ export const ACHIEVEMENTS: { id: string; emoji: string; name: string; desc: stri
   { id: 'streak', emoji: '🔥', name: 'En racha', desc: '5 servicios completados', check: (t) => t.servicios_completados >= 5 },
   { id: 'unstoppable', emoji: '⚡', name: 'Imparable', desc: '10 servicios completados', check: (t) => t.servicios_completados >= 10 },
   { id: 'master', emoji: '👑', name: 'Maestro', desc: '50 servicios completados', check: (t) => t.servicios_completados >= 50 },
-  { id: 'legend', emoji: '🏅', name: 'Leyenda', desc: '100 servicios completados', check: (t) => t.servicios_completados >= 100 },
+  { id: 'legend', emoji: '🏅', name: 'Centenario', desc: '100 servicios completados', check: (t) => t.servicios_completados >= 100 },
   { id: 'verified', emoji: '✅', name: 'Verificado', desc: 'DNI verificado', check: (t) => t.verificado },
   { id: 'fivestar', emoji: '⭐', name: 'Cinco estrellas', desc: 'Calificación perfecta', check: (t) => t.calificacion >= 5.0 },
   { id: 'highrated', emoji: '🌟', name: 'Top valorado', desc: 'Calificación 4.5+', check: (t) => t.calificacion >= 4.5 },
@@ -380,8 +382,8 @@ export const ACHIEVEMENTS: { id: string; emoji: string; name: string; desc: stri
   // Achievements V3.1: ya no dependen de "plan mensual" (eliminado). Reemplazados
   // por tier loyalty real (Oro+) y por compra de paquete Coins.
   { id: 'pro', emoji: '🏆', name: 'Top Pro', desc: '10+ servicios con calificación 4.5+', check: (t) => (t.servicios_completados ?? 0) >= 10 && (t.calificacion ?? 0) >= 4.5 },
-  // Umbral 200 = TIER_THRESHOLDS.platino de la web (con 100 la insignia mentía).
-  { id: 'platino', emoji: '💎', name: 'Platino', desc: '200+ servicios completados', check: (t) => (t.servicios_completados ?? 0) >= 200 },
+  // Umbral 500 = TIER_THRESHOLDS.platino de la web.
+  { id: 'platino', emoji: '💎', name: 'Platino', desc: '500+ servicios completados', check: (t) => (t.servicios_completados ?? 0) >= 500 },
   { id: 'gallery', emoji: '📸', name: 'Portafolio', desc: '5+ fotos de trabajos', check: (t) => (t.galeria?.length ?? 0) >= 5 },
   { id: 'multizone', emoji: '🗺️', name: 'Multi-zona', desc: '2+ zonas de cobertura', check: (t) => (t.zonas?.length ?? 0) >= 2 },
 ]

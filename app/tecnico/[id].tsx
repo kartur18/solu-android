@@ -28,6 +28,8 @@ const TIER_LABEL: Record<string, string> = {
   plata: 'Plata',
   oro: 'Oro',
   platino: 'Platino',
+  diamante: 'Diamante',
+  leyenda: 'Leyenda',
 }
 
 // Fuente monoespaciada para el código público (look de "número de serie").

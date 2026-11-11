@@ -49,6 +49,8 @@ export const THEME = {
     plata: '#9CA3AF',
     oro: '#F59E0B',
     platino: '#6366F1',
+    diamante: '#0891B2',
+    leyenda: '#E11D48',
 
     white: '#FFFFFF',
     black: '#000000',

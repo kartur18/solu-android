@@ -16,7 +16,7 @@ export interface Tecnico {
   // V3.1: el modelo de planes mensuales se eliminó; el técnico usa saldo de
   // SoluCoins prepagos (ver `coins_balance`) + tier de fidelidad derivado.
   coins_balance?: number
-  tier?: 'bronce' | 'plata' | 'oro' | 'platino'
+  tier?: 'bronce' | 'plata' | 'oro' | 'platino' | 'diamante' | 'leyenda'
   disponible: boolean
   verificado: boolean
   // DNI/antecedentes al día según el flujo de verificación manual. Viene en el

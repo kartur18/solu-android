@@ -29,16 +29,18 @@ export interface PagoCoins {
   created_at: string
 }
 
-// Tiers de fidelidad con los umbrales REALES del server (10/50/200) y su
+// Tiers de fidelidad con los umbrales REALES del server (75/200/500/1.000/2.000) y su
 // beneficio. El descuento en paquetes se apagó el 10-nov-2026 (queda en 0): el nivel da
 // bono de coins al subir y mejor posición en las búsquedas. El viejo getTechLevel usaba
 // 100 para Platino: el badge podía contradecir el tier que fija el descuento
 // y la card pública del técnico.
 export const TIERS_FIDELIDAD = [
   { key: 'bronce' as TierTecnico, name: 'Bronce', emoji: '🥉', min: 0, color: '#CD7F32', descuento: 0 },
-  { key: 'plata' as TierTecnico, name: 'Plata', emoji: '🥈', min: 10, color: '#C0C0C0', descuento: 0 },
-  { key: 'oro' as TierTecnico, name: 'Oro', emoji: '🥇', min: 50, color: '#FFD700', descuento: 0 },
-  { key: 'platino' as TierTecnico, name: 'Platino', emoji: '💎', min: 200, color: '#6366F1', descuento: 0 },
+  { key: 'plata' as TierTecnico, name: 'Plata', emoji: '🥈', min: 75, color: '#C0C0C0', descuento: 0 },
+  { key: 'oro' as TierTecnico, name: 'Oro', emoji: '🥇', min: 200, color: '#FFD700', descuento: 0 },
+  { key: 'platino' as TierTecnico, name: 'Platino', emoji: '💎', min: 500, color: '#6366F1', descuento: 0 },
+  { key: 'diamante' as TierTecnico, name: 'Diamante', emoji: '🔷', min: 1000, color: '#0891B2', descuento: 0 },
+  { key: 'leyenda' as TierTecnico, name: 'Leyenda', emoji: '🏆', min: 2000, color: '#E11D48', descuento: 0 },
 ]
 
 export type TierInfo = (typeof TIERS_FIDELIDAD)[number]

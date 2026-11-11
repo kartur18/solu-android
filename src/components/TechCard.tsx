@@ -27,6 +27,8 @@ const TIER_LABEL: Record<string, string> = {
   plata: 'Plata',
   oro: 'Oro',
   platino: 'Platino',
+  diamante: 'Diamante',
+  leyenda: 'Leyenda',
 }
 
 const AVATAR_GRADIENTS: [string, string][] = [
