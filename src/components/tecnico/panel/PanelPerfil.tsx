@@ -3,6 +3,7 @@
 // Es el momento de más ansiedad del técnico (acá sube su DNI y antecedentes):
 // todo lo tocable mide 44px o más.
 
+import { fotoEstable } from '../../../lib/foto'
 import { useState } from 'react'
 import { ActivityIndicator, Alert, Image, Platform, ScrollView, Share, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
@@ -139,7 +140,7 @@ export function PanelPerfil({
         <TouchableOpacity onPress={onSubirFotoPerfil} accessibilityLabel="Cambiar foto de perfil" style={{ alignItems: 'center' }}>
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: THEME.space.sm }}>
             {tech.foto_url ? (
-              <Image source={{ uri: tech.foto_url }} style={{ width: 80, height: 80 }} />
+              <Image source={{ uri: fotoEstable(tech.foto_url) }} style={{ width: 80, height: 80 }} />
             ) : (
               <Text style={{ fontSize: 32, fontWeight: '900', color: THEME.color.brand }}>{tech.nombre?.[0]}</Text>
             )}

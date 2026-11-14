@@ -1,3 +1,4 @@
+import { fotoEstable } from '../lib/foto'
 import { useState, useEffect, useCallback } from 'react'
 import { View, Text, ScrollView, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
@@ -75,7 +76,7 @@ export function MisTecnicosConfianza({ whatsapp }: { whatsapp: string }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.sm }}>
                 {t.foto_url ? (
                   <Image
-                    source={{ uri: t.foto_url }}
+                    source={{ uri: fotoEstable(t.foto_url) }}
                     style={{ width: 44, height: 44, borderRadius: THEME.radius.full, backgroundColor: THEME.color.surfaceSunken }}
                     accessibilityIgnoresInvertColors
                   />

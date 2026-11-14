@@ -1,3 +1,4 @@
+import { fotoEstable } from './foto'
 import { ENV } from './env'
 
 // Cloudinary image optimization for Android
@@ -22,7 +23,7 @@ export function optimizeUrl(url: string | null | undefined, opts?: { width?: num
   // ya sirve la imagen directo (200), así que la devolvemos tal cual.
   // (Optimización de tamaño pendiente: usar render/image de Supabase.)
   if (url.includes('supabase.co')) {
-    return url
+    return fotoEstable(url)
   }
   return url
 }

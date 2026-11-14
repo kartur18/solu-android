@@ -2,6 +2,7 @@
 // Cada pestaña vive en su propio componente (src/components/tecnico/panel/):
 // esta pantalla conserva el estado y los handlers que comparten entre sí.
 
+import { fotoEstable } from '../../src/lib/foto'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Linking, RefreshControl, Image, Modal, ActivityIndicator, Share, KeyboardAvoidingView, Platform } from 'react-native'
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
@@ -846,7 +847,7 @@ export default function CuentaScreen({ onCambiarModo }: { onCambiarModo?: () => 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
               <PressableScale onPress={() => { void pickAndUploadProfilePhoto() }} accessibilityLabel="Cambiar foto de perfil" style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...THEME.shadow.brand }}>
                 {tech.foto_url ? (
-                  <Image source={{ uri: tech.foto_url }} style={{ width: 48, height: 48 }} />
+                  <Image source={{ uri: fotoEstable(tech.foto_url) }} style={{ width: 48, height: 48 }} />
                 ) : (
                   <Text style={{ fontSize: 22, fontWeight: '900', color: THEME.color.white }}>{tech.nombre?.[0] || 'S'}</Text>
                 )}

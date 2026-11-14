@@ -1,6 +1,7 @@
 // Pestaña "Inicio" del panel del técnico: bandeja, resumen del mes, tier,
 // logros, agenda, últimas solicitudes, promociones y tarjeta digital.
 
+import { fotoEstable } from '../../../lib/foto'
 import { Image, Share, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { useRouter } from 'expo-router'
@@ -247,7 +248,7 @@ export function PanelDashboard({
         <View style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(242,107,33,0.15)' }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md, marginBottom: THEME.space.lg }}>
           <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: THEME.color.brand, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            {tech.foto_url ? <Image source={{ uri: tech.foto_url }} style={{ width: 50, height: 50 }} /> : <Text style={{ fontSize: 24, fontWeight: '900', color: THEME.color.white }}>{tech.nombre?.[0]}</Text>}
+            {tech.foto_url ? <Image source={{ uri: fotoEstable(tech.foto_url) }} style={{ width: 50, height: 50 }} /> : <Text style={{ fontSize: 24, fontWeight: '900', color: THEME.color.white }}>{tech.nombre?.[0]}</Text>}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 16, fontWeight: '900', color: THEME.color.white }}>{tech.nombre}</Text>

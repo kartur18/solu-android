@@ -1,3 +1,4 @@
+import { fotoEstable } from '../src/lib/foto'
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TextInput, Image, Alert, Linking, StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -83,7 +84,7 @@ function TecnicoMiniCard({ tech }: { tech: TecnicoSugerido }) {
       }}
     >
       {tech.foto_url ? (
-        <Image source={{ uri: tech.foto_url }} style={{ width: 52, height: 52, borderRadius: THEME.radius.md }} />
+        <Image source={{ uri: fotoEstable(tech.foto_url) }} style={{ width: 52, height: 52, borderRadius: THEME.radius.md }} />
       ) : (
         <View style={{ width: 52, height: 52, borderRadius: THEME.radius.md, backgroundColor: THEME.color.brandLight, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 20, fontWeight: '800', color: THEME.color.brand }}>{tech.nombre?.charAt(0) || 'T'}</Text>

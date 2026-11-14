@@ -1,3 +1,4 @@
+import { fotoEstable } from '../../src/lib/foto'
 import { useState, useEffect, useCallback } from 'react'
 import { View, Text, ScrollView, Image, Linking, RefreshControl, Alert, Share } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -369,7 +370,7 @@ export default function TrackingScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: THEME.space.md }}>
               {tech.foto_url ? (
                 <Image
-                  source={{ uri: tech.foto_url }}
+                  source={{ uri: fotoEstable(tech.foto_url) }}
                   style={{ width: 52, height: 52, borderRadius: THEME.radius.lg, borderWidth: 1, borderColor: THEME.color.line }}
                 />
               ) : (
